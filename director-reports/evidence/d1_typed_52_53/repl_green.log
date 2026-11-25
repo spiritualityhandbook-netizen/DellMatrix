@@ -1,0 +1,8 @@
+you>   Mandell: 52[Filter](predicate="garden")
+  English: Filter (Reduce a set by conditions)
+  -- 52[Filter] ns=CORE_II
+  Filter 2->1 cond=garden
+you>   Mandell: 53[Scope](name="nope")
+  English: Scope (Establish execution/context boundary)
+  -- 53[Scope] ns=CORE_II
+  Scope refused: unknown scope 'nope' (supported: plane)

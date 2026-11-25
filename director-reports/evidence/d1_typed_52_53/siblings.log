@@ -1,0 +1,14 @@
+== form.mandell.d1_recon1_scope_test
+D1_RECON1_SCOPE: 17/17
+== form.mandell.d1_dell51_select_test
+[ok] proof_card_carries_the_deep_note :: Deep contract proven (D1 circuit 9, d1_dell51_select_test; s
+D1_DELL51_SELECT: 15/15
+== form.mandell.d1_dell54_query_test
+[ok] proof_card_carries_the_deep_note :: Deep contract proven (D1 circuit 10, d1_dell54_query_test): 
+D1_DELL54_QUERY: 12/12
+== form.mandell.d1_stale_probes_test
+PASS record: ENGLISH_UNREACHABLE verified at probe base
+D1_STALE_PROBES: 12/12
+== form.mandell.p12_closure_test
+
+=== RESULT: 8/8 PASS ===

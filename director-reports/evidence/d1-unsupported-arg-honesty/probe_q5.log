@@ -1,0 +1,23 @@
+flow parse 55[Set](key=a, value=b) -> ValueError: expected flow at 7: '(key="a", value="b")'
+[CONFIRMED] Q5-flow-args-channel: SeedAtom-style typed args in flow-program text are NOT silently dropped: _tokenize_program refuses the text outright (ValueError 'expected flow') — an unstructured exception, not a receipt
+flow parse 34[Stamp] :: hello -> node.args={'mark': 'hello'}
+[CONFIRMED] Q5-flow-label-derived: the flow path's 'args' are synthesized FROM the label by _args_from_label (stamp/cycle/form only) — a different mechanism, not a drop
+--- REPL transcript (filtered) ---
+  you>   Mandell: 82[Group](name="greens")
+    English: Group (Treat multiple targets as one collection)
+    -- 82[Group] ns=CORE_II
+    Group group n=3
+  you>   Mandell: 53[Scope] :: greens
+    English: Scope (Establish execution/context boundary) → greens
+    -- 53[Scope] ns=CORE_II
+    Scope refused: unknown scope 'greens' (supported: plane, group)
+  you>   Mandell: 53[Scope] :: group
+    English: Scope (Establish execution/context boundary) → group
+    Chain atoms=1 label=group
+    -- 53[Scope] ns=CORE_II
+    Scope -> group
+--- end transcript ---
+[CONFIRMED] Q5-repl-same-drop: REPL (real user path): typed Group(name=greens) created the DEFAULT 'group'; Scope :: greens refused as unknown, Scope :: group succeeded — the identical silent drop, witnessed inside the user's own interface
+  (cleanup ArgHonRepl: 1 entries removed)
+
+Q5 SUMMARY: 3/3 expectations confirmed

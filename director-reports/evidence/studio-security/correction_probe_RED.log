@@ -1,0 +1,6 @@
+server bound to 8765; token acquired (43 chars)
+POST /api/execute valid-token + Origin http://127.0.0.1 (no port) -> HTTP 200
+store before: {}
+store after:  {'corrprobe': '1'}
+refused 403: False; zero mutation: False
+PROBE RESULT: FAIL — implicit-port Origin was ACCEPTED (defect present)

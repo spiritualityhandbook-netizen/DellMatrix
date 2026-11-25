@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Forces</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1>Forces</h1>
+        <p class="lede">Force field status, weather, and ticks — growth, water, breath through the lattice. Keys: <kbd>T</kbd> force tick</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="primary" data-cmd="forces" title="Force field status">Status</button>
+        <button title="force tick" type="button" data-cmd="force tick">Force tick</button>
+        <button type="button" data-cmd="pulse" title="Enhance pulse scores">Pulse</button>
+        <button title="grow ideas 1" type="button" data-cmd="grow ideas 1">Grow ×1</button>
+        <button title="evolve" type="button" data-cmd="evolve">Evolve</button>
+        <a href="/geometry"><button type="button" class="sm">Geometry</button></a>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Active field</h3>
+        <div class="stat" id="field">—</div>
+        <div class="row" style="margin-top:10px">
+          <button title="weather clear" type="button" class="sm" data-cmd="weather clear">clear</button>
+          <button title="weather rain" type="button" class="sm" data-cmd="weather rain">rain</button>
+          <button title="weather storm" type="button" class="sm" data-cmd="weather storm">storm</button>
+          <button title="weather fog" type="button" class="sm" data-cmd="weather fog">fog</button>
+          <button title="weather calm" type="button" class="sm" data-cmd="weather calm">calm</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>At your cell</h3>
+        <div id="reach" class="list"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Command output</h3>
+      <pre id="out" class="mono-out">—</pre>
+    </div>
+  
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages" data-navhub="forces">
+      <a href="/"><button type="button" class="sm" title="Menu">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm" title="Walk">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm" title="Lattice">Lattice</button></a>
+      <a href="/nursery"><button type="button" class="sm" title="Nursery">Nursery</button></a>
+      <a href="/program"><button type="button" class="sm" title="Program">Program</button></a>
+      <a href="/personas"><button type="button" class="sm" title="Personas">Personas</button></a>
+      <a href="/forces"><button type="button" class="sm" title="Forces">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm" title="Geometry">Geometry</button></a>
+      <a href="/matrices"><button type="button" class="sm" title="Matrices">Matrices</button></a>
+      <a href="/console"><button type="button" class="sm" title="Console">Console</button></a>
+    </nav><!-- btnpath:navhub:forces -->
+</div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell=DM.mountShell({page:'forces'});
+  const $=id=>document.getElementById(id);
+
+  async function paint(){
+    const s=await DM.getState();
+    const fr=s.forces||{}, fp=s.fp||{};
+    document.title=`DellMatrix · Forces · ${fr.weather||'?'}`;
+    shell.setMeta(`forces · ${((fr.active)||[]).join(', ')||'—'} · weather ${fr.weather||'—'}`);
+    shell.setFoot(s);
+    try{ var _sx=document.getElementById('sync-text'); if(_sx&&DM.formatSyncLine){ var _st=(typeof s!=='undefined'?s:(typeof STATE!=='undefined'?STATE:null)); if(_st) _sx.textContent=DM.formatSyncLine(_st); } }catch(_e){}
+    /* syncux:sync-strip-forces */
+
+    $('field').innerHTML=`
+      <b>Active</b> ${DM.esc(((fr.active)||[]).join(', ')||'—')}<br>
+      <b>Weather</b> ${DM.esc(fr.weather||'—')}<br>
+      <b>Tick</b> ${fr.time_tick??fr.tick??'—'}<br>
+      <pre class="mono-out" style="margin-top:8px;max-height:180px">${DM.esc(JSON.stringify(fr,null,2).slice(0,1500))}</pre>
+    `;
+    const reach=fp.forces_reach||[];
+    $('reach').innerHTML=reach.length? reach.map(f=>`
+      <div class="card"><h3>${DM.esc(f.force)}</h3><div class="d">intensity ${f.intensity} · ${DM.esc(f.note||'')}</div></div>
+    `).join('') : '<div class="empty">No forces reaching this cell — walk the matrix or Force tick</div>';
+  }
+  async function run(cmd){
+    const r=await DM.sendCmd(cmd);
+    $('out').textContent=r&&(r.msg||r.error)||'—';
+    await paint();
+  }
+  document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>run(b.getAttribute('data-cmd')));
+  window.addEventListener('keydown',e=>{
+    if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
+    if(e.key==='t'){ e.preventDefault(); run('force tick'); }
+  });
+  paint();
+  run('forces');
+  setInterval(()=>{ if(document.visibilityState==='visible') paint().catch(()=>{}); }, 4000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') paint().catch(()=>{}); });
+})();
+</script>
+<!-- btnpath:titles:forces -->
+<!-- syncux:empty-forces -->
+<!-- syncux:kbdhelp-forces -->
+</body>
+</html>

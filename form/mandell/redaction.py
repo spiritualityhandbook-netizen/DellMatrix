@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""DAF-02/B5: the ONE Sanitize redaction authority.
+
+Dell 41[Sanitize] exists to keep secret-shaped values out of the
+program's surfaces. Before this module the redaction regexes lived
+only inside the Sanitize leaf arm, while the generic Mandell/English
+echoes, the returned seed/english metadata, the chain echoes, the
+execution observer's receipt, and the persisted outcome ledger all
+carried the RAW input — so Sanitize disclosed exactly what it
+redacted (Director DAF-02, executed on b352e39).
+
+Every surface that echoes a seed containing a Sanitize atom uses
+these helpers, so there is exactly one redaction semantics:
+
+- ``sanitize_text`` — the canonical redaction (secret-key values
+  and 12+ digit runs), unchanged from the historical OUT line.
+- ``has_sanitize`` — does a parsed seed contain Dell 41?
+- ``redacted_seed`` — a copy of the parsed seed whose label,
+  per-atom segment labels, typed arg values, and raw text have
+  been sanitized; echoes built from it cannot leak. Seeds without
+  a Sanitize atom are returned unchanged (identity).
+
+No digests are substituted for secrets: a digest of a guessable
+secret is not confidentiality (Director DAF-02).
+"""
+from __future__ import annotations
+
+import re
+from dataclasses import replace
+from typing import Any
+
+_SECRET_RE = re.compile(
+    # DD-31: an optional copula ("is") may sit between the keyword /
+    # separator and the value ("my password is X"); consume it so the
+    # VALUE is redacted, not the word "is".
+    r"(?i)(password|secret|token|api[_-]?key|bearer)"
+    r"\s*[:=]?\s*(?:is\s*[:=]?\s*)?\S+")
+_NUMBER_RE = re.compile(r"\b\d{12,}\b")
+
+SANITIZE_DELL = 41
+
+
+def sanitize_text(text: str) -> str:
+    """Canonical Sanitize redaction of one text value."""
+    out = _SECRET_RE.sub(r"\1=[REDACTED]", text or "")
+    out = _NUMBER_RE.sub("[REDACTED_NUM]", out)
+    return out
+
+
+def has_sanitize(parsed: Any) -> bool:
+    """True when any atom of the parsed seed is Dell 41[Sanitize]."""
+    return any(int(getattr(a, "dell", -1)) == SANITIZE_DELL
+               for a in (getattr(parsed, "atoms", None) or []))
+
+
+def sanitize_evidence(obj: Any) -> Any:
+    """Deep copy of an evidence structure with every string run
+    through ``sanitize_text``. Evidence only — never applied to
+    execution operands or live execution state (store, selected),
+    so a Sanitize chain still executes with its real operands
+    (step 3b: DAF-02 chain follow-up)."""
+    if isinstance(obj, str):
+        return sanitize_text(obj)
+    if isinstance(obj, dict):
+        return {k: sanitize_evidence(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [sanitize_evidence(v) for v in obj]
+    return obj
+
+
+class RedactingMessages(list):
+    """Step 3b: a chain-messages list that sanitizes every string
+    at append time. A chain containing Dell 41[Sanitize] carries
+    its redaction requirement through EVERY atom trace built on
+    this list (TOAM lines, Query scope lines, leaf sub-messages,
+    control messages) without touching the operands those atoms
+    execute with — one shared authority, no per-site copies."""
+
+    def append(self, item: Any) -> None:
+        super().append(sanitize_text(item) if isinstance(item, str) else item)
+
+    def extend(self, items: Any) -> None:
+        for item in items:
+            self.append(item)
+
+
+def redacted_seed(parsed: Any) -> Any:
+    """Echo-safe copy of a parsed seed (identity if no Sanitize)."""
+    if parsed is None or not has_sanitize(parsed):
+        return parsed
+    atoms = []
+    for a in parsed.atoms:
+        atoms.append(replace(
+            a,
+            args={k: sanitize_text(v) for k, v in (a.args or {}).items()},
+            label=sanitize_text(a.label or ""),
+        ))
+    return replace(
+        parsed,
+        atoms=atoms,
+        label=sanitize_text(parsed.label or ""),
+        raw=sanitize_text(parsed.raw or ""),
+    )

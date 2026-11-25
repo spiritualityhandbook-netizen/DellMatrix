@@ -1,0 +1,2 @@
+RED: active owner unchanged after tokenless switch attempt
+RESULT: 30/35 pass, 5 RED

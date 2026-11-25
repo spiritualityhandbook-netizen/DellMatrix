@@ -1,0 +1,527 @@
+#!/usr/bin/env python3
+"""
+Universal LLM bridge — cloud + local open-source (Ollama).
+
+44[Bridge] > 35[Discover] >> 04[Transform] :: LLMBridge
+
+Cloud (env keys):
+  gemini, aistudio, grok, claude, copilot
+
+Local OSS:
+  ollama / local  — http://127.0.0.1:11434  (no cloud key)
+  OLLAMA_HOST, OLLAMA_MODEL
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+import json
+import os
+import shutil
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+
+try:
+    from form.mandell.floor import FLOOR, assert_floor_intact
+except ImportError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+    from form.mandell.floor import FLOOR, assert_floor_intact
+
+PROVIDERS = ("ollama", "local", "gemini", "grok", "claude", "copilot", "aistudio")
+
+
+@dataclass
+class ProviderResult:
+    provider: str
+    ok: bool
+    text: str = ""
+    error: str = ""
+    meta: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "provider": self.provider,
+            "ok": self.ok,
+            "text": self.text[:8000],
+            "error": self.error,
+            "meta": self.meta,
+        }
+
+
+@dataclass
+class EmbedResult:
+    """One embedding transport outcome (C8 EmbedBind).
+
+    `model` is the ACTUAL model that produced the vector and `vector`
+    the ACTUAL values; callers build vector-space identity
+    ("<provider>:<model>:<dim>") from these, never from requests.
+    """
+    provider: str
+    ok: bool
+    vector: List[float] = field(default_factory=list)
+    model: str = ""
+    error: str = ""
+
+
+FAKE_EMBED_MODEL = "fake-embed-16"
+FAKE_EMBED_DIM = 16
+
+
+def _validate_embed_result(res: EmbedResult) -> EmbedResult:
+    """Central vector-validity gate for EVERY embed transport.
+
+    Director requirement (PR #378, mail 1a1c9f8b): a bound probe
+    must never accept an empty, nonfinite, or malformed vector.
+    Every LLMBridge.embed return path passes through here, so no
+    provider - present or future - can bind on a bad vector. The
+    provider/model identity is preserved on the failure result.
+    """
+    if not res.ok:
+        return res
+    import math
+    vec = res.vector
+    if not isinstance(vec, list) or not vec:
+        return EmbedResult(res.provider, False, model=res.model,
+                           error="embed_invalid_vector: empty")
+    for v in vec:
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+            return EmbedResult(res.provider, False, model=res.model,
+                               error="embed_invalid_vector: nonfinite_or_malformed")
+    return EmbedResult(res.provider, True,
+                       vector=[float(v) for v in vec], model=res.model)
+
+
+def _fake_embed(text: str) -> EmbedResult:
+    """Deterministic offline embedding test double.
+
+    Mirrors the dock's FakeProvider precedent: an honest, labeled
+    stand-in for transport proofs. It is NOT a semantic embedding
+    and must never be served as one - the provider name "fake" and
+    the model name travel in every receipt it produces.
+    """
+    import hashlib
+    digest = hashlib.sha256(text.encode("utf-8")).digest()
+    vec = [digest[i % len(digest)] / 127.5 - 1.0 for i in range(FAKE_EMBED_DIM)]
+    return EmbedResult("fake", True, vector=vec, model=FAKE_EMBED_MODEL)
+
+
+def _env(*names: str) -> str:
+    for n in names:
+        v = os.environ.get(n, "").strip()
+        if v:
+            return v
+    return ""
+
+
+class _ResponseTooLarge(Exception):
+    """Transport body exceeded the byte bound (AMEND 2026-10-07)."""
+
+
+def _read_bounded(resp, max_bytes: int) -> bytes:
+    """Read at most max_bytes+1 bytes, handling short reads.
+
+    Reading exactly max_bytes cannot distinguish EOF from truncation,
+    so one extra byte is the truncation sentinel. Loops on short
+    reads; never performs an unlimited fallback. Returns the body
+    (at most max_bytes+1 bytes).
+    """
+    chunks = []
+    remaining = max_bytes + 1
+    while remaining > 0:
+        chunk = resp.read(min(65536, remaining))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    return b"".join(chunks)
+
+
+def _http_json(url: str, payload: dict, headers: Optional[dict] = None,
+               timeout: int = 120, max_bytes: Optional[int] = None) -> dict:
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url, data=data, headers=headers or {"Content-Type": "application/json"}, method="POST"
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        if max_bytes is None:
+            raw = resp.read()
+        else:
+            raw = _read_bounded(resp, max_bytes)
+            if len(raw) > max_bytes:
+                # Oversized: reject BEFORE parsing. A truncated prefix
+                # must never be accepted because it happens to parse.
+                raise _ResponseTooLarge(
+                    f"transport body exceeds {max_bytes} bytes")
+        return json.loads(raw.decode("utf-8"))
+
+
+def _http_get_json(url: str, timeout: int = 5) -> dict:
+    with urllib.request.urlopen(url, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def ollama_host() -> str:
+    return _env("OLLAMA_HOST") or "http://127.0.0.1:11434"
+
+
+def ollama_alive() -> bool:
+    try:
+        _http_get_json(ollama_host().rstrip("/") + "/api/tags", timeout=2)
+        return True
+    except Exception:
+        return False
+
+
+def ollama_models() -> List[str]:
+    try:
+        data = _http_get_json(ollama_host().rstrip("/") + "/api/tags", timeout=5)
+        return [m.get("name", "") for m in data.get("models") or [] if m.get("name")]
+    except Exception:
+        return []
+
+
+@dataclass
+class LLMBridge:
+    enabled: Dict[str, bool] = field(default_factory=lambda: {p: False for p in PROVIDERS})
+
+    def detect(self) -> Dict[str, Any]:
+        local = ollama_alive()
+        models = ollama_models() if local else []
+        return {
+            "ollama": local,
+            "local": local,
+            "ollama_host": ollama_host(),
+            "ollama_models": models,
+            "ollama_model_default": _env("OLLAMA_MODEL") or (models[0] if models else "llama3.2"),
+            "gemini": bool(_env("GOOGLE_API_KEY", "GEMINI_API_KEY")),
+            "aistudio": bool(_env("GOOGLE_API_KEY", "GEMINI_API_KEY", "AISTUDIO_API_KEY")),
+            "grok": bool(_env("XAI_API_KEY")),
+            "claude": bool(_env("ANTHROPIC_API_KEY")),
+            "copilot": bool(_env("GITHUB_TOKEN", "GH_TOKEN")) or bool(shutil.which("gh")),
+            "gh_cli": bool(shutil.which("gh")),
+            "floor": list(FLOOR),
+            "note": "Prefer ollama/local for offline. Cloud keys optional.",
+        }
+
+    def enable(self, name: str) -> bool:
+        if name not in self.enabled:
+            return False
+        self.enabled[name] = True
+        return True
+
+    def disable(self, name: str) -> bool:
+        if name not in self.enabled:
+            return False
+        self.enabled[name] = False
+        return True
+
+    def call(self, provider: str, prompt: str, system: str = "") -> ProviderResult:
+        assert_floor_intact()
+        provider = provider.lower().strip()
+        if provider not in PROVIDERS:
+            return ProviderResult(provider, False, error=f"unknown provider {provider}")
+        det = self.detect()
+        if not self.enabled.get(provider, False):
+            if not det.get(provider):
+                return ProviderResult(provider, False, error=f"{provider} not configured")
+            self.enabled[provider] = True
+        return self.dispatch(provider, prompt, system)
+
+    def dispatch(self, provider: str, prompt: str, system: str = "",
+                 *, model: Optional[str] = None,
+                 timeout: int = 120,
+                 max_bytes: Optional[int] = None) -> ProviderResult:
+        """Configured dispatch WITHOUT provider auto-detection.
+
+        R6.2: the dock calls this (not call()) so no unrelated
+        provider detection runs during configured dispatch. Explicit
+        model/timeout/read-bound reach the actual provider request.
+        `timeout` is the blocking-I/O timeout for the HTTP operation.
+        """
+        assert_floor_intact()
+        provider = provider.lower().strip()
+        if provider not in PROVIDERS:
+            return ProviderResult(provider, False, error=f"unknown provider {provider}")
+        try:
+            if provider in ("ollama", "local"):
+                return self._ollama(prompt, system, model=model,
+                                    timeout=timeout, max_bytes=max_bytes)
+            if provider in ("gemini", "aistudio"):
+                return self._gemini(prompt, system, label=provider,
+                                    model=model, timeout=timeout,
+                                    max_bytes=max_bytes)
+            if provider == "grok":
+                return self._grok(prompt, system, model=model,
+                                  timeout=timeout, max_bytes=max_bytes)
+            if provider == "claude":
+                return self._claude(prompt, system, model=model,
+                                    timeout=timeout, max_bytes=max_bytes)
+            if provider == "copilot":
+                return self._copilot(prompt, system)
+        except urllib.error.HTTPError as e:
+            body = e.read(2000).decode("utf-8", errors="replace")[:500]
+            return ProviderResult(provider, False, error=f"HTTP {e.code}: {body}")
+        except _ResponseTooLarge as e:
+            # Machine-readable prefix: the dock maps this to a stable
+            # response_too_large receipt (never parsed, never silent).
+            return ProviderResult(provider, False,
+                                  error=f"response_too_large: {e}")
+        except Exception as e:
+            return ProviderResult(provider, False, error=str(e))
+        return ProviderResult(provider, False, error="unhandled")
+
+    def embed(self, provider: str, text: str, *,
+              model: Optional[str] = None, timeout: int = 30) -> EmbedResult:
+        """Embedding transport (C8 EmbedBind, MWL 153).
+
+        A provider's generative access does NOT by itself prove
+        embedding entitlement (plan SS12.36): embedding is a separate
+        endpoint/model, so this method is the entitlement surface and
+        it fails by name. Providers without an implemented embedding
+        endpoint return embed_not_supported_for_provider - never a
+        substitute vector from any other mechanism.
+        """
+        assert_floor_intact()
+        provider = provider.lower().strip()
+        if provider == "fake":
+            return _validate_embed_result(_fake_embed(text))
+        if provider not in PROVIDERS:
+            return EmbedResult(provider, False, error=f"unknown provider {provider}")
+        try:
+            if provider in ("gemini", "aistudio"):
+                return _validate_embed_result(
+                    self._gemini_embed(provider, text, model=model, timeout=timeout))
+            if provider in ("ollama", "local"):
+                return _validate_embed_result(
+                    self._ollama_embed(provider, text, model=model, timeout=timeout))
+        except urllib.error.HTTPError as e:
+            body = e.read(2000).decode("utf-8", errors="replace")[:500]
+            return EmbedResult(provider, False, error=f"HTTP {e.code}: {body}")
+        except Exception as e:
+            return EmbedResult(provider, False, error=str(e))
+        return EmbedResult(provider, False,
+                           error=f"embed_not_supported_for_provider: {provider}")
+
+    def _gemini_embed(self, label: str, text: str, model: Optional[str] = None,
+                      timeout: int = 30) -> EmbedResult:
+        key = _env("GOOGLE_API_KEY", "GEMINI_API_KEY", "AISTUDIO_API_KEY")
+        if not key:
+            return EmbedResult(label, False,
+                               error="missing GOOGLE_API_KEY / GEMINI_API_KEY")
+        actual_model = model or os.environ.get("GEMINI_EMBED_MODEL", "gemini-embedding-001")
+        url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+               f"{actual_model}:embedContent?key={key}")
+        data = _http_json(url, {"content": {"parts": [{"text": text}]}},
+                          {"Content-Type": "application/json"}, timeout=timeout)
+        values = (data.get("embedding") or {}).get("values") or []
+        if not values:
+            return EmbedResult(label, False, model=actual_model,
+                               error="empty embedding values in response")
+        return EmbedResult(label, True, vector=[float(v) for v in values],
+                           model=actual_model)
+
+    def _ollama_embed(self, label: str, text: str, model: Optional[str] = None,
+                      timeout: int = 30) -> EmbedResult:
+        actual_model = model or os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+        url = ollama_host().rstrip("/") + "/api/embeddings"
+        data = _http_json(url, {"model": actual_model, "prompt": text},
+                          {"Content-Type": "application/json"}, timeout=timeout)
+        values = data.get("embedding") or []
+        if not values:
+            return EmbedResult(label, False, model=actual_model,
+                               error="empty embedding in response")
+        return EmbedResult(label, True, vector=[float(v) for v in values],
+                           model=actual_model)
+
+    def call_all(self, prompt: str, system: str = "") -> List[ProviderResult]:
+        det = self.detect()
+        out = []
+        for p in PROVIDERS:
+            if p == "local":
+                continue  # alias of ollama
+            if det.get(p):
+                out.append(self.call(p, prompt, system))
+        return out
+
+    def _ollama(self, prompt: str, system: str, model: Optional[str] = None,
+                timeout: int = 180,
+                max_bytes: Optional[int] = None) -> ProviderResult:
+        if not ollama_alive():
+            return ProviderResult(
+                "ollama",
+                False,
+                error="Ollama not running — install from ollama.com and run: ollama serve",
+            )
+        # Explicit model wins; otherwise env/default as before.
+        actual_model = model or _env("OLLAMA_MODEL") or (
+            ollama_models() or ["llama3.2"])[0]
+        url = ollama_host().rstrip("/") + "/api/chat"
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        payload = {"model": actual_model, "messages": messages,
+                   "stream": False}
+        data = _http_json(url, payload, timeout=timeout,
+                          max_bytes=max_bytes)
+        out = (data.get("message") or {}).get("content", "")
+        return ProviderResult("ollama", True, text=out,
+                              meta={"model": actual_model,
+                                    "requested_model": model,
+                                    "host": ollama_host()})
+
+    def _gemini(self, prompt: str, system: str, label: str = "gemini",
+                model: Optional[str] = None, timeout: int = 120,
+                max_bytes: Optional[int] = None) -> ProviderResult:
+        key = _env("GOOGLE_API_KEY", "GEMINI_API_KEY", "AISTUDIO_API_KEY")
+        if not key:
+            return ProviderResult(label, False, error="missing GOOGLE_API_KEY / GEMINI_API_KEY")
+        actual_model = model or os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{actual_model}:generateContent?key={key}"
+        text = prompt if not system else f"{system}\n\n{prompt}"
+        data = _http_json(url, {"contents": [{"parts": [{"text": text}]}]},
+                          {"Content-Type": "application/json"},
+                          timeout=timeout, max_bytes=max_bytes)
+        parts = (data.get("candidates") or [{}])[0].get("content", {}).get("parts") or []
+        out = "".join(p.get("text", "") for p in parts)
+        return ProviderResult(label, True, text=out,
+                              meta={"model": actual_model,
+                                    "requested_model": model})
+
+    def _grok(self, prompt: str, system: str, model: Optional[str] = None,
+              timeout: int = 120,
+              max_bytes: Optional[int] = None) -> ProviderResult:
+        key = _env("XAI_API_KEY")
+        if not key:
+            return ProviderResult("grok", False, error="missing XAI_API_KEY")
+        actual_model = model or os.environ.get("GROK_MODEL", "grok-2-latest")
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        data = _http_json(
+            "https://api.x.ai/v1/chat/completions",
+            {"model": actual_model, "messages": messages, "temperature": 0.4},
+            {"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
+            timeout=timeout, max_bytes=max_bytes,
+        )
+        out = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+        return ProviderResult("grok", True, text=out,
+                              meta={"model": actual_model,
+                                    "requested_model": model})
+
+    def _claude(self, prompt: str, system: str, model: Optional[str] = None,
+                timeout: int = 120,
+                max_bytes: Optional[int] = None) -> ProviderResult:
+        key = _env("ANTHROPIC_API_KEY")
+        if not key:
+            return ProviderResult("claude", False, error="missing ANTHROPIC_API_KEY")
+        actual_model = model or os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-20250514")
+        payload: Dict[str, Any] = {
+            "model": actual_model,
+            "max_tokens": 2048,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if system:
+            payload["system"] = system
+        data = _http_json(
+            "https://api.anthropic.com/v1/messages",
+            payload,
+            {
+                "Content-Type": "application/json",
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01",
+            },
+            timeout=timeout, max_bytes=max_bytes,
+        )
+        blocks = data.get("content") or []
+        out = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+        return ProviderResult("claude", True, text=out,
+                              meta={"model": actual_model,
+                                    "requested_model": model})
+
+    def _copilot(self, prompt: str, system: str) -> ProviderResult:
+        gh = shutil.which("gh")
+        if gh:
+            try:
+                text = prompt if not system else f"{system}\n\n{prompt}"
+                r = subprocess.run([gh, "auth", "status"], capture_output=True, text=True, timeout=15)
+                if r.returncode != 0:
+                    return ProviderResult("copilot", False, error="gh not authenticated — gh auth login")
+                return ProviderResult(
+                    "copilot",
+                    True,
+                    text=(
+                        "GitHub CLI ready. Interactive: gh copilot suggest \"...\"\n\n"
+                        f"Context preview:\n{text[:1500]}"
+                    ),
+                    meta={"gh": True},
+                )
+            except Exception as e:
+                return ProviderResult("copilot", False, error=str(e))
+        if _env("GITHUB_TOKEN", "GH_TOKEN"):
+            return ProviderResult(
+                "copilot",
+                True,
+                text="GITHUB_TOKEN set. Install: winget install GitHub.cli && gh auth login",
+                meta={"token": True},
+            )
+        return ProviderResult("copilot", False, error="install GitHub CLI or set GITHUB_TOKEN")
+
+
+SYSTEM_MATRIX = (
+    "You enhance a Dell Matrix trading workspace. "
+    "Floor is locked Alpha Delta Omega Omni. "
+    "Be practical, risk-aware, not financial advice. "
+    "Return concrete observations and ranked next actions. "
+    "Mandell-aware: prefer structure over fluff."
+)
+
+
+def enhance_matrix(
+    bridge: LLMBridge,
+    context: str,
+    providers: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    assert_floor_intact()
+    det = bridge.detect()
+    use = providers or [p for p in PROVIDERS if p != "local" and det.get(p)]
+    results = []
+    for p in use:
+        if not det.get(p):
+            results.append(ProviderResult(p, False, error="not configured").to_dict())
+            continue
+        results.append(bridge.call(p, context, SYSTEM_MATRIX).to_dict())
+    return {
+        "ok": any(r.get("ok") for r in results),
+        "results": results,
+        "floor": list(FLOOR),
+        "disclaimer": "AI output is not financial advice. Verify before trading.",
+    }
+
+
+def smoke() -> bool:
+    print("=== LLM BRIDGE SMOKE ===")
+    b = LLMBridge()
+    d = b.detect()
+    print("detect:", json.dumps({k: d[k] for k in d if k != "ollama_models"}, indent=2))
+    r = b.call("nope", "test")
+    ok = r.ok is False and d["floor"] == list(FLOOR)
+    print("PASS" if ok else "FAIL")
+    return ok
+
+
+def main() -> None:
+    if "--smoke" in sys.argv:
+        sys.exit(0 if smoke() else 1)
+    if "--detect" in sys.argv:
+        print(json.dumps(LLMBridge().detect(), indent=2))
+        return
+    print("44[Bridge] :: ollama/local + cloud providers")
+
+
+if __name__ == "__main__":
+    main()

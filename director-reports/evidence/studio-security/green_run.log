@@ -1,0 +1,36 @@
+[PASS] GET / 200 serves the Studio page
+[PASS] index page carries a per-launch session token
+[PASS] token-bearing index is served Cache-Control: no-store
+[PASS] browser-shaped execute (own Origin + token) succeeds
+[PASS] the stored value is visible afterwards
+[PASS] no-Origin tooling execute with token succeeds
+[PASS] GET /api/dells needs no token and lists 100 Dells
+[PASS] foreign Host is rejected 403
+[PASS] suffix-trick Host is rejected 403
+[PASS] loopback Host with the wrong port is rejected 403
+[PASS] missing Host is rejected 403
+[PASS] localhost Host is accepted
+[PASS] [::1] Host is accepted
+[PASS] cross-origin execute is rejected 403
+[PASS] cross-origin execute mutated nothing
+[PASS] simple-request (text/plain) execute is rejected
+[PASS] simple-request execute mutated nothing
+[PASS] token-carrying text/plain execute is rejected 415
+[PASS] the text/plain rejection mutated nothing
+[PASS] Origin from a foreign port is rejected 403
+[PASS] Origin 'null' is rejected 403
+[PASS] no rejected execute ever mutated the store
+[PASS] tokenless execute is rejected 401
+[PASS] wrong-token execute is rejected 401
+[PASS] token rejections mutated nothing
+[PASS] tokenless owner switch is rejected 401
+[PASS] active owner unchanged after tokenless switch attempt
+[PASS] session token never appears in /app.js
+[PASS] session token never appears in error bodies
+[PASS] oversized body is refused 413 BEFORE being read
+[PASS] malformed Content-Length is a 400, never a 500
+[PASS] negative Content-Length is a 400
+[PASS] slow-drip connection is closed by the server timeout
+[PASS] dot-dot path stays 404
+[PASS] encoded traversal path stays 404
+STUDIO-SEC: 35/35 GREEN

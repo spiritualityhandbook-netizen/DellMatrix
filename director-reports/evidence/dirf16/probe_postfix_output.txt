@@ -1,0 +1,9 @@
+EVIDENCE E2 — DIR-F16 probe, POST-FIX
+command: python3 director-reports/evidence/dirf16/dirf16_probe.py
+revision: merge head dd80a0e (PR #217; tree == fix commit b9789bb tree) in a fresh clone
+run: 2026-11-02 (fresh-clone session)
+send-EPERM: ('unavailable', 'alive=True')
+send-ENOSYS: ('unavailable', 'alive=True')
+send-ESRCH: ('refused', 'alive=True')
+PROBE: PASS
+probe exit=0

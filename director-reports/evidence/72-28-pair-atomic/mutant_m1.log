@@ -1,0 +1,40 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/form/sm35_pair_atomic_test.py", line 317, in <module>
+    run_all()
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/form/sm35_pair_atomic_test.py", line 281, in run_all
+    check(f"{case_id}: checkpoint verdict is {want} (never HYBRID)",
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/form/sm35_pair_atomic_test.py", line 64, in check
+    raise AssertionError(name)
+AssertionError: CP3: checkpoint verdict is OLD_ONLY (never HYBRID)
+[PASS] H1-A: setup in child process
+[PASS] H1-A: crash observed between saves (rc=42)
+[PASS] H1-A: fresh-process view produced
+[PASS] H1-A: ordinary nursery-first crash exposes HYBRID pair (per-file atomicity only — bounded statement)
+[PASS] H1-A: old pair members still present
+[PASS] H1-A: fresh load rewrote no files (no journal exists)
+[PASS] H1-B: setup in child process
+[PASS] H1-B: crash observed between saves (rc=42)
+[PASS] H1-B: fresh-process view produced
+[PASS] H1-B: ordinary program-first crash exposes HYBRID pair (per-file atomicity only — bounded statement)
+[PASS] H1-B: old pair members still present
+[PASS] H1-B: fresh load rewrote no files (no journal exists)
+[PASS] CP1: setup in child process
+[PASS] CP1: crash observed at seam (rc=42)
+[PASS] CP1: fresh-process view produced
+[PASS] CP1: checkpoint verdict is OLD_ONLY (never HYBRID)
+[PASS] CP1: fresh load succeeded (no fail-closed error)
+[PASS] CP1: old pair members still present
+[PASS] CP1: load rewrite behavior matches contract (rewrote=False)
+[PASS] CP2: setup in child process
+[PASS] CP2: crash observed at seam (rc=42)
+[PASS] CP2: fresh-process view produced
+[PASS] CP2: checkpoint verdict is OLD_ONLY (never HYBRID)
+[PASS] CP2: fresh load succeeded (no fail-closed error)
+[PASS] CP2: old pair members still present
+[PASS] CP2: load rewrite behavior matches contract (rewrote=True)
+[PASS] CP3: setup in child process
+[PASS] CP3: crash observed at seam (rc=42)
+[PASS] CP3: fresh-process view produced
+[FAIL] CP3: checkpoint verdict is OLD_ONLY (never HYBRID) — verdict=HYBRID

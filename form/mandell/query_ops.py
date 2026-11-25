@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""51-59 and 67-79 query/reasoning handlers. Shared predicate engine."""
+from __future__ import annotations
+
+from typing import Any, List, Tuple
+
+from .predicate import MAX_BOUND, eval_predicate, partition_store_operand, result_cell, validate_bound
+
+QUERY_DELLS = {51, 52, 54, 55, 56, 57, 58, 59, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
+
+
+def apply_query(n: int, st: Any, program: Any, lab: str, term: str, messages: List[str], ids_fn, pred_fn, shot_fn, roles: Any = None) -> Tuple[bool, str]:
+    # DAF-01: `roles` carries validated typed arguments losslessly
+    # from chain_exec; Set (55) resolves its key/value from roles
+    # when present instead of re-splitting the flattened lab.
+    ok, err = True, ""
+    if n == 51:
+        from .core_ii_exec import scope_universe
+        ids, scope_err = scope_universe(st, program)
+        if scope_err:
+            messages.append(f"Select refused: {scope_err}")
+            return False, scope_err
+        st.selected = list(ids) if not lab else [i for i in ids if pred_fn(lab, i)]
+        st.last_result = result_cell(value=list(st.selected), matched=bool(st.selected), count=len(st.selected), source="select", predicate=lab or "*", trace="51")
+        messages.append(f"Select scope={st.scope} n={len(st.selected)}")
+    elif n == 52:
+        before = list(st.selected)
+        st.selected = [i for i in before if pred_fn(lab, i)] if lab else list(before)
+        st.last_result = result_cell(value=list(st.selected), matched=bool(st.selected), count=len(st.selected), source="filter", predicate=lab or "*", trace="52")
+        messages.append(f"Filter {len(before)}->{len(st.selected)} cond={lab or '*'}")
+    elif n == 54:
+        ids = list(st.selected)
+        hits = [i for i in ids if pred_fn(lab, i)] if lab else list(ids)
+        st.last_result = result_cell(value=hits, matched=bool(hits), count=len(hits), source="query", predicate=lab or "*", confidence=1.0 if hits else 0.0, trace="54")
+        messages.append(f"Query scope={st.scope} hits={len(hits)} q={lab or '*'}")
+    elif n == 55:
+        # Step 9 (B14): Set participates in the shared
+        # diff-baseline mechanism — the same authority the
+        # spectrum writers use (spectrum_ops._note_mutation
+        # with a pre-mutation _ckpt), called after every
+        # refusal check and immediately before the mutation.
+        # A refused Set captures no baseline and mutates
+        # nothing.
+        from .spectrum_ops import _ckpt as _diff_ckpt, _note_mutation as _note_diff
+        if roles is not None:
+            key = roles.get("key", "") or "value"
+            _note_diff(st, "set", lab, _diff_ckpt(st))
+            shot_fn()
+            st.store[key] = roles.get("value", "")
+            messages.append(f"Set {key}={st.store[key]}")
+        else:
+            key, val, _amb = partition_store_operand(st.store, lab, "=")
+            if _amb:
+                ok, err = False, "ambiguous_set"
+                messages.append("Set ambiguous — use typed roles (key=..., value=...)")
+                st.last_result = result_cell(value=None, matched=False, source="set",
+                                             predicate=lab or "*", error="ambiguous_set",
+                                             trace="55")
+            else:
+                key = (key or "value").strip()
+                _note_diff(st, "set", lab, _diff_ckpt(st))
+                shot_fn()
+                st.store[key] = val.strip() if val.strip() else ("" if "=" in lab else "1")
+                messages.append(f"Set {key}={st.store[key]}")
+    elif n == 56:
+        key = lab or (list(st.store)[-1] if st.store else "")
+        if key not in st.store:
+            st.last_result = result_cell(value=None, matched=False, source="get", predicate=key, error="missing", trace="56")
+            messages.append(f"Get {key}=MISSING")
+        else:
+            val = st.store[key]
+            status = "empty" if val == "" else "ok"
+            st.last_result = result_cell(value=val, matched=status == "ok", source="get", predicate=key, error=status if status == "empty" else "", trace="56")
+            messages.append(f"Get {key}={val!r} status={status}")
+    elif n == 57:
+        head = lab.lower().split(":")[0].split(" ")[0]
+        _toks = [p for p in lab.replace(",", " ").split() if p]
+        _explicit57 = head in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends")
+        if not _explicit57 and lab.count('"') % 2 == 1:
+            # R25/GP-E04: malformed quoting in a shorthand
+            # condition is unparseable grammar — refuse, never
+            # guess which tokens the quote was meant to join.
+            ok, err = False, "condition_unparseable"
+            st.last_result = result_cell(value=None, matched=False, source="compare", predicate="unparseable", error=err, trace="57")
+            messages.append(f"Compare refused ({err}) {lab}")
+            expr = None
+        elif not _explicit57 and len(_toks) >= 2 and _toks[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends"):
+            # DD-42: an infix condition (level gt 99) refuses
+            # honestly — the old rewrite silently re-answered
+            # "eq:level gt", a question nobody asked.
+            ok, err = False, "condition_unparseable"
+            st.last_result = result_cell(value=None, matched=False, source="compare", predicate="unparseable", error=err, trace="57")
+            messages.append(f"Compare refused ({err}) {lab}")
+            expr = None
+        elif not _explicit57 and len(_toks) > 2:
+            # R25/GP-E04: the eq shorthand maps ONLY an
+            # exactly-two-operand question. A surplus token
+            # refuses typed fail-closed — the old rewrite
+            # silently dropped tokens beyond two and reported
+            # a verdict on a question nobody asked in full.
+            ok, err = False, "condition_extra_operand"
+            st.last_result = result_cell(value=None, matched=False, source="compare", predicate="extra_operand", error=err, trace="57")
+            messages.append(f"Compare refused ({err}) {lab}")
+            expr = None
+        else:
+            expr = lab if _explicit57 else ("eq:" + " ".join([p for p in lab.replace(",", " ").split() if p][:2]))
+        if expr is not None:
+            cmpd = eval_predicate(st, program, expr)
+            st.last_result = result_cell(value=cmpd.get("matched"), matched=bool(cmpd.get("matched")), source="compare", predicate=cmpd.get("predicate") or "eq", error=cmpd.get("error") or "", trace="57")
+            st.last_result["mode"] = cmpd.get("mode") or ""
+            if cmpd.get("error") == "type_mismatch":
+                ok, err = False, "type_mismatch"
+            elif cmpd.get("error") == "condition_extra_operand":
+                # eval_predicate surplus circuit (Director
+                # 7008502649): an explicit form with surplus
+                # operands fails the atom with the engine's
+                # refusal, never a verdict on the truncated form.
+                ok, err = False, "condition_extra_operand"
+            messages.append(f"Compare {expr} matched={cmpd.get('matched')} mode={cmpd.get('mode')} err={cmpd.get('error')}")
+    elif n == 58:
+        ids = list(st.selected)
+        st.selected = [i for i in ids if pred_fn(lab, i)] if lab else list(ids)
+        st.last_result = result_cell(value=list(st.selected), matched=bool(st.selected), count=len(st.selected), source="match", predicate=lab or "*", trace="58")
+        messages.append(f"Match pattern={lab or '*'} hits={len(st.selected)}")
+    elif n == 59:
+        dest = lab or "primary"
+        st.route = dest
+        st.last_result = result_cell(value=dest, matched=True, source="route", predicate=dest, trace="59")
+        messages.append(f"Route -> {st.route}")
+    elif n == 67:
+        ids = list(st.selected)
+        hit = any(pred_fn(lab, i) for i in ids) if ids else False
+        st.last_result = result_cell(value=hit, matched=hit, count=len(ids), source="any", predicate=lab or "*", trace="67")
+        messages.append(f"Any {hit} n={len(ids)}")
+    elif n == 68:
+        ids = list(st.selected)
+        hit = all(pred_fn(lab, i) for i in ids) if ids else True
+        st.last_result = result_cell(value=hit, matched=hit, count=len(ids), source="all", predicate=lab or "*", trace="68")
+        messages.append(f"All {hit} n={len(ids)}")
+    elif n == 69:
+        ids = list(st.selected)
+        hit = not any(pred_fn(lab, i) for i in ids)
+        st.last_result = result_cell(value=hit, matched=hit, count=len(ids), source="none", predicate=lab or "*", trace="69")
+        messages.append(f"None {hit} n={len(ids)}")
+    elif n == 70:
+        ids = list(st.selected)
+        st.last_result = result_cell(value=len(ids), matched=True, count=len(ids), source="count", predicate="count", trace="70")
+        messages.append(f"Count {len(ids)}")
+    elif n == 71:
+        kind = lab or "count"
+        unit = "count"
+        if ":" in kind:
+            unit, _, kind = kind.partition(":")
+            unit, kind = unit.strip() or "count", kind.strip() or "selected"
+        val = float(len(st.selected))
+        st.last_result = result_cell(value=val, matched=True, count=len(st.selected), source="measure", predicate=kind, trace="71")
+        st.last_result["unit"] = unit
+        st.last_result["measure_kind"] = kind
+        messages.append(f"Measure {kind}={val} unit={unit}")
+    elif n == 72:
+        raw = (lab or "").strip()
+        if not raw:
+            # DD-44: a bare Limit may not manufacture a value —
+            # the old (lab or "max") path silently stored 8.
+            ok, err = False, "limit_unspecified"
+            st.last_result = result_cell(value=None, matched=False, source="limit", error=err, trace="72")
+            messages.append("Limit refused (limit_unspecified): state a number or max")
+        elif raw.lower() == "max":
+            # DD-44: "max" states the maximum (MAX_BOUND) —
+            # it previously also stored 8 via validate_bound.
+            st.limit = str(MAX_BOUND)
+            st.last_result = result_cell(value=MAX_BOUND, matched=True, source="limit", predicate="bound", trace="72")
+            messages.append(f"Limit {st.limit}")
+        else:
+            vok, bound, verr = validate_bound(raw)
+            if not vok:
+                ok, err = False, verr
+                st.last_result = result_cell(value=None, matched=False, source="limit", error=verr, trace="72")
+                messages.append(f"Limit invalid {lab!r}")
+            else:
+                st.limit = str(bound)
+                st.last_result = result_cell(value=bound, matched=True, source="limit", predicate="bound", trace="72")
+                messages.append(f"Limit {st.limit}")
+    elif n == 73:
+        expr = lab if lab else "gte:count 0"
+        head = lab.lower().split(":")[0] if lab else ""
+        _refuse73 = False
+        _refuse73_err = "condition_unparseable"
+        _refuse73_pred = "unparseable"
+        if lab and head == "threshold":
+            # The threshold: alias is this Dell's own rewrite
+            # into gte: — the R25 exactly-two-operand rule
+            # applies to the operands it carries.
+            _tparts = [p for p in lab.split(":", 1)[-1].replace(",", " ").split() if p]
+            if lab.count('"') % 2 == 1:
+                _refuse73 = True
+            elif len(_tparts) > 2:
+                _refuse73 = True
+                _refuse73_err = "condition_extra_operand"
+                _refuse73_pred = "extra_operand"
+        if lab and head not in ("eq", "ne", "lt", "lte", "gt", "gte", "threshold"):
+            parts = [p for p in lab.replace(",", " ").replace(":", " ").split() if p]
+            if lab.count('"') % 2 == 1:
+                # R25/GP-E04: malformed quoting refuses
+                # (condition_unparseable), as at 57.
+                _refuse73 = True
+            elif len(parts) >= 2 and parts[1].lower() in ("eq", "ne", "lt", "lte", "gt", "gte", "contains", "starts", "ends"):
+                # DD-42 sibling: an infix condition refuses
+                # honestly instead of comparing against the
+                # operator word (gte:level gt).
+                _refuse73 = True
+            elif len(parts) > 2:
+                # R25/GP-E04: the gte shorthand maps ONLY an
+                # exactly-two-operand question. A surplus
+                # token refuses typed fail-closed — the old
+                # rewrite silently dropped tokens beyond two
+                # (the Dell 57 truncation defect, sibling site).
+                _refuse73 = True
+                _refuse73_err = "condition_extra_operand"
+                _refuse73_pred = "extra_operand"
+            else:
+                expr = f"gte:{parts[0]} {parts[1]}" if len(parts) >= 2 else (f"gte:count {parts[0]}" if parts else expr)
+        if _refuse73:
+            ok, err = False, _refuse73_err
+            st.last_result = result_cell(value=None, matched=False, source="threshold", predicate=_refuse73_pred, error=err, trace="73")
+            messages.append(f"Threshold refused ({err}) {lab}")
+        else:
+            if expr.lower().startswith("threshold"):
+                expr = "gte:" + expr.split(":", 1)[-1]
+            cmpd = eval_predicate(st, program, expr)
+            hit = bool(cmpd.get("matched"))
+            st.last_result = result_cell(value=hit, matched=hit, source="threshold", predicate=cmpd.get("predicate") or "gte", error=cmpd.get("error") or "", trace="73")
+            if cmpd.get("error") == "condition_extra_operand":
+                # eval_predicate surplus circuit (Director
+                # 7008502649): propagate the engine refusal as an
+                # atom failure, as at Compare (57).
+                ok, err = False, "condition_extra_operand"
+            messages.append(f"Threshold {expr} matched={hit}")
+    elif n == 74:
+        key, _, val = lab.partition("=")
+        key = (key or "target").strip()
+        try:
+            w = float(val) if val else 1.0
+        except ValueError:
+            w = float("nan")
+        if w != w or w in (float("inf"), float("-inf")):
+            ok, err = False, "nonfinite_weight"
+            st.last_result = result_cell(value=None, matched=False, source="weight", error=err, trace="74")
+            messages.append(f"Weight reject {key}={val!r}")
+        else:
+            # DD-51 Ring 1: Weight joins the shared
+            # diff-baseline authority (Set's pattern):
+            # note after the refusal check, before writing.
+            from .spectrum_ops import _ckpt as _diff_ckpt, _note_mutation as _note_diff
+            _note_diff(st, "weight", lab, _diff_ckpt(st))
+            st.weights[key] = w
+            st.last_result = result_cell(value=w, matched=True, source="weight", predicate=key, trace="74")
+            messages.append(f"Weight {key}={w}")
+    elif n == 75:
+        ssum = sum(st.weights.values())
+        if not st.weights or ssum == 0:
+            st.last_result = result_cell(value=dict(st.weights), matched=False, count=len(st.weights), source="normalize", error="zero_set", trace="75")
+            messages.append("Normalize zero_set")
+        else:
+            # DD-51 Ring 1: Normalize joins the shared
+            # authority — the capture precedes the
+            # whole-dict rebind exactly as a per-key write.
+            from .spectrum_ops import _ckpt as _diff_ckpt, _note_mutation as _note_diff
+            _note_diff(st, "normalize", lab, _diff_ckpt(st))
+            st.weights = {k: v / ssum for k, v in st.weights.items()}
+            st.last_result = result_cell(value=dict(st.weights), matched=True, count=len(st.weights), source="normalize", trace="75")
+            messages.append(f"Normalize n={len(st.weights)} sum={sum(st.weights.values()):.6f}")
+    elif n == 76:
+        # Step 10 (B11): Resolve resolves its LABEL (the operand
+        # after ::) against the active Dell registry — never
+        # Resolve's own term via the manifest fallback, which
+        # published matched=True at conf 0.40 for any unknown
+        # label. Hit/miss shapes follow the Get (56) precedent:
+        # the atom itself succeeds (ok stays True); the CELL
+        # carries the honest outcome. Hits only for dells 0-99:
+        # reserved records are honest misses. registry.lookup
+        # is hardened, so digit-like labels never raise here.
+        from .registry import lookup as _dell_lookup
+        label = (lab or "").strip()
+        if not label:
+            st.last_result = result_cell(value=None, matched=False, source="resolve", predicate="", confidence=0.0, error="target_required", trace="76")
+            messages.append("Resolve =MISSING target_required")
+        else:
+            rec = _dell_lookup(label)
+            dell_no = rec.get("dell") if isinstance(rec, dict) else None
+            is_hit = (
+                isinstance(dell_no, int)
+                and 0 <= dell_no <= 99
+                and rec.get("status") != "RESERVED_NOT_ACTIVE"
+                and rec.get("namespace") in ("CORE_I", "CORE_II")
+            )
+            if is_hit:
+                st.last_result = result_cell(value=rec["name"], matched=True, source="resolve", predicate=label, confidence=1.0, trace="76")
+                messages.append(f"Resolve {label}={rec['name']} dell={dell_no} conf=1.00")
+            else:
+                st.last_result = result_cell(value=None, matched=False, source="resolve", predicate=label, confidence=0.0, error="missing", trace="76")
+                messages.append(f"Resolve {label}=MISSING")
+    elif n == 77:
+        evidence = lab or "evidence"
+        prior = dict(st.last_result or {})
+        has_ev = bool(evidence) and evidence != "evidence"
+        conf = max(0.0, min(1.0, float(prior.get("confidence") or (0.6 if has_ev else 0.0))))
+        st.last_result = result_cell(value=evidence, matched=False, source="infer", predicate="projected", confidence=conf, trace="77")
+        st.last_result.update({"evidence": evidence if has_ev else prior.get("value") or evidence, "conclusion": evidence, "projected": True, "fact": False})
+        messages.append(f"Infer {evidence} PROJECTED_NOT_FACT")
+    elif n == 78:
+        ok, err = _relation(st, "causes", lab, "cause", "78", messages, "Cause")
+    elif n == 79:
+        ok, err = _relation(st, "deps", lab, "depend", "79", messages, "Depend")
+    return ok, err
+
+
+def _relation(st, field, lab, source, trace, messages, title) -> Tuple[bool, str]:
+    if ">" not in lab:
+        st.last_result = result_cell(error="malformed_relation", source=source, trace=trace)
+        messages.append(f"{title} malformed")
+        return False, "malformed_relation"
+    a, _, b = lab.partition(">")
+    a, b = a.strip(), b.strip()
+    if not a or not b:
+        st.last_result = result_cell(error="malformed_relation", source=source, trace=trace)
+        messages.append(f"{title} malformed")
+        return False, "malformed_relation"
+    bag = getattr(st, field)
+    if a == b:
+        st.last_result = result_cell(error="self_relation", source=source, trace=trace)
+        messages.append(f"{title} self rejected")
+        return False, "self_relation"
+    if (a, b) in [(str(x[0]), str(x[1])) for x in bag]:
+        st.last_result = result_cell(value=(a, b), matched=False, source=source, error="duplicate_relation", trace=trace)
+        messages.append(f"{title} duplicate {a}->{b}")
+        return True, ""
+    # DD-51 Ring 1: ONE note site covers both Cause (78)
+    # and Depend (79) — after every refusal check (the
+    # duplicate path above returns ok WITHOUT mutating, so
+    # it must not note), immediately before the append.
+    from .spectrum_ops import _ckpt as _diff_ckpt, _note_mutation as _note_diff
+    _note_diff(st, source, lab, _diff_ckpt(st))
+    bag.append((a, b))
+    st.last_result = result_cell(value=(a, b), matched=True, source=source, trace=trace)
+    messages.append(f"{title} {a}->{b}" if source == "cause" else f"{title} {a} requires {b}")
+    return True, ""

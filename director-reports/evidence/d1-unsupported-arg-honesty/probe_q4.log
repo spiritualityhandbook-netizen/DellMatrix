@@ -1,0 +1,31 @@
+single 151 typed -> ok=False error='Dell 151 not executable via single-seed leaf'
+single 151 bare  -> ok=False error='Dell 151 not executable via single-seed leaf'
+[CONFIRMED] Q4-reserved-single: single-atom reserved Dell routes to the LEAF, which refuses it as not-executable; args are never inspected — identical with and without
+  (cleanup ArgHonQ4R1: 0 entries removed)
+chain Set >> 151(bogus) -> ok=False partial=True any_skipped=True
+  receipt: {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}
+  receipt: {'dell': 151, 'ok': False, 'error': 'reserved/not-active', 'skipped': True, 'reason': 'Dell 151[Harmonic] is reserved/not-active; atom not executed (chain continues per policy)'}
+[CONFIRMED] Q4-reserved-chain: in a chain the reserved atom gets the Decision-1 skip receipt (ok=False, skipped=True, explicit reason); the typed arg appears NOWHERE in it
+  (cleanup ArgHonQ4R2: 0 entries removed)
+Scope(ghost) >> Group(name=greens) -> ok=False
+  receipt: {'dell': 53, 'ok': False, 'error': 'scope_unknown:ghost', 'skipped': False, 'reason': 'scope_unknown:ghost'}
+  receipt: {'dell': 82, 'ok': False, 'error': 'flow_thru_block', 'skipped': True, 'reason': 'Dell 82 blocked by FlowThru (previous atom did not succeed); not executed'}
+[CONFIRMED] Q4-flowthru-block: FlowThru-blocked atom: skip receipt names the flow, not the args; the Group never ran (no 'greens', no default 'group')
+  (cleanup ArgHonQ4R3: 1 entries removed)
+Scope(ghost) >> Set(key=k,value=v) -> receipts=[{'dell': 53, 'ok': False, 'error': 'scope_unknown:ghost', 'skipped': False, 'reason': 'scope_unknown:ghost'}, {'dell': 55, 'ok': False, 'error': 'flow_thru_block', 'skipped': True, 'reason': 'Dell 55 blocked by FlowThru (previous atom did not succeed); not executed'}] store={}
+[CONFIRMED] Q4-skipped-not-validated: even a REGISTERED Dell's args are not validated when the atom is flow-blocked: the skip happens in execute_range before _run_atom, so no validation receipt exists for skipped atoms
+  (cleanup ArgHonQ4R4: 0 entries removed)
+FlowOver chain receipts:
+  receipt: {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}
+  receipt: {'dell': 82, 'ok': False, 'skipped': True, 'error': '', 'reason': 'skipped by FlowOver (>>> — skip forward to Join); not executed'}
+  receipt: {'dell': 61, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}
+[CONFIRMED] Q4-flowover-skip: FlowOver-skipped atom: occurrence receipt with the FlowOver reason; args absent; Group never ran
+  (cleanup ArgHonQ4R5: 1 entries removed)
+While-false chain receipts:
+  receipt: {'dell': 65, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}
+  receipt: {'dell': 82, 'ok': False, 'skipped': True, 'error': '', 'reason': 'while condition already false — zero iterations; body occurrence not executed'}
+  receipt: {'dell': 61, 'ok': True, 'error': '', 'owned_by': 'while'}
+[CONFIRMED] Q4-while-zero: zero-iteration body atom: skip receipt with the zero-iteration reason; args absent; never ran
+  (cleanup ArgHonQ4R6: 1 entries removed)
+
+Q4 SUMMARY: 6/6 expectations confirmed

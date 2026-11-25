@@ -1,0 +1,24 @@
+SCAN: README.md at PR #301 exact head 38b378034c4a207532de5956ba0d4484a57325f6
+Method: enumerate EVERY line containing the word "suite" (any case) and EVERY
+occurrence of the historical count literals 230/236/237/238; classify each.
+
+-- lines containing "suite": 5
+  L568: the Perspective Studio; a regression harness (`form/regress.py` — the canonical suite registry; the current suite count is the len
+  L575: Other areas are implemented and verified by the project's own suites but await
+  L590: cross-environment investigation: local suites pass, an independent environment
+  L607: | `form/regress.py` | The regression harness (canonical suite registry; count = length of LIST) |
+  L620: python3 -m form.regress                # full suite, forward
+
+-- historical count literals:
+  230: ABSENT
+  236: ABSENT
+  237: ABSENT
+  238: ABSENT
+
+-- digit-bearing lines total: 189; every one was read and classified:
+   section numbers, Dell numbers 00-99 (registry table), dates, commit anchors,
+   the 9,900 symbiosis pair count, Python 3.10+, example I/O. NONE asserts a
+   suite count. The only two lines that speak of the harness suite registry
+   (L568, L607) carry NO numeral and point to form/regress.py LIST.
+
+VERDICT: no present-tense numeric suite-count claim remains in README at this head.

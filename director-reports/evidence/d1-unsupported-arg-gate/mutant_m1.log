@@ -1,0 +1,9 @@
+FAIL registered 52[Filter] typed behavior unchanged (narrows by predicate) :: ok=False selected=['welcome', 'garden_gate', 'garden_fern', 'river_stone']
+FAIL registered 52 bogus role still UNKNOWN_ROLE (gate does not leak into regime 1) :: err=UNSUPPORTED_ARGS: bogus
+FAIL registered 55[Set] valid typed call unchanged :: ok=False store={}
+FAIL registered precedence preserved: MISSING_REQUIRED surfaces before UNKNOWN_ROLE :: err=UNSUPPORTED_ARGS: bogus
+FAIL registered typed+legacy conflict still ARGUMENT_CONFLICT before mutation :: err=UNSUPPORTED_ARGS: key, value store={}
+FAIL registered 53[Scope] typed behavior unchanged :: ok=False scope=plane
+FAIL FlowThru-blocked head: flow_thru_block skip, NO UNSUPPORTED_ARGS anywhere (args uninspected) :: ars=[{'dell': 55, 'ok': False, 'error': 'UNSUPPORTED_ARGS: bogus', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: bogus'}, {'dell': 60, 'ok': False, 'error': 'flow_thru_block', 'skipped': True, 'reason': 'Dell 60 blocked by FlowThru (previous atom did not succeed); not executed'}, {'dell': 55, 'ok': False, 'error': 'flow_thru_block', 'skipped': True, 'reason': 'Dell 55 blocked by FlowThru (previous atom did not succeed); not executed'}, {'dell': 61, 'ok': False, 'error': 'flow_thru_block', 'skipped': True, 'reason': 'Dell 61 blocked by FlowThru (previous atom did not succeed); not executed'}]
+FAIL J3: pre-existing refusal + clean Join — preserved semantics (chain error = body refusal, Join receipt join_fail, frame fail) :: jr=[{'dell': 61, 'ok': False, 'error': 'join_fail', 'owned_by': 'sequence'}] err=UNSUPPORTED_ARGS: bogus frame={'kind': 'sequence', 'condition': '', 'status': 'fail', 'iterations': 0, 'results': [{'dell': 55, 'ok': False, 'error': 'UNSUPPORTED_ARGS: bogus', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: bogus'}, {'dell': 61, 'ok': False, 'error': 'join_fail', 'owned_by': 'sequence'}], 'error': 'join_fail', 'depth': 0}
+D1_UNSUPPORTED_ARG_GATE: 35/43

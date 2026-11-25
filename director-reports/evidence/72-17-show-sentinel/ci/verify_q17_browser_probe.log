@@ -1,0 +1,4 @@
+PASS B3.session_token_real :: token length=43
+PASS B1.control_no_sentinel :: control dump clean
+PASS B2.show_sentinel_visible_in_console :: sentinel present in user-visible console text after bare 09[Show]
+BROWSER PROBE RESULT: all assertions pass

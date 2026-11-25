@@ -1,0 +1,22 @@
+[PASS] F1: final-save failure raises (never ok=True)
+[PASS] F1: error names the final-save stage
+[PASS] F1: compensation verified complete
+[PASS] F1: journal cleared after proven compensation
+[PASS] F1: reload has no partial proposal
+[PASS] F1: retry after resolved failure succeeds
+[PASS] F1: retry is durable (seed + receipts exact)
+[PASS] F2: import raises
+[PASS] F2: incomplete compensation reported in details
+[PASS] F2: memory rolled back (no proposal in memory)
+[PASS] F2: journal retained as compensation_incomplete
+[PASS] F2: durable partial still on disk before restart
+[PASS] F2: restart removes the partial before exposure
+[PASS] F2: journal cleared by recovery
+[PASS] F2: retry after recovery succeeds
+[PASS] F2: retry durable with original provenance
+[PASS] F2: retried import exports cleanly
+[PASS] happy: import ok with exactly one program save (AF6)
+[PASS] happy: no journal remains after success
+[PASS] damaged: unjournaled partial survives load (quarantine)
+[PASS] damaged: export stays refused
+STEP5B_EXCHANGE_DURABILITY: 21/21

@@ -1,0 +1,12 @@
+diff --git a/form/persist_rest.py b/form/persist_rest.py
+index b56432a..cdfb677 100644
+--- a/form/persist_rest.py
++++ b/form/persist_rest.py
+@@ -147,6 +147,7 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
+     """
+     from form.mandell.core_i_recovery import check_save_allowed
+     check_save_allowed(program, "persist_rest.save")
++    program.nursery.save()  # MUTANT M3 (reconstruction): ordinary save also saves the nursery
+     target = path or _path(program.owner)
+     canonical = os.path.abspath(target) == os.path.abspath(
+         _path(program.owner))

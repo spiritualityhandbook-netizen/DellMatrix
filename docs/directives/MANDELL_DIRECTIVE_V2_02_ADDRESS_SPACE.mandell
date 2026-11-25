@@ -1,0 +1,68 @@
+00[Nova] > 01[Initiate] > 11[Architect] > 39[Schema] > 23[Lock] > 50[Manifest] :: SEGMENT_ADDRESS_SPACE
+
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_000_099_CORE_LANGUAGE
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_100_199_SEMANTIC_KNOWLEDGE
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_200_299_MATH_QUANTITY
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_300_399_SPACE_GEOMETRY
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_400_499_TIME_PROCESS
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_500_599_NATURE_PHYSICS
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_600_699_AGENT_COGNITION
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_700_799_INTERFACE_PERCEPTION
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_800_899_SYSTEM_COMPUTATION
+53[Scope] > 39[Schema] > 50[Manifest] :: BAND_900_999_BRIDGE_EXTERNAL_META
+
+23[Lock] > 39[Schema] > 12[Test] > 50[Manifest] :: DO_NOT_FILL_100_999_UNTIL_DVS_EARNS_NUMBER
+23[Lock] > 39[Schema] > 12[Test] > 50[Manifest] :: DO_NOT_DECLARE_RESERVED_ACTIVE_WITHOUT_FULL_PIPELINE
+
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_51_HARMONIC_TO_151
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_52_CHESS_TO_821
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_53_CHECKERS_TO_822
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_54_HYPO_TO_654
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_55_HYPOTHERMIA_TO_655
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_56_MANIFESTACT_TO_850
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_57_EIGEN_TO_257
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_58_LOGISTIC_TO_258
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_59_FOURIER_TO_259
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_60_NATURE_TO_560
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_61_LATTICE_TO_361
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_62_VERITA_TO_662
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_63_ORBIT_TO_463
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_64_NURSERY_TO_564
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_65_FLOOR_TO_865
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_66_ENGLISHBRAIN_TO_666
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_67_SEED_TO_167
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_68_TAG_TO_168
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_69_ROUTE_TO_869
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_70_AUDIT_TO_870
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_71_GROW_TO_571
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_72_HANDICAP_TO_872
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_73_ONEBODY_TO_673
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_74_BACKGROUND_TO_874
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_75_MANDELLMOJI_TO_775
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_76_POLYGLOT_TO_176
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_77_RESIDUE_TO_777
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_78_WORKSHOP_TO_778
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_79_FUSION_TO_679
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_80_SNAPIN_TO_880
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_81_OFFLINE_TO_881
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_82_VISION_TO_782
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_83_FORCE_TO_583
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_84_PARTICLE_TO_584
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_85_AGENT_TO_685
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_86_CA_TO_586
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_87_FRACTAL_TO_587
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_88_NEUROEVO_TO_688
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_89_TRADE_TO_889
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_90_BUSINESS_TO_890
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_91_SISTER_TO_891
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_92_ORACLE_TO_692
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_93_SUS_TO_893
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_94_LUPE_TO_894
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_95_NBD_TO_895
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_96_UNIFY_TO_696
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_97_DEPTH_TO_697
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_98_HORIZON_TO_698
+98[Alias] > 15[Map] > 10[Keep] > 50[Manifest] :: MIGRATE_OLD_99_OMEGA_TO_999
+
+03[Logic] > 23[Lock] > 50[Manifest] :: DOMAIN_CONCEPTS_PRESERVED_NOT_ERASED
+03[Logic] > 23[Lock] > 50[Manifest] :: DOMAIN_CONCEPTS_NOT_COUNTED_AS_ACTIVE_CORE

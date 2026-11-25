@@ -1,0 +1,12 @@
+Independent certification run
+=============================
+started_utc: 2026-11-02T17:47:27.517706+00:00
+repo_root: /home/hatch/workspace/freshclone-certrunner
+revision_sha: 081dd35855f964b27bc90e7b6beb5661b7c73c0f
+python: 3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]
+python_executable: /usr/bin/python3
+platform: Linux-7.0.0-39-generic-x86_64-with-glibc2.39
+runner_file: /home/hatch/workspace/freshclone-certrunner/director-reports/certification_runner.py
+runner_sha256: dc988ad38123d75a47a9352ae3c8b6b5af6df83edb351cfec3c594e68a6afcf1
+per_item_timeout_s: 900
+items run sequentially; suites are subprocesses (python3 -m <module>) from the repo root; probes are the sources preserved under probe_sources/.

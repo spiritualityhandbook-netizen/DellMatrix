@@ -1,0 +1,820 @@
+#!/usr/bin/env python3
+"""ROS-I: Runtime Observability Surface (NBD-Ω-006).
+
+Canonical READ-ONLY observation functions over existing live evidence.
+
+LAW: OBSERVATION MUST NOT EXECUTE, MUTATE, OR PERSIST.
+Every function below is a pure read: it never executes a Dell, never
+modifies Program/Nursery/conflicts/DuoBeta, never commits a checkpoint,
+never changes generation, and never creates an Outcome record.
+
+Honest-unknown vocabulary (Phase L):
+  known            evidence present
+  not_recorded     the ledger/query has no entry
+  not_applicable   concept does not apply to this item
+  ephemeral        EPHEMERAL_BY_DESIGN (never presented as durable)
+  blocked          policy boundary (reason given, never invented)
+  unsupported      capability boundary
+
+Empty knowledge provenance remains empty. Outcome != truth is explicit
+in every trace/query result.
+"""
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+
+
+# ── Phase E: Dell explain ─────────────────────────────────────────────
+def explain_dell(n: Any) -> Dict[str, Any]:
+    """Factual read-only metadata for a Dell address.
+
+    All fields come from the registry and existing policy tables.
+    Nothing is invented. Unknown addresses return ok=False honestly.
+    """
+    try:
+        addr = int(n)
+    except (TypeError, ValueError):
+        return {"ok": False, "status": "unknown_dell",
+                "detail": f"{n!r} is not a Dell address"}
+    from . import registry
+    rec = registry.get_dell(addr)
+    if not rec:
+        return {"ok": False, "status": "unknown_dell",
+                "detail": f"Dell {addr} is not registered"}
+    from .operator_bridge import BLOCKED_WITH_REASON, _BLOCK_REASONS, _RAW_ONLY_REASONS
+
+    namespace = str(rec.get("namespace", ""))
+    is_core_i = namespace == "CORE_I" or (0 <= addr <= 50)
+    is_core_ii = namespace == "CORE_II" or (51 <= addr <= 99)
+
+    if addr in BLOCKED_WITH_REASON:
+        semantic_access = "BLOCKED"
+        policy = {"restriction": "blocked_with_reason",
+                  "reason": _BLOCK_REASONS.get(addr, "")}
+    elif addr == 99:
+        semantic_access = "MANDELL_ONLY"
+        policy = {"restriction": "intentionally_raw_only",
+                  "reason": _RAW_ONLY_REASONS.get(addr, "")}
+    else:
+        semantic_access = "CANONICAL_ENGLISH"
+        policy = {"restriction": "none", "reason": ""}
+
+    # Execution authority (existing, factual).
+    if addr in (21, 22):
+        authority = "live_identity (merge_live/split_live) via execute_seed"
+    elif addr in (27, 28):
+        authority = "core_i_recovery via execute_seed (Dell 27 commits Generation V1)"
+    elif addr == 99:
+        authority = "spectrum_ops compose via execute_chain (raw only)"
+    elif is_core_i:
+        authority = "apply_core_i / executor_leaf via execute_seed; chain leaf via execute_chain"
+    else:
+        authority = "execute_chain > execute_core_ii"
+
+    return {
+        "ok": True,
+        "status": "known",
+        "address": addr,
+        "canonical_name": rec.get("name"),
+        "manor": rec.get("manor"),
+        "classification": "Core-I" if is_core_i else ("Core-II" if is_core_ii else "unknown"),
+        "execution_authority": authority,
+        "semantic_accessibility": semantic_access,
+        "raw_accessibility": "RAW_MANDELL (all nine flows; 86/87/88 attempt execution, may fail on operands)",
+        "policy": policy,
+        "flow_compatibility": "all nine flows (>, >>, >>>, ::, :, :>, <:, <:>, <<[Delta]) via raw chain_exec",
+        "outcome_is_observation": True,
+    }
+
+
+# ── Phase F: execution trace ──────────────────────────────────────────
+def execution_trace(program: Any, outcome_id: Optional[str] = None) -> Dict[str, Any]:
+    """Coherent read-only trace of an execution, as a view over existing evidence.
+
+    Uses the Outcome V1 record + re-parsing the RECORDED input (parse_seed
+    is pure analysis, not execution). Never invents per-node events.
+    outcome_id=None traces the latest recorded outcome.
+    """
+    from .outcome_ledger import get_outcome, list_outcomes
+    rec = None
+    if outcome_id:
+        rec = get_outcome(program, outcome_id)
+        if not rec:
+            return {"ok": False, "status": "not_recorded",
+                    "detail": f"no outcome {outcome_id} in this program's ledger"}
+    else:
+        latest = list_outcomes(program, limit=1)
+        if not latest:
+            return {"ok": False, "status": "not_recorded",
+                    "detail": "no outcomes recorded for this program"}
+        rec = latest[0]
+
+    mandell = str(rec.get("mandell") or rec.get("input") or "")
+    atoms: List[Dict[str, Any]] = []
+    flows: List[str] = []
+    parse_status = "known"
+    try:
+        from .seed import parse_seed
+        parsed = parse_seed(mandell)
+        if parsed.ok:
+            atoms = [{"dell": a.dell, "term": a.term,
+                      "mandell": a.as_mandel()} for a in (parsed.atoms or [])]
+            flows = list(parsed.flows or [])
+        else:
+            parse_status = "not_applicable (input was not a parseable seed)"
+    except Exception:
+        parse_status = "not_applicable (input could not be re-parsed)"
+
+    knowledge = rec.get("knowledge") or []
+    # EIC-I: expose explicit interaction correlation when present.
+    # None/UNKNOWN for legacy outcomes. Read-only; no new authority.
+    interaction = rec.get("interaction_id")
+    return {
+        "ok": True,
+        "status": "known",
+        "outcome_id": rec.get("outcome_id"),
+        "interaction_id": interaction if interaction else "UNKNOWN",
+        "input_understood": mandell,
+        "resolved_to": {"dell": rec.get("dell"),
+                        "operation": rec.get("operation"),
+                        "semantic": rec.get("semantic")},
+        "ordered_atoms": atoms,
+        "parse_status": parse_status,
+        "flow_used": flows,
+        "what_happened": {"result": rec.get("result"),
+                          "ok": rec.get("result") == "completed",
+                          "error": rec.get("error") or ""},
+        "messages": list(rec.get("messages") or [])[:12],
+        "knowledge_involved": knowledge if knowledge else "not_recorded (empty provenance remains empty)",
+        "generation": rec.get("generation_id") or "not_recorded",
+        "outcome_is_observation": True,
+        "outcome_is_not_truth": True,
+    }
+
+
+# ── Phase G: outcome inspection ───────────────────────────────────────
+def latest_outcomes(program: Any, limit: int = 10) -> List[Dict[str, Any]]:
+    """Latest Outcome V1 records (existing query authority). Read-only."""
+    from .outcome_ledger import list_outcomes
+    try:
+        n = max(1, min(int(limit), 100))
+    except (TypeError, ValueError):
+        n = 10
+    return list_outcomes(program, limit=n)
+
+
+def outcomes_for_dell(program: Any, n: Any) -> Dict[str, Any]:
+    """Outcome V1 records for a Dell address. Honest when none exist."""
+    try:
+        addr = int(n)
+    except (TypeError, ValueError):
+        return {"ok": False, "status": "unknown_dell", "outcomes": []}
+    from .outcome_ledger import list_outcomes
+    recs = [r for r in list_outcomes(program, limit=1000)
+            if r.get("dell") == addr]
+    return {"ok": True,
+            "status": "known" if recs else "not_recorded",
+            "dell": addr, "count": len(recs), "outcomes": recs}
+
+
+def outcomes_for_interaction(program: Any, interaction_id: str) -> Dict[str, Any]:
+    """Outcome V1 records for an interaction ID (DIVG-I). Read-only.
+
+    Groups all Outcomes explicitly correlated to one interaction.
+    Honest when none exist (including legacy UNKNOWN).
+    """
+    from .outcome_ledger import outcomes_for_interaction as _ofi
+    iid = str(interaction_id or "").strip()
+    if not iid:
+        return {"ok": False, "status": "unknown_interaction", "outcomes": []}
+    recs = _ofi(program, iid)
+    return {"ok": True,
+            "status": "known" if recs else "not_recorded",
+            "interaction_id": iid, "count": len(recs), "outcomes": recs}
+
+
+def resolve_interaction_ref(program: Any, ref: str) -> Dict[str, Any]:
+    """Resolve a user-facing interaction reference. Read-only.
+
+    Interactions carry no sequence number of their own; the only
+    user-visible handle near an interaction is the seq of one of its
+    member outcomes (the REPL outcome lists print seq, never
+    interaction IDs). Accepts:
+    - integer sequence number: the seq of ANY outcome recorded for
+      the interaction; resolves through that outcome's recorded
+      interaction_id to the whole sibling group.
+    - a full interaction UUID, as before.
+    Never ambiguous: integers are outcome seq, non-integers are
+    interaction UUIDs. An outcome with no recorded interaction
+    (legacy UNKNOWN) is an honest miss — no interaction is ever
+    fabricated for it.
+    """
+    from .outcome_ledger import get_outcome_by_seq
+    r = str(ref or "").strip()
+    if not r:
+        return {"ok": False, "status": "unknown_interaction",
+                "outcomes": []}
+    if r.isdigit():
+        rec = get_outcome_by_seq(program, int(r))
+        if rec is None:
+            return {"ok": False, "status": "unknown_seq",
+                    "detail": f"no outcome with seq {r}", "outcomes": []}
+        iid = rec.get("interaction_id")
+        if not iid:
+            return {"ok": False, "status": "no_interaction_recorded",
+                    "detail": f"outcome seq {r} has no recorded "
+                              f"interaction (legacy UNKNOWN)",
+                    "outcomes": []}
+        out = outcomes_for_interaction(program, iid)
+        out["ref_kind"] = "seq"
+        out["via_outcome_seq"] = int(r)
+        return out
+    out = outcomes_for_interaction(program, r)
+    if out.get("ok"):
+        out["ref_kind"] = "uuid"
+    return out
+
+
+def resolve_lineage_ref(program: Any, ref: str) -> Dict[str, Any]:
+    """Resolve a user-facing lineage reference. Read-only.
+
+    Accepts an exact proposal/unit ID (the historical behavior) or a
+    proposal/unit label. Label resolution is never ambiguous:
+    - exact-case label matches across nursery proposals and plane
+      units are collected first; only if there are none are
+      case-insensitive matches collected;
+    - matches are deduplicated by record ID (a confirmed proposal and
+      its plane unit share an ID and are one entity; the proposal
+      record wins, matching the ID path's precedence);
+    - exactly one distinct ID resolves; more than one is reported
+      "ambiguous" with the candidate IDs; zero is "not_recorded".
+    Returns {"ok": True, "via": "id"|"label", "proposal": ...} or
+    {"ok": True, "via": ..., "unit": ..., "unit_id": ...} or
+    {"ok": False, "status": "ambiguous"|"not_recorded"|"unknown_ref",
+     ...}. Mutates nothing.
+    """
+    r = str(ref or "").strip()
+    if not r:
+        return {"ok": False, "status": "unknown_ref",
+                "detail": "empty reference"}
+    proposals = getattr(getattr(program, "nursery", None),
+                        "proposals", None) or {}
+    try:
+        units = program.cube.session.plane.units or {}
+    except AttributeError:
+        units = {}
+    prop = proposals.get(r)
+    if prop is not None:
+        return {"ok": True, "via": "id", "proposal": prop}
+    unit = units.get(r)
+    if unit is not None:
+        return {"ok": True, "via": "id", "unit": unit, "unit_id": r}
+
+    def collect(case_insensitive: bool):
+        found = []
+        for pid, p in proposals.items():
+            lab = getattr(p, "label", "") or ""
+            if (lab.lower() == r.lower()) if case_insensitive else (lab == r):
+                found.append(("proposal", pid, lab, p))
+        for uid, u in units.items():
+            lab = getattr(u, "label", "") or ""
+            if (lab.lower() == r.lower()) if case_insensitive else (lab == r):
+                found.append(("unit", uid, lab, u))
+        return found
+
+    matches = collect(False) or collect(True)
+    by_id: Dict[str, Any] = {}
+    for kind, rid, lab, obj in matches:
+        cur = by_id.get(rid)
+        if cur is None or (cur[0] == "unit" and kind == "proposal"):
+            by_id[rid] = (kind, lab, obj)
+    if len(by_id) == 1:
+        rid, (kind, lab, obj) = next(iter(by_id.items()))
+        if kind == "proposal":
+            return {"ok": True, "via": "label", "proposal": obj}
+        return {"ok": True, "via": "label", "unit": obj, "unit_id": rid}
+    if len(by_id) > 1:
+        cands = sorted(
+            ({"kind": kind, "id": rid, "label": lab}
+             for rid, (kind, lab, _obj) in by_id.items()),
+            key=lambda c: c["id"])
+        return {"ok": False, "status": "ambiguous", "matches": cands,
+                "detail": f"{len(cands)} records share that label"}
+    return {"ok": False, "status": "not_recorded",
+            "detail": "no proposal or idea with that id or label"}
+
+
+def resonance_candidates(program: Any, focus_ref: Optional[str] = None,
+                         limit: int = 10) -> Dict[str, Any]:
+    """Ranked resonance candidates over the canonically active plane
+    units, computed with the production machinery
+    (form.dell_matrix.first_person.resonance_rank over
+    Program.nodes_payload + Program.scores + live forces). Read-only:
+    unlike first_person_view it does NOT snap or move the avatar.
+
+    - focus_ref None: rank all active units from the avatar's
+      current center.
+    - focus_ref given: resolved via resolve_lineage_ref and must
+      name a live unit; the OTHER active units are ranked from the
+      focus position — candidate connections, as suggestions only
+      (nothing is linked or mutated).
+    Units excluded by the canonical lifecycle (superseded, faded,
+    malformed) never appear. Returns {"ok": True, "focus": {...} or
+    None, "rows": [{"id", "label", "resonance", "dist", "score"}],
+    "considered": n} or {"ok": False, "status": ...} with status in
+    not_recorded / ambiguous / not_live / empty.
+    """
+    from form.dell_matrix import canonical_lifecycle
+    from form.dell_matrix.first_person import resonance_rank, snap_center
+
+    units = program.cube.session.plane.units or {}
+    scores = program.scores() if hasattr(program, "scores") else {}
+    nodes = [n for n in program.nodes_payload()
+             if canonical_lifecycle.is_active(program, n["id"])]
+    form = (program.lattice.perception.form.value
+            if hasattr(program, "lattice") else "cube")
+    forces = program.forces.status() if hasattr(program, "forces") else {}
+
+    focus = None
+    if focus_ref is not None:
+        res = resolve_lineage_ref(program, focus_ref)
+        if res.get("status") == "ambiguous":
+            return {"ok": False, "status": "ambiguous",
+                    "matches": res["matches"]}
+        if not res.get("ok"):
+            return {"ok": False, "status": "not_recorded",
+                    "detail": res.get("detail", "")}
+        if "unit" in res:
+            focus_id = res["unit_id"]
+        else:
+            focus_id = res["proposal"].id
+        fnode = next((n for n in nodes if n["id"] == focus_id), None)
+        if fnode is None:
+            return {"ok": False, "status": "not_live",
+                    "detail": "that record is not a live idea "
+                              "(pending, superseded, or faded)"}
+        focus = {"id": fnode["id"], "label": fnode["label"]}
+        center = (int(round(float(fnode["x"]))),
+                  int(round(float(fnode["y"]))), 0)
+        pool = [n for n in nodes if n["id"] != focus_id]
+    else:
+        ax, ay = program.avatar.body.pos
+        cf = int(getattr(program, "center_f", 0) or 0)
+        center = snap_center(float(ax), float(ay), float(cf))
+        pool = list(nodes)
+
+    if not pool:
+        return {"ok": False, "status": "empty",
+                "detail": "no live ideas to rank"}
+    ranked = resonance_rank(pool, center=center, scores=scores,
+                            forces=forces, form=form)
+    rows = [{"id": n["id"], "label": n.get("label", ""),
+             "resonance": n["_resonance"], "dist": n["_dist"],
+             "score": float(scores.get(n["id"], 0.0) or 0.0)}
+            for n in ranked[:limit]]
+    return {"ok": True, "focus": focus, "rows": rows,
+            "considered": len(pool)}
+
+
+def resolve_outcome_ref(program: Any, ref: str) -> Dict[str, Any]:
+    """Resolve a user-facing outcome reference (COO-I). Read-only.
+
+    Accepts:
+    - integer sequence number (e.g., "5")
+    - full outcome UUID (e.g., "out_abc123...")
+    Returns {"ok": True, "outcome": {...}} or {"ok": False, ...}.
+    Never ambiguous: integers are seq, non-integers are UUIDs.
+    """
+    from .outcome_ledger import get_outcome, get_outcome_by_seq
+    r = str(ref or "").strip()
+    if not r:
+        return {"ok": False, "status": "unknown_ref", "detail": "empty reference"}
+    # Integer → sequence number
+    if r.isdigit():
+        rec = get_outcome_by_seq(program, int(r))
+        if rec:
+            return {"ok": True, "outcome": rec, "ref_kind": "seq"}
+        return {"ok": False, "status": "unknown_seq",
+                "detail": f"no outcome with seq {r}"}
+    # Otherwise → UUID
+    rec = get_outcome(program, r)
+    if rec:
+        return {"ok": True, "outcome": rec, "ref_kind": "uuid"}
+    return {"ok": False, "status": "unknown_outcome",
+            "detail": f"no outcome {r[:20]}..."}
+
+
+def find_outcomes(program: Any, query: str, limit: int = 20) -> Dict[str, Any]:
+    """Deterministic Outcome search (COO-I). Read-only.
+
+    Literal substring over input/Mandell/operation/semantic.
+    """
+    from .outcome_ledger import find_outcomes as _fo
+    q = str(query or "").strip()
+    if not q:
+        return {"ok": False, "status": "empty_query", "outcomes": []}
+    recs = _fo(program, q, limit=limit)
+    return {"ok": True, "status": "known" if recs else "not_recorded",
+            "query": q, "count": len(recs), "outcomes": recs}
+
+
+def outcomes_by_status(program: Any, status: str) -> Dict[str, Any]:
+    """Outcome V1 records filtered by result status."""
+    valid = {"completed", "failed", "blocked", "skipped"}
+    s = str(status or "").lower()
+    if s not in valid:
+        return {"ok": False, "status": "unsupported",
+                "detail": f"status must be one of {sorted(valid)}",
+                "outcomes": []}
+    from .outcome_ledger import list_outcomes
+    recs = [r for r in list_outcomes(program, limit=1000)
+            if str(r.get("result")) == s]
+    return {"ok": True, "status": "known" if recs else "not_recorded",
+            "result": s, "count": len(recs), "outcomes": recs}
+
+
+def outcome_by_id(program: Any, outcome_id: str) -> Dict[str, Any]:
+    """Specific Outcome V1 lookup. Honest when absent."""
+    from .outcome_ledger import get_outcome
+    rec = get_outcome(program, str(outcome_id or ""))
+    if not rec:
+        return {"ok": False, "status": "not_recorded",
+                "detail": f"no outcome {outcome_id} in this program's ledger"}
+    return {"ok": True, "status": "known", "outcome": rec}
+
+
+def outcomes_for_knowledge_item(program: Any, knowledge_id: str) -> Dict[str, Any]:
+    """Outcome V1 records carrying provenance for a knowledge item."""
+    from .outcome_ledger import outcomes_for_knowledge
+    recs = outcomes_for_knowledge(program, str(knowledge_id or ""))
+    return {"ok": True,
+            "status": "known" if recs else "not_recorded",
+            "knowledge_id": knowledge_id, "count": len(recs),
+            "outcomes": recs}
+
+
+def correction_candidates(program: Any, outcome_id: str = None) -> Dict[str, Any]:
+    """ODCG-I: read-only correction candidate projection.
+
+    If outcome_id given: explain candidates for that outcome.
+    Otherwise: list all correction edges.
+
+    This is observation, not truth. Correlation != causation.
+    """
+    from . import correction_graph as cg
+    if outcome_id:
+        return {"ok": True, **cg.explain_correction(program, str(outcome_id))}
+    edges = cg.correction_edges(program)
+    return {"ok": True, "count": len(edges), "edges": edges,
+            "note": "CORRECTION_CANDIDATE: correlation, not proven causation."}
+
+
+# ── Phase H: runtime health ───────────────────────────────────────────
+def runtime_health(owner: str = "Operator") -> Dict[str, Any]:
+    """Component/invariant availability. Read-only.
+
+    Health means AVAILABLE, not intelligent, not truth-verified,
+    not correct-answer-guaranteed. Each check is an import/attribute
+    probe; failures report honestly.
+    """
+    checks: Dict[str, Dict[str, Any]] = {}
+
+    def probe(name: str, fn) -> None:
+        try:
+            detail = fn()
+            checks[name] = {"available": True, "detail": detail}
+        except Exception as exc:
+            checks[name] = {"available": False,
+                            "detail": f"{type(exc).__name__}: {exc}"}
+
+    def _registry():
+        from . import registry
+        r = registry.get_dell(70)
+        return f"name={r['name']}" if r else "empty"
+    probe("registry", _registry)
+
+    def _core_i():
+        from .core_i_ops import HANDLED
+        return f"{len(HANDLED)} handled atoms"
+    probe("core_i_authority", _core_i)
+
+    def _core_ii():
+        from .core_ii_exec import execute_core_ii
+        return "execute_core_ii importable"
+    probe("core_ii_authority", _core_ii)
+
+    def _router():
+        from .semantic_router import route_intent
+        return "route_intent importable"
+    probe("semantic_router", _router)
+
+    def _outcome():
+        from .outcome_ledger import capture_outcome
+        return "capture_outcome importable"
+    probe("outcome_v1", _outcome)
+
+    def _persist():
+        from form.dell_matrix.atomic_write import PERSISTENCE_PROTOCOL_VERSION
+        return f"protocol v{PERSISTENCE_PROTOCOL_VERSION}"
+    probe("persistence_v2", _persist)
+
+    def _generation():
+        from .checkpoint_generation import current_generation_id
+        gid = current_generation_id(owner)
+        return f"current={gid}" if gid else "no generation committed yet"
+    probe("generation_v1", _generation)
+
+    def _nursery():
+        from form.dell_matrix.nursery import Nursery
+        return "Nursery importable"
+    probe("knowledge_plane", _nursery)
+
+    def _duobeta():
+        from form.duobeta.growth import DuoBeta
+        return "DuoBeta importable"
+    probe("duobeta", _duobeta)
+
+    all_ok = all(c["available"] for c in checks.values())
+    return {"ok": all_ok, "owner": owner, "components": checks,
+            "health_means": "component/invariant availability only",
+            "health_does_not_mean": ["system intelligent", "truth verified",
+                                     "correct answer guaranteed"]}
+
+
+# ── Phase I: current state ────────────────────────────────────────────
+def runtime_state(program: Any) -> Dict[str, Any]:
+    """Read-only runtime state summary. Computed on the fly; nothing persisted.
+
+    EPHEMERAL_BY_DESIGN fields (action_stack, last_nurture, last_checkpoint,
+    _last_result) are never presented as durable. Last-execution evidence
+    comes from the durable Outcome V1 ledger (legitimately available).
+    """
+    from .checkpoint_generation import current_generation_id
+    from .outcome_ledger import list_outcomes
+
+    owner = getattr(program, "owner", "Operator")
+    try:
+        generation = current_generation_id(owner)
+    except Exception:
+        generation = None
+
+    # Knowledge plane (read-only summary).
+    knowledge: Dict[str, Any] = {"status": "not_recorded"}
+    nursery = getattr(program, "nursery", None)
+    if nursery is not None and hasattr(nursery, "summary"):
+        try:
+            knowledge = {"status": "known", **dict(nursery.summary())}
+        except Exception:
+            pass
+
+    # Conflict/disposition counts (read-only; never modified).
+    conflicts: Dict[str, Any] = {"status": "not_recorded"}
+    try:
+        cq = getattr(program, "conflict_quarantine", None)
+        if isinstance(cq, dict):
+            conflicts = {"status": "known",
+                         "quarantined_sets": len(cq)}
+    except Exception:
+        pass
+
+    # Outcome counts by status (durable ledger).
+    outcomes: Dict[str, Any] = {"status": "known", "counts": {},
+                                "total": 0}
+    try:
+        recs = list_outcomes(program, limit=1000)
+        counts: Dict[str, int] = {}
+        for r in recs:
+            s = str(r.get("result") or "unknown")
+            counts[s] = counts.get(s, 0) + 1
+        outcomes = {"status": "known", "counts": counts, "total": len(recs)}
+    except Exception:
+        outcomes = {"status": "not_recorded", "counts": {}, "total": 0}
+
+    # DuoBeta summary (read-only attributes).
+    duobeta: Dict[str, Any] = {"status": "not_recorded"}
+    duo = getattr(program, "duo", None)
+    if duo is not None:
+        try:
+            duobeta = {"status": "known",
+                       "generation": getattr(duo, "generation", None),
+                       "rings": list(getattr(duo, "rings", []) or []),
+                       "ledger_len": len(getattr(duo, "ledger", []) or [])}
+        except Exception:
+            pass
+
+    # Last execution evidence (durable ledger only — legitimate).
+    last_execution: Dict[str, Any] = {"status": "not_recorded"}
+    try:
+        latest = list_outcomes(program, limit=1)
+        if latest:
+            r = latest[0]
+            last_execution = {"status": "known",
+                              "outcome_id": r.get("outcome_id"),
+                              "operation": r.get("operation"),
+                              "dell": r.get("dell"),
+                              "result": r.get("result")}
+    except Exception:
+        pass
+
+    # Track D TD-1 binding summary (read-only census; never binds).
+    binding: Dict[str, Any] = {"status": "not_recorded"}
+    try:
+        if hasattr(program, "binding_census"):
+            c = program.binding_census()
+            binding = {"status": "known",
+                       "units": c.get("units"),
+                       "bound": c.get("bound"),
+                       "unbound": c.get("unbound"),
+                       "invalid": len(c.get("invalid") or []),
+                       "unreferenced_ideas":
+                           len(c.get("unreferenced_idea_ids") or [])}
+    except Exception:
+        pass
+
+    return {
+        "ok": True,
+        "owner": owner,
+        "current_generation": generation if generation else "not_recorded (no generation committed yet)",
+        "knowledge": knowledge,
+        "conflicts": conflicts,
+        "outcomes": outcomes,
+        "duobeta": duobeta,
+        "binding": binding,
+        "last_execution": last_execution,
+        "ephemeral_note": "action_stack/last_nurture/last_checkpoint/_last_result are EPHEMERAL_BY_DESIGN and not shown",
+    }
+
+
+# ── DBEL-I: learning inspection (read-only) ───────────────────────────
+def learning_ledger_view(program: Any) -> Dict[str, Any]:
+    """Read-only view of DuoBeta learning entries. Delegates to canonical
+    DuoBeta state; gains no mutation authority."""
+    from .duobeta_learn import learning_ledger
+    try:
+        entries = learning_ledger(program)
+    except Exception:
+        entries = []
+    return {"ok": True,
+            "status": "known" if entries else "not_recorded",
+            "count": len(entries), "entries": entries}
+
+
+def learned_preferences_view(program: Any) -> Dict[str, Any]:
+    """Read-only view of the derived preference index (separable counters)."""
+    from .duobeta_learn import preference_index
+    try:
+        idx = preference_index(program)
+    except Exception:
+        idx = {}
+    prefs = [{"dell": k[0], "knowledge_id": k[1], **v}
+             for k, v in idx.items()]
+    return {"ok": True,
+            "status": "known" if prefs else "not_recorded",
+            "count": len(prefs), "preferences": prefs}
+
+
+def selection_learning_view(program: Any, context: str) -> Dict[str, Any]:
+    """ASI-I (NBD-Ω-008): read-only inspection of learned preference
+    influence on knowledge selection.
+
+    Returns whether learning affected the selection, which preference
+    evidence applied (bounded scores), which hard filters ran before
+    learning (revision/dependency exclusions), and the final selected
+    candidate(s) — alongside the Relevance V2 baseline order.
+
+    Pure read: delegates to select_for_context (no mutation authority).
+    """
+    from .knowledge_selector import select_for_context
+    try:
+        sel = select_for_context(program, context, operation="grow")
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+    return {"ok": True,
+            "learned_preference_applied":
+                sel.get("learned_preference_applied", False),
+            "learned_scores": sel.get("learned_scores", {}),
+            "baseline_selected_ids": sel.get("baseline_selected_ids", []),
+            "learned_selected_ids": sel.get("learned_selected_ids", []),
+            "selected_ids": [s["id"] for s in sel.get("selected", [])],
+            "supersession_exclusions":
+                sel.get("supersession_exclusions", []),
+            "dependency_exclusions": sel.get("dependency_exclusions", []),
+            "eligible_count": sel.get("eligible_count", 0)}
+
+
+def nbd_view(program: Any, candidate_id: str = "") -> Dict[str, Any]:
+    """NBDE-I (NBD-Ω-009): read-only inspection of NBD-Ω recommendations.
+
+    Runs the NBD engine (read-only) and returns the ranked proposals,
+    or details for a specific candidate. Creates no outcomes, mutates
+    no state.
+    """
+    from .nbd_engine import nbd_packet, is_stale
+    from .nbd_candidates import build_frontier
+    try:
+        cands = build_frontier(program)
+        pkt = nbd_packet(program, cands)
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+    if candidate_id:
+        cid = candidate_id.strip().lower()
+        for c in pkt["candidates"]:
+            if c["candidate_id"].lower() == cid:
+                return {"ok": True, "candidate": c,
+                        "stale": is_stale(pkt, program)}
+        return {"ok": False, "error": f"unknown candidate {candidate_id!r}"}
+    return {"ok": True,
+            "ranked": pkt["ranked"],
+            "batches": pkt["batches"],
+            "top_proposal": pkt["top_proposal"],
+            "ready_set": pkt["ready_set"],
+            "fingerprint_hash": pkt["fingerprint_hash"],
+            "stale": is_stale(pkt, program),
+            "AUTONOMY": pkt["AUTONOMY"],
+            "DIRECTOR_DECISION_REQUIRED":
+                pkt["DIRECTOR_DECISION_REQUIRED"],
+            "EXECUTION_AUTHORITY": pkt["EXECUTION_AUTHORITY"]}
+
+
+# ── LEAS-I: read-only circuit inspection ─────────────────────────────
+def circuits_view(program: Any) -> Dict[str, Any]:
+    """Read-only view of canonical circuit ledger. No mutation."""
+    from .circuit_ledger import build_ledger
+    ledger = build_ledger()
+    by_state: Dict[str, List[str]] = {}
+    for c in ledger:
+        by_state.setdefault(c.state, []).append(c.circuit_id)
+    return {
+        "total": len(ledger),
+        "by_state": {k: sorted(v) for k, v in by_state.items()},
+        "circuits": [
+            {"circuit_id": c.circuit_id, "title": c.title,
+             "state": c.state, "locality": c.locality,
+             "closure_cycle": c.closure_cycle}
+            for c in ledger
+        ],
+    }
+
+
+def circuit_view(program: Any, circuit_id: str) -> Dict[str, Any]:
+    """Read-only view of a single circuit. No mutation."""
+    from .circuit_ledger import get_circuit
+    c = get_circuit(circuit_id)
+    if c is None:
+        return {"found": False, "circuit_id": circuit_id}
+    return {
+        "found": True,
+        "circuit_id": c.circuit_id,
+        "title": c.title,
+        "state": c.state,
+        "locality": c.locality,
+        "dependency_ids": c.dependency_ids,
+        "evidence": c.evidence,
+        "closure_cycle": c.closure_cycle,
+        "closure_commit": c.closure_commit,
+        "superseded_by": c.superseded_by,
+        "last_verified": c.last_verified,
+        "notes": c.notes,
+    }
+
+
+# ── KIE-I: Knowledge Influence Chain (read-only explanation) ──────────
+def knowledge_influence_view(
+    program: Any,
+    knowledge_id: str,
+    outcome_id: Optional[str] = None,
+    context: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Read-only explanation of knowledge influence.
+
+    Delegates to form/mandell/knowledge_influence.py. Gains no mutation
+    authority. Reports FACT/DERIVED_FACT/UNKNOWN; never claims causation.
+    """
+    from .knowledge_influence import explain_influence
+    try:
+        return explain_influence(
+            program, knowledge_id,
+            outcome_id=outcome_id, context=context,
+        )
+    except Exception as e:
+        return {"knowledge_id": knowledge_id, "error": str(e)}
+
+
+def why_used_view(program: Any, knowledge_id: str, outcome_id: str) -> Dict[str, Any]:
+    """User-facing: WHY WAS <id> USED in <outcome>? (historical)."""
+    from .knowledge_influence import why_used
+    try:
+        return why_used(program, knowledge_id, outcome_id)
+    except Exception as e:
+        return {"question": f"WHY WAS {knowledge_id} USED?", "error": str(e)}
+
+
+def why_not_used_view(
+    program: Any, knowledge_id: str, context: Optional[str] = None,
+) -> Dict[str, Any]:
+    """User-facing: WHY WAS <id> NOT USED? (current state)."""
+    from .knowledge_influence import why_not_used
+    try:
+        return why_not_used(program, knowledge_id, context=context)
+    except Exception as e:
+        return {"question": f"WHY WAS {knowledge_id} NOT USED?", "error": str(e)}

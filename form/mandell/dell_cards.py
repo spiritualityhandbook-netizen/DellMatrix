@@ -1,0 +1,1012 @@
+#!/usr/bin/env python3
+"""D1 proof cards — a survey of every Dell in the registry.
+
+One card per registry entry (the Director's D1 denominator:
+100 entries), each card carrying only MEASURED dimensions:
+
+- identity: number, name, manor, namespace (from the
+  registry itself);
+- typed signature: present (with roles, output and failures
+  from signatures.get_signature) or absent — signature
+  presence is its own dimension, never merged with the
+  others;
+- English reachability: whether translate() names this Dell
+  in any Intent it can return (the circuit-1 static scan) —
+  English-pattern presence, again its own dimension;
+- bare invocation: the OBSERVED outcome of executing the
+  Dell's bare seed (NN[Name], no operands) through the
+  canonical public executor on an empty field — executed, or
+  failed with the executor's own reason. This is
+  operational evidence for the bare case only; a failure
+  here usually names the missing operand or precondition,
+  which is precisely what the card records.
+
+Cards are regenerated from live probes; the committed
+DELL_PROOF_CARDS.md is the renderer's output, and the D1
+suite fails if the document drifts from a fresh survey.
+"""
+from __future__ import annotations
+
+import ast
+import glob
+import os
+import shutil
+from typing import Any, Dict, List
+
+from .registry import DELLS, get_dell
+from .signatures import get_signature
+
+
+# Deep-contract notes from D1 deepening circuits: one entry per
+# Dell whose full contract (arguments, outputs, failures, state,
+# persistence, English path) has been derived and proven beyond
+# this survey. Keyed by Dell number; text is evidence, kept short.
+DEEP_NOTES: Dict[int, str] = {
+    84: ("Deep contract proven (D1 circuit 4, "
+         "d1_dell84_copy_test): store[copy_<src>] = deepcopy of "
+         "the source; the destination is derived, never a caller "
+         "argument; a missing source copies the name string "
+         "itself; fallback order lab -> selected[0] -> \"object\"; "
+         "publishes last_result; copies persist across save/load; "
+         "English \"copy A\" routes its typed source through the "
+         "generalized route (router arg-loss defect found and "
+         "fixed in the same circuit)."),
+    85: ("Deep contract proven (D1 circuit 5, "
+         "d1_dell85_move_test): store[dest] = store.pop(src) — "
+         "the same object relocates (identity, not a copy); lab "
+         "is src>dest, partition on the first \">\"; an existing "
+         "destination is overwritten; dest == src is a named "
+         "no-op success (\"Move same identity\", fresh matched "
+         "result cell); failures malformed_move / move_missing "
+         "publish failure cells; NOT in the English blocked set "
+         "(86/87/88 are) — the English route executes \"move A "
+         "to B\" with its operands and the moved state persists; "
+         "at the REPL surface, however, the word \"move\" is "
+         "captured by avatar navigation, so the REPL user path "
+         "for 85 is the Mandell seed line."),
+    86: ("Deep contract proven (D1 circuit 6, "
+         "d1_dell86_delete_test): key = the whole lab; store "
+         "wins over groups for a shared name (two deletes peel "
+         "store, then group); NO_AUTHORITATIVE_RESULT — even a "
+         "successful delete publishes an explicit non-matched "
+         "result cell, distinct from the failure cell that "
+         "carries delete_missing:{key} (empty key: "
+         "delete_missing:empty — signature failures text synced "
+         "to this truth in the same circuit); English delete is "
+         "blocked_with_reason (operand-confirmation policy) at "
+         "the route and at the REPL, and negated English never "
+         "becomes a delete intent; deletions persist."),
+    87: ("Deep contract proven (D1 circuit 7, "
+         "d1_dell87_replace_test): identity rename old>new; an "
+         "occupied destination REFUSES (replace_occupied:{new}, "
+         "zero mutation — the MPC-012 §0 / MPC-011 J-decision in "
+         "the executor's comment; the deliberate contrast with "
+         "Dell 85 Move, which overwrites); replace_missing:{old} "
+         "for an absent source (bare form: replace_missing:); "
+         "empty new and new == old are no-op successes; "
+         "signature failures text + derived_from range synced "
+         "to the code in the same circuit (the refusal was "
+         "missing from the signature); English replace is "
+         "blocked_with_reason; renames persist."),
+    88: ("Deep contract proven (D1 circuit 8, "
+         "d1_dell88_patch_test): UPDATE-ONLY targeted write — "
+         "an absent key fails patch_miss:{key} and is never "
+         "created (the contrast with Dell 55 Set, which "
+         "creates); first '=' splits, the value keeps further "
+         "'=' characters and is stored RAW (key stripped, "
+         "value not); an empty value is legal ('' stored, key "
+         "survives); patching replaces the value's type "
+         "wholesale (a list cell becomes the raw string); "
+         "signature derived_from synced to the real arm "
+         "(208-227) and its output now states the update-only "
+         "law; English patch is blocked_with_reason; patches "
+         "persist. This closes the store-mutation cluster "
+         "84-88."),
+    51: ("Deep contract proven (D1 circuit 9, "
+         "d1_dell51_select_test; scope semantics corrected "
+         "by reconciliation R1, d1_recon1_scope_test): the "
+         "universe is SCOPE-BOUND — the whole plane under "
+         "scope 'plane', or the named group's membership "
+         "(plane-intersected, plane order) under a group "
+         "scope; a predicate filters by case-insensitive "
+         "substring OR underscore-prefix (a spaced predicate "
+         "matches the underscored id by prefix) and can "
+         "narrow within the scope but never widen past it. "
+         "Select REPLACES the selection, never appends; a "
+         "no-match predicate is a successful empty selection "
+         "(matched=False, count=0). Its one failure mode is "
+         "a dangling scope (scope_unknown refusal, "
+         "fail-closed). English select routes and executes "
+         "(not blocked); the selection persists."),
+    52: ("D1 circuit 20 DEEP NOTE: Filter narrows "
+         "the CURRENT selection only (never the plane) "
+         "by the shared _pred engine (substring OR "
+         "underscore-prefix; a spaced phrase matches "
+         "the underscored id); bare Filter is the "
+         "identity; a no-match Filter succeeds and "
+         "empties the selection (matched=False, "
+         "count=0); publishes a filter result cell."),
+    55: ("D1 circuit 20 DEEP NOTE (step 9, B14): Set is "
+         "the store writer — 'k=v' stores v, a bare key "
+         "stores '1', 'k=' stores '', a bare Set stores "
+         "value='1'; a snapshot of the PRE-write state "
+         "is appended before the mutation, and Set "
+         "captures the shared Diff baseline through the "
+         "same _note_mutation authority as the spectrum "
+         "writers (a refused Set captures nothing); Set "
+         "publishes NO result cell (last_result keeps "
+         "the previous Dell's cell)."),
+    59: ("D1 circuit 20 DEEP NOTE: Route sets "
+         "st.route (bare resets 'primary') and "
+         "publishes a matched route cell; in a Branch "
+         "chain the 59 atom is consumed as the Else "
+         "marker and never executes as Route (designed "
+         "clash); the :> FlowTowards operator writes "
+         "the same route channel."),
+    60: ("D1 circuit 20 DEEP NOTE: Branch records "
+         "st.branch {cond, taken, path} (bare cond "
+         "defaults true); in a chain only the taken "
+         "arm runs to Join — the unchosen arm is "
+         "skipped and does not mutate."),
+    61: ("D1 circuit 20 DEEP NOTE (STEP 7, B7/DAF-08): "
+         "Join reads the results in st.last_frame — "
+         "policy 'all' fails join_fail if any EXECUTED "
+         "incoming result failed, 'any' passes if one "
+         "executed result passed (or none came in); "
+         "skipped occurrences and a previous Join's "
+         "verdict receipt never count as failures. The "
+         "Join closing a control block evaluates the "
+         "completed block's actual results (published "
+         "to last_frame before it runs) — no vacuous "
+         "incoming=0 verdict when children ran. STEP 11 "
+         "(Q1/Q2 settlement, the canonical home for this "
+         "pairing): an EMPTY executed child set is a "
+         "successful Join under both policies ('all' and "
+         "'any') — that is Join's deliberate policy, NOT "
+         "Dell 67 Any's rule: Any on an empty selection is "
+         "False. And on chain receipts, partial marks "
+         "occurrence-level incompleteness (an omission OR "
+         "a failure among the atoms), while ok is the "
+         "separate success verdict — never infer failure "
+         "from partial alone."),
+    62: ("D1 circuit 20 DEEP NOTE: Parallel parses "
+         "its label as a comma list (bare defaults "
+         "['a', 'b']) and is offline_deterministic; "
+         "in a chain the body runs sequentially, a "
+         "sibling failure is captured and the rest "
+         "still runs. STEP 7 (B7): the parallel frame "
+         "status is 'fail' when a captured sibling "
+         "failed (the closing Join's verdict is "
+         "represented in the frame), and the chain "
+         "error keeps the sibling's root cause."),
+    63: ("D1 circuit 20 DEEP NOTE: Sequence runs "
+         "its chain body in written order to Join; "
+         "the last writer wins shared state."),
+    64: ("D1 circuit 20 DEEP NOTE: Until loops its "
+         "body until the condition holds (a body "
+         "that sets it exits after 1 iteration); a "
+         "never-true condition fails bound_reached "
+         "at the Limit bound (default 8); the frame "
+         "exposes bound + iterations. STEP 7 (B8): "
+         "bare Until's layers AGREE — the empty "
+         "condition is true in both the core arm "
+         "(cond=true/already=True) and the chain "
+         "layer, which closes zero/ok."),
+    65: ("D1 circuit 20 DEEP NOTE: While loops "
+         "while the condition holds; bare While "
+         "(condition defaults true) with an empty "
+         "body fails bound_reached honestly at the "
+         "bound; a false condition is zero "
+         "iterations; a body that clears the "
+         "condition (e.g. Delete of the store key) "
+         "exits after 1 iteration."),
+    66: ("D1 circuit 20 DEEP NOTE: ForEach walks "
+         "the CURRENT selection in order in a chain, "
+         "binding each member into its results and "
+         "restoring route afterwards. STEP 7 (B9): "
+         "on an empty selection BOTH surfaces report "
+         "zero iterations — core arm n=0/empty_ok=True "
+         "(no plane-id fallback), chain layer 'empty "
+         "selection valid', status empty."),
+    53: (
+        "RECONCILIATION R1 NOTE (d1_recon1_scope_test): "
+        "Scope establishes the selection boundary Dell 51 "
+        "honors. Supported names are explicit: 'plane' (the "
+        "default; a bare Scope restores it) or an existing "
+        "Dell 82 group name. An unknown name refuses with "
+        "scope_unknown:{name} and leaves the scope "
+        "unchanged — a scope never silently widens to the "
+        "whole plane. Ungrouping the active scope group "
+        "leaves the scope dangling and Select refuses "
+        "until it is reset. Scope and groups are core_ii "
+        "durable state (save/load preserves the contract)."),
+    54: ("Deep contract proven (D1 circuit 10, "
+         "d1_dell54_query_test): READ-ONLY search of the "
+         "current selection — the universe is st.selected "
+         "only, never the plane (an idea placed after the "
+         "Select is invisible); the selection is "
+         "byte-identical after any query (contrast Dell 58, "
+         "which rewrites it); matched is a Boolean (bool of "
+         "the hits — standardized by reconciliation R2; the "
+         "IDs live in value, the quantity in count); confidence "
+         "is exactly 1.0 with hits, 0.0 without; Query never "
+         "fails (empty selection and no-match are valid "
+         "empty results); there is NO English surface — "
+         "'query garden' becomes the Dell 9 question intent "
+         "and is refused, 'find garden' goes to Dell 56; "
+         "the seed line and typed invocation are the only "
+         "paths."),
+    56: ("Deep contract proven (D1 circuit 11, "
+         "d1_dell56_get_test): a THREE-STATE read — ok "
+         "(matched=True), empty (stored \"\" — matched=False, "
+         "error=\"empty\"), missing (matched=False, "
+         "error=\"missing\") — and the atom returns ok=True "
+         "in ALL three states; the miss lives in the result "
+         "cell, not the atom (contrast Dell 86, whose missing "
+         "key fails the atom); bare Get falls back to the "
+         "LAST INSERTED store key (\"\" on an empty store); "
+         "values return by identity; Get never mutates the "
+         "store; English get/find DO reach 56 with the "
+         "operand preserved (R5: 'get A' reads 'A' — the "
+         "circuit-3 ARGUMENT_LOSS residual that lowercased "
+         "the operand on this read path is repaired end to "
+         "end and the limitation record reads RESOLVED)."),
+    57: ("Deep contract proven (D1 circuit 12, "
+         "d1_dell57_compare_test): typed comparison over "
+         "resolved operands (literals, store keys, count, "
+         "selected, last_result); a lab without an operator "
+         "head is rewritten to eq: of its two tokens "
+         "(further tokens REFUSE condition_extra_operand, "
+         "R25/GP-E04); type_mismatch is the "
+         "ONE hard failure (the atom fails) while a missing "
+         "operand is soft (atom ok, cell error='missing'); "
+         "the cell carries a mode (number/string/boolean/"
+         "missing/type_mismatch); a bare Compare is vacuous "
+         "truth (empty == empty); Compare is the query "
+         "cluster's composition reader — count reads Dell "
+         "51's selection and last_result reads any previous "
+         "Dell's cell, both proven live; no English surface "
+         "('compare...' becomes the Dell 9 question intent)."),
+    8: (
+        "D1 circuit 15 DEEP NOTE: Create mints plane units "
+        "through the leaf executor's place_idea with the "
+        "canonical slug (lowercase, non-alnum runs to '_', "
+        "40-char cap, fallback 'idea') and collision DEDUP "
+        "(_1, _2, ...) — an existing unit is never "
+        "overwritten; label is the name with '_' -> ' ', "
+        "words is the name as passed. Typed law: name "
+        "required, label/name conflicts fail with "
+        "ARGUMENT_CONFLICT. SKIN (R4 corrected contract): "
+        "validate() checks enum membership (skin is the "
+        "registry's only enum role) against the canonical "
+        "Skin enum — which has NO UNKNOWN member — and the "
+        "executor wires the resolved skin into place_idea, "
+        "so a typed skin lands on the unit; a non-member "
+        "value refuses with INVALID_VALUE before any "
+        "mutation, never a silent CUBE substitution; the "
+        "untyped label path still defaults to Skin.CUBE. "
+        "Creation is in-memory until Dell 10 saves; "
+        "Program.load restores. In the REPL, English 'create "
+        "a garden' takes the strong-idea door: the whole "
+        "phrase becomes the name (id create_a_garden) with "
+        "a strength report; the typed-chain Mandell line "
+        "printed beside it is an echo, not the execution."),
+    67: (
+        "D1 circuit 14 DEEP NOTE: Any answers whether AT "
+        "LEAST ONE selected id matches the shared predicate "
+        "engine; value = matched = the hit, count = "
+        "selection size, source 'any'. On an empty selection "
+        "Any is False for every predicate; a bare predicate "
+        "on a non-empty selection is True, so bare Any reads "
+        "as 'is the selection non-empty'. Read-only. Dell 69 "
+        "is its exact De Morgan dual (proven in the 67/69 "
+        "suites). No English surface; typed form agrees."),
+    68: (
+        "D1 circuit 14 DEEP NOTE: All answers whether EVERY "
+        "selected id matches the shared predicate engine; "
+        "value = matched = the hit, count = selection size, "
+        "source 'all'. On an empty selection All is True "
+        "for every predicate — VACUOUS truth, the classical "
+        "dual of Dell 67's empty-False; a bare predicate is "
+        "True on any selection. Read-only. No English "
+        "surface; typed form agrees."),
+    69: (
+        "D1 circuit 14 DEEP NOTE: None answers whether NO "
+        "selected id matches the shared predicate engine; "
+        "value = matched = the hit, count = selection size, "
+        "source 'none'. None is the exact DE MORGAN dual of "
+        "Dell 67: None(lab) == not Any(lab) on every state "
+        "(proven across four predicates); on an empty "
+        "selection None is True, and a bare predicate makes "
+        "None True exactly when the selection is empty. "
+        "Read-only. No English surface; typed form agrees."),
+    70: ("D1 circuit 21 DEEP NOTE: Count is the "
+         "cardinality of the CURRENT selection — value "
+         "== count == len(selected), matched=True even "
+         "at 0, and read-only (the selection is "
+         "byte-identical afterwards)."),
+    71: ("D1 circuit 21 DEEP NOTE: Measure parses an "
+         "optional 'unit:kind' label into unit / "
+         "measure_kind on the cell. EXHIBIT: whatever "
+         "the kind says — even a bogus one — the value "
+         "is ALWAYS float(len(selected)); Measure is "
+         "cardinality dressed with a label echo, never "
+         "a property measurement."),
+    72: ("D1 circuit 21 DEEP NOTE: Limit installs "
+         "the loop bound — bare (or 'max') is the "
+         "default 8, integers 0..64 are accepted (0 "
+         "included), a float label is silently "
+         "truncated ('8.5' -> 8), and anything else "
+         "fails invalid_limit leaving st.limit "
+         "unchanged."),
+    73: ("D1 circuit 21 DEEP NOTE: Threshold runs a "
+         "typed predicate over the shared engine — "
+         "bare is 'gte:count 0', a plain number becomes "
+         "'gte:count N', store refs work "
+         "('gte:store:n 3'); a miss is matched=False "
+         "in the cell while the atom stays ok=True."),
+    74: ("D1 circuit 21 DEEP NOTE: Weight stores "
+         "float weights in st.weights ('k=v'; a bare "
+         "Weight stores target=1.0); non-finite or "
+         "non-numeric values (nan, inf, abc) fail "
+         "nonfinite_weight with no mutation."),
+    75: ("D1 circuit 21 DEEP NOTE: Normalize rescales "
+         "st.weights to sum 1.0 in place, preserving "
+         "proportions, and is idempotent; on an empty "
+         "or zero-sum set it reports zero_set / "
+         "matched=False while the atom stays ok=True."),
+    76: ("D1 circuit 21 DEEP NOTE: Resolve resolves "
+         "the Dell name in its own bracket term via "
+         "the manifest resolver. EXHIBIT: a "
+         "non-numeric label is ignored entirely "
+         "(':: Select' and ':: bogusname' both resolve "
+         "Resolve itself, conf 1.00); only a "
+         "leading-digit label changes the target dell "
+         "(':: 51' resolves Select at conf 0.40)."),
+    77: ("D1 circuit 21 DEEP NOTE: Infer is NEVER a "
+         "fact — matched=False, projected=True, "
+         "fact=False on every call; the conclusion is "
+         "the label verbatim; confidence is inherited "
+         "from the previous result cell (1.0 after a "
+         "hit Query), 0.6 for fresh explicit evidence, "
+         "0.0 for a bare first call."),
+    78: ("D1 circuit 21 DEEP NOTE: Cause records "
+         "'a > b' pairs in st.causes; a duplicate is "
+         "ok=True with duplicate_relation and no "
+         "second append; a self-relation fails "
+         "self_relation; a missing '>' or empty side "
+         "fails malformed_relation."),
+    79: ("D1 circuit 21 DEEP NOTE: Depend is Cause's "
+         "prerequisite twin — 'a > b' records 'a "
+         "requires b' in st.deps with the same "
+         "duplicate (ok, no append), self_relation "
+         "and malformed_relation contract as Dell 78."),
+    80: ("D1 circuit 21 DEEP NOTE: Context sets "
+         "st.context (a bare Context falls back to "
+         "the current scope name, not ''); it "
+         "publishes NO result cell — last_result keeps "
+         "the previous Dell's cell, like Dell 55."),
+    81: ("D1 circuit 21 DEEP NOTE: Reference records "
+         "refs[name] = target with no copy — bare "
+         "targets selected[0]; on an empty selection "
+         "it records refs['ref'] = ''; it publishes "
+         "NO result cell and mutates neither the "
+         "selection nor the store."),
+    82: ("D1 circuit 21 DEEP NOTE: Group stores a "
+         "SNAPSHOT COPY of the current selection "
+         "under a name (later narrowing does not "
+         "shrink it); an empty selection falls back "
+         "to all plane ids; re-grouping a name "
+         "overwrites; bare name is 'group'; publishes "
+         "NO result cell. Groups are the scopes Dell "
+         "53 binds."),
+    83: ("D1 circuit 21 DEEP NOTE: Ungroup pops a "
+         "group (bare = the last one); members land "
+         "in the selection only when it is empty. "
+         "Ungrouping the ACTIVE scope group prints "
+         "the R1 scope warning and leaves the scope "
+         "dangling — Select refuses scope_unknown "
+         "until reset. EXHIBIT: ungrouping a missing "
+         "name is ok=True with released=0."),
+    58: ("Deep contract proven (D1 circuit 13, "
+         "d1_dell58_match_test): DESTRUCTIVE narrowing of "
+         "the selection by pattern (the dual of Dell 54's "
+         "read-only search); chained Matches intersect; "
+         "empty pattern is the identity; Match never fails; "
+         "matched is a Boolean (as 54; R2 standardization); "
+         "the pattern test is the SHARED predicate engine "
+         "(unified by reconciliation R3): the spaced pattern "
+         "'garden gate' matches [garden_gate] under Match "
+         "exactly as under Select — same text, one engine, "
+         "same answer; no English "
+         "surface; the narrowed selection persists."),
+    0: ("D1 circuit 16 DEEP NOTE: Nova is a message-only "
+        "locked floor — the exact line 'Nova is cheat/edge "
+        "only — floor stays locked.' and NO state change: "
+        "plane census, avatar, and history all untouched."),
+    1: ("D1 circuit 16 DEEP NOTE: Initiate is message-only: "
+        "'Initiated. owner=<owner>' — it names the program "
+        "owner and mutates nothing."),
+    2: ("D1 circuit 16 DEEP NOTE: Persona is a pure read of "
+        "avatar_status — the message is exactly '<look>  "
+        "<describe>'; it reflects whatever state other "
+        "Dells wrote (after Transform turns the avatar, "
+        "Persona reports the new facing)."),
+    3: ("D1 circuit 16 DEEP NOTE: Logic prints the four "
+        "live constraints; a label is echoed as a noted "
+        "rule and written to program history via note_seed "
+        "('03[Logic] :: <label>'); bare Logic notes "
+        "'constraints'."),
+    4: ("D1 circuit 16 DEEP NOTE: Transform dispatches on "
+        "substrings of the lowered label — left/right "
+        "rotate the avatar, sit/stand set posture, jump "
+        "lands back at STAND, toggle flips the lattice "
+        "form (cube <-> sphere); an unrecognized label is "
+        "a named no-op ('Transform ready.') that changes "
+        "nothing."),
+    5: ("D1 circuit 16 DEEP NOTE: Tone maps the lowered "
+        "label through an expression table (joy/smile, "
+        "calm, focus, soft, intense, curious, neutral); "
+        "any other label — and a bare Tone — falls back "
+        "to NEUTRAL. Never an error."),
+    6: ("D1 circuit 16 DEEP NOTE: Cycle runs grow_ideas "
+        "with n = the digit label clamped to 1..5 (bare "
+        "= 1); growth PROPOSES only — the live plane "
+        "census is unchanged (the growth gate) — and "
+        "note_seed records the clamped n in history."),
+    7: ("D1 circuit 16 DEEP NOTE: Link mints a plane unit "
+        "through Create's place_idea machinery under the "
+        "name 'link_<label or link>' — canonical slug id, "
+        "label with '_' -> ' ', words = the name as "
+        "passed, Skin.CUBE, collision dedup; the unit is "
+        "immediately selectable by Core II Select."),
+    9: ("D1 circuit 17 DEEP NOTE: Show dispatches on the "
+        "label — bare Show sets the structured result "
+        "directive 'render' (72-17 R-B: no machine token in "
+        "the human messages list; the REPL keys off the "
+        "field); 'avatar' returns exactly '<look>  "
+        "<describe>' of live avatar_status; 'lattice' "
+        "returns the lattice ASCII render; 'visual' "
+        "reports 'Visual ready.' plus the UI html path."),
+    10: ("D1 circuit 17 DEEP NOTE: Keep saves the "
+         "session — 'Session saved.', 'ideas=<census> "
+         "nursery=<pending>', 'file=<program_<owner>.json>' "
+         "— and Program.load restores the saved plane "
+         "exactly (units minted by Bind and Map survive)."),
+    11: ("D1 circuit 17 DEEP NOTE: Architect is a schema "
+         "read of live state — owner, idea census, "
+         "lattice size and CURRENT form, cell count — "
+         "and notes '11[Architect]' to history."),
+    12: ("D1 circuit 17 DEEP NOTE: Test runs five live "
+         "checks (floor, lattice, growth, nursery, "
+         "ideas); on a healthy program all PASS and the "
+         "summary is 'Test: 5/5', noted to history."),
+    13: ("D1 circuit 17 DEEP NOTE: Loop runs ringed "
+         "growth for cycles = the digit label else 1. "
+         "B2 (Director FIX, step 6): Loop now uses "
+         "Dell 06 Cycle's 1..5 clamp, reports requested "
+         "and executed counts plus any clamp, and "
+         "refuses non-digit labels invalid_loop_count "
+         "with zero growth; growth proposes only, the "
+         "live census is unchanged while nursery "
+         "pending grows."),
+    14: ("D1 circuit 17 DEEP NOTE: Bind mints a plane "
+         "unit through place_idea with the RAW label — "
+         "no prefix (the contrast with 07 Link's "
+         "'link_<label>'): bare Bind mints 'bind', "
+         "repeats dedup, Skin.CUBE."),
+    15: ("D1 circuit 17 DEEP NOTE: Map — a label in "
+         "{cube, sphere, core, flower} sets the lattice "
+         "form ('Form → <name>'); any other label mints "
+         "a unit via place_idea with the form unchanged; "
+         "bare Map reports 'Mapped units=<census>'."),
+    16: ("D1 circuit 17 DEEP NOTE: Decay resolves the "
+         "factor from the numeric label clamped to "
+         "0.1..1.0 (bare/non-numeric = 0.9) and notes "
+         "the resolved factor; with enhance ON the "
+         "resonance scores are multiplied by it. "
+         "B1 (Director FIX, step 6): with enhance OFF "
+         "the gate refusal is reported as a refusal "
+         "(ok=False, scores unchanged) — the former "
+         "'Scores decayed' claim on a refused decay "
+         "was the B1 defect."),
+    17: ("D1 circuit 17 DEEP NOTE: Shadow is "
+         "message-only — the track id is 'shadow_' + "
+         "the label (spaces to '_', case kept, label "
+         "truncated to 20 chars; bare = 'shadow_bg'), "
+         "announced as parallel/not-live; the live "
+         "census is unchanged and the id is noted."),
+    18: ("D1 circuit 17 DEEP NOTE: Mirror reads the "
+         "live plane — header 'Mirror: <N> live ideas' "
+         "plus one bullet '<uid>: <label> [<skin>]' "
+         "per unit, CAPPED at 16 bullets while the "
+         "header keeps the true total."),
+    19: ("D1 circuit 17 DEEP NOTE: Drive sets "
+         "locomotion and steps the avatar — bare/walk "
+         "steps 1 ('Walked to <pos>.'), a label "
+         "containing 'run' steps 2 ('Ran to <pos>.'), "
+         "'stop' sets idle in place ('Stopped.')."),
+    20: ("D1 circuit 17 DEEP NOTE: Alpha is the close "
+         "read — 'Alpha close:', the idea census, the "
+         "CURRENT lattice form (it reports the form "
+         "Map set), and the save tip naming Dell 10; "
+         "the label (or 'close') is noted to history."),
+    21: ("D1 circuit 18 DEEP NOTE: Merge (live_identity "
+         "authority) resolves sources from the label's "
+         "tokens (id, exact label, case-insensitive "
+         "label; joiners skipped); one resolved source "
+         "fails missing_source, an ambiguous token "
+         "fails ambiguous_source; the child is "
+         "merge_<p1>_<p2> (repeats dedup to _2) with "
+         "parents/origin recorded and parents "
+         "unmutated. B3 (Director FIX, step 6): with "
+         "zero resolved sources Merge refuses "
+         "missing_source with zero mutation — the "
+         "former silent fallback to the LAST TWO "
+         "units was the B3 defect."),
+    22: ("D1 circuit 18 DEEP NOTE: Split "
+         "(live_identity authority) splits the first "
+         "resolved source into <src>_a/<src>_b "
+         "('split <src>' words, parents [source], "
+         "origin split), parent preserved; an "
+         "ambiguous label fails ambiguous_source. "
+         "B4 (Director FIX, step 6): with no resolved "
+         "source Split refuses missing_source with "
+         "zero mutation — the former silent fallback "
+         "to the LAST unit was the B4 defect."),
+    23: ("D1 circuit 18 DEEP NOTE: Lock is the "
+         "sandbox switch — sandbox_on applies the "
+         "sandbox to every live unit "
+         "(sandboxed=True), 'Sandbox ON.'; the "
+         "mechanism is the sandbox, not a per-unit "
+         "freeze."),
+    24: ("D1 circuit 18 DEEP NOTE: Unlock releases "
+         "the sandbox — sandbox_off, every unit "
+         "sandboxed=False, 'Sandbox OFF.'"),
+    25: ("D1 circuit 18 DEEP NOTE: Pulse pulses the "
+         "enhance engine ('Pulse sent.' when a pulse "
+         "executes); with enhance OFF the scores are "
+         "untouched and the receipt reports the refusal "
+         "('Pulse NOT sent (enhance OFF).', DD-18); the "
+         "labels 'on'/'enhance_on' turn enhance ON "
+         "instead ('Enhance ON.')."),
+    26: ("D1 circuit 18 DEEP NOTE: Temp resolves "
+         "cold/cool -> enhance OFF, hot/heat -> "
+         "enhance ON + pulse (the pulse scores every "
+         "live unit), anything else incl. bare -> "
+         "warm (enhance ON); the resolved label is "
+         "noted to history."),
+    27: ("D1 circuit 18 DEEP NOTE: Checkpoint "
+         "(core_i_ops) writes a committed generation "
+         "via Checkpoint Generation V1, returns its "
+         "id ('Checkpoint written: generation <id>') "
+         "and records it in last_core_i."),
+    28: ("D1 circuit 18 DEEP NOTE: Rollback "
+         "(core_i_ops) is authority-mediated — a bare "
+         "Dell-28 seed is DENIED with zero mutation "
+         "(acceptance_policy_denied with a checkpoint "
+         "present, rollback_target_invalid without "
+         "one); only the mediated path (freeze + "
+         "grant + confirm_rollback) restores the "
+         "checkpointed plane."),
+    29: ("D1 circuit 18 DEEP NOTE: Compress mints "
+         "compress_<distilled> as SEED, where "
+         "distilled = distill_label(label): tokens "
+         ">2 chars, lowercased, deduped, max 4 "
+         "(empty label -> 'distill'); 'Compressed "
+         "→ <distilled>'."),
+    30: ("D1 circuit 18 DEEP NOTE: Expand's source "
+         "is the label, or (bare) the LAST unit's "
+         "'<label> <words>'; it mints expand_<source "
+         "underscored, truncated to 24 chars> as "
+         "CUBE and reports the full expansion."),
+    31: ("C13 (DD-21): Simulate is a real dry-run "
+         "rehearsal — as a chain head it rehearses the "
+         "atoms after it against an isolated copy of "
+         "program state and reports per-atom outcomes "
+         "plus a scoped would-be diff; live state, "
+         "including history, is bit-identical afterward. "
+         "Bare Simulate rehearses nothing and reports "
+         "itself unexecuted. (Supersedes the D1 circuit "
+         "18 note: the pre-C13 arm was a status read that "
+         "appended its own history entry.)"),
+    32: ("D1 circuit 18 DEEP NOTE: Pause idles the "
+         "avatar ('Paused.'); a label containing "
+         "'enhance' turns enhance OFF instead "
+         "('Enhance OFF.', avatar untouched)."),
+    33: ("D1 circuit 18 DEEP NOTE: Resume walks the "
+         "avatar; if enhance was OFF it is turned ON "
+         "('Resumed walk + enhance ON.'), otherwise "
+         "'Resumed walk.'; noted to history."),
+    34: ("D1 circuit 18 DEEP NOTE: Stamp (core_i_ops) "
+         "records last_stamp {mark, UTC ts} — the "
+         "label is the mark (bare = 'stamp') — and "
+         "echoes 'Stamp: <mark> @ <ts>'; last_core_i "
+         "records dell 34."),
+    35: ("D1 circuit 18 DEEP NOTE: Discover "
+         "(core_i_ops) is a sourced read family: the "
+         "default read returns the avatar line + "
+         "ideas/nursery counts and records "
+         "last_discover {ids in plane order, count, "
+         "nursery}; named reads count_nursery, "
+         "list_pending, compare_nursery, trace and "
+         "find_idea <q> each record a sourced "
+         "last_discover."),
+    36: ("D1 circuit 18 DEEP NOTE: Inject mints the "
+         "RAW label as SEED via place_idea (bare = "
+         "'inject'), announces 'Injected into scope: "
+         "<name>' and notes the name to history."),
+    37: ("D1 circuit 19 DEEP NOTE: Nurture "
+         "(core_i_ops) is the nursery lifecycle "
+         "adapter — bare fails 'add idea requires a "
+         "label' with zero mutation; a label adds a "
+         "PENDING nursery proposal (not a plane unit); "
+         "'confirm <pid>' promotes through the "
+         "canonical boundary into the plane, 'reject "
+         "<pid>' rejects without promoting; unknown "
+         "pids fail honestly on both paths."),
+    38: ("D1 circuit 19 DEEP NOTE: Distill's source "
+         "is the label, or (bare) the LAST unit's "
+         "'<label> <words>'; it mints the distilled "
+         "name itself as SEED (no prefix), where "
+         "distilled = distill_label(source): tokens "
+         ">2 chars, lowercased, deduped, max 4; the "
+         "minted id dedups against an existing unit "
+         "of the same name."),
+    39: ("D1 circuit 19 DEEP NOTE, as rebuilt by the "
+         "C7.Schema circuit (DD-29): Schema is the "
+         "read-only nervous-system board — DD-29's 16 "
+         "systems (floor, truths, avatar, companion, "
+         "inspire, self_knowledge, nursery, ideas, "
+         "enhance, lattice, keys, pulse, forces, "
+         "personas, bimo, persona_matrix), each probed "
+         "through its own status provider and reported "
+         "exists / connected / available plus a state "
+         "line; enhance off reads OFF-by-design, a "
+         "raising organ reads UNKNOWN; 'Schema: VALID' "
+         "only when every system passes, else INVALID "
+         "naming the failing systems; any label is "
+         "ignored and the verdict is noted to history "
+         "('39[Schema] :: valid')."),
+    40: ("D1 circuit 19 DEEP NOTE: TokenCount "
+         "(core_i_ops) is the approx session weight: "
+         "approx = ideas*8 + history*4 + cells*2 + "
+         "pending*6, recorded exactly in last_measure "
+         "and last_core_i {dell 40, ok}."),
+    41: ("D1 circuit 19 DEEP NOTE: Sanitize's OUT "
+         "line redacts password/secret/token/api_key/"
+         "bearer values and 12+ digit numbers. "
+         "EXHIBIT: the IN line echoes the RAW label — "
+         "the secrets the OUT line redacted are "
+         "printed verbatim in Sanitize's own first "
+         "output line."),
+    42: ("D1 circuit 19 DEEP NOTE: Retry replays "
+         "the LAST noted history entry — an empty "
+         "history reports 'Retry: history empty.'; "
+         "otherwise 'Retry last: <entry>' plus a real "
+         "replay_exec (ran=1), so the retried seed "
+         "executes again and Retry notes itself."),
+    43: ("D1 circuit 19 DEEP NOTE: Fallback is a "
+         "message-only safe path — status / save / "
+         "the acceptance sequence — with zero "
+         "mutation; noted to history."),
+    44: ("D1 circuit 19 DEEP NOTE: Bridge "
+         "(core_i_ops) is an HONEST REFUSAL — "
+         "ok=False bridge_unavailable, 'Bridge "
+         "unavailable: no external provider bound'; "
+         "last_core_i records capability (the label, "
+         "default 'external') and permission "
+         "offline_origin. The working EN<->Mandell "
+         "bridge function belongs to Dell 45."),
+    45: ("D1 circuit 19 DEEP NOTE: Translate is "
+         "bridge(label) — an English phrase reports "
+         "its Mandell seed and English gloss; a "
+         "report only, nothing executes or mutates. "
+         "B6 (Director FIX, step 6): bare Translate "
+         "reports nothing_to_translate with no "
+         "fabricated Show intent — the former "
+         "empty-string '09[Show] :: unknown' report "
+         "was the B6 defect."),
+    46: ("D1 circuit 19 DEEP NOTE: Rank reports "
+         "'Ranked <n> proposals:' plus one line per "
+         "PENDING proposal, affinity-descending "
+         "(equal affinities keep insertion order), "
+         "in the format '<i>. aff=<aff:.3f> [<kind>] "
+         "<id> — <label>'."),
+    47: ("D1 circuit 19 DEEP NOTE: Embed "
+         "(core_i_ops) is an HONEST REFUSAL — "
+         "ok=False embed_unavailable, representation "
+         "'none', no provider bound; bare and "
+         "labeled refuse identically."),
+    48: ("D1 circuit 19 DEEP NOTE: Macro renders "
+         "the macro seed — the last n noted history "
+         "entries joined ' > ' (bare n=5, a digit "
+         "label sets n; empty history -> '48[Macro] "
+         ":: empty') — and notes nothing itself; a "
+         "'replay' label runs replay_exec(n) for "
+         "real instead."),
+    49: ("D1 circuit 19 DEEP NOTE, as rebuilt by "
+         "C7.Profile (DD-39): Profile is the "
+         "speedometer — a deliberate BENCHMARK on "
+         "disposable state timing the named stages "
+         "place/pulse/growth/save/load with a "
+         "monotonic clock, per-stage shares, harness "
+         "overhead disclosed, embedding ABSENT "
+         "standalone; the live program is never the "
+         "measured system and status() is not read."),
+    50: ("D1 circuit 19 DEEP NOTE: Manifest mints "
+         "a label via place_idea as CUBE + "
+         "'Manifested.'; 'acceptance'/'accept' print "
+         "the acceptance sequence and mint nothing; "
+         "bare Manifest is ok=True 'Manifest needs "
+         ":: label.' with zero mutation (a "
+         "message-level refusal, unlike 44/47)."),
+    89: ("D1 circuit 22 DEEP NOTE (step 9, B13/B14): "
+         "Diff reports the store change-set against "
+         "ONE baseline lifecycle: an active "
+         "transaction's checkpoint (baseline="
+         "transaction), else the pre-mutation "
+         "checkpoint captured by the most recent store "
+         "mutation through the shared _note_mutation "
+         "authority — Dell 55 Set and spectrum writers "
+         "84-88 alike (baseline=immediate). With no "
+         "baseline captured in this session Diff "
+         "REFUSES baseline_missing (changed=None, "
+         "available=False) and claims no change-set; "
+         "the baseline is session-only, so a restored "
+         "state reports baseline_missing until its "
+         "next mutation. Reading Diff never captures, "
+         "replaces, or clears a baseline."),
+    90: ("D1 circuit 22 DEEP NOTE: Trace prints "
+         "the last <=8 entries of the execution "
+         "trace buffer ('NN[Term]::label' per "
+         "executed Core II atom; Trace's own entry "
+         "lands after its dump) and publishes a "
+         "cell whose value is the WHOLE trace list; "
+         "an empty trace prints '(empty)', count 0."),
+    91: ("D1 circuit 22 DEEP NOTE: Assert "
+         "evaluates a condition via the shared "
+         "control runtime (bare = 'true'; words "
+         "pass/fail; otherwise the predicate "
+         "engine), records last_assert PASS/FAIL, "
+         "and a failure fails the atom (assert_fail) "
+         "AND marks an open transaction frame "
+         "failed."),
+    92: ("D1 circuit 22 DEEP NOTE: Guard is "
+         "Assert's gate form — it asks 'may this "
+         "proceed?': ALLOW passes; BLOCK "
+         "fails the atom (guard_block), records "
+         "last_guard, and marks an open frame "
+         "failed; 'block'/'deny' labels force BLOCK."),
+    93: ("D1 circuit 22 DEEP NOTE (step 8, B15/B16): "
+         "Try opens a transaction frame with a CLEAN "
+         "frame error state and a checkpoint covering "
+         "exactly: scope, selected, store, groups, "
+         "defs, aliases, compositions, weights, "
+         "context, route, refs, causes, deps, "
+         "last_assert, last_guard; ids are monotonic "
+         "over frame history, depth counts "
+         "already-active frames, try_depth tracks the "
+         "active count. EVERY executed atom failure "
+         "(leaf, Core II, composition) marks the "
+         "innermost active frame failed via the one "
+         "canonical outcome hook — the first root "
+         "cause is preserved in the frame's error."),
+    94: ("D1 circuit 22 DEEP NOTE (step 8, B16): "
+         "Catch is illegal with no active frame "
+         "(catch_illegal); otherwise it consumes the "
+         "innermost active frame's OWN error — never "
+         "the sticky global st.last_error and never a "
+         "pre-transaction error — marks it 'caught' "
+         "and records caught_error. With no frame "
+         "error it reports 'Catch (no error)' "
+         "explicitly and consumes nothing (status "
+         "unchanged). A later commit_illegal is "
+         "additional evidence (extra_errors), never "
+         "an overwrite of the root cause."),
+    95: ("D1 circuit 22 DEEP NOTE (step 8, B17): "
+         "Commit fails commit_without_try with no "
+         "frame and commit_illegal on terminal or "
+         "FAILED frames (a failed frame must be "
+         "Caught first); on an open/caught frame it "
+         "MARKS/ACCEPTS it (committed, accepted = the "
+         "whole CURRENT store). Commit is a live "
+         "mark/accept mechanism: NO atomic staged "
+         "isolation (mutations are live immediately; "
+         "staged_changes records every store mutation "
+         "through the shared baseline authority — Set "
+         "55 and spectrum writers 84-88, step 9 B14), "
+         "NO whole-program ACID, "
+         "and Revert covers only the checkpoint "
+         "fields listed under Try — external effects "
+         "are never rolled back."),
+    96: ("D1 circuit 22 DEEP NOTE: Revert on an "
+         "active frame restores its checkpoint "
+         "EXACTLY (values rolled back, new keys "
+         "removed) and marks it reverted; on a "
+         "committed frame it refuses "
+         "(unrelated_revert); on a reverted frame "
+         "it fails revert_illegal. With no frames "
+         "it pops the pre-write snapshot stack "
+         "(captured by Set/Delete/Replace/Patch); "
+         "with nothing it is ok=True 'Revert "
+         "nothing'."),
+    97: ("D1 circuit 22 DEEP NOTE: Define stores "
+         "st.defs[name] = meaning from 'name="
+         "meaning'; a label without '=' defines "
+         "the name as itself; bare Define creates "
+         "defs['def'] = ''. Publishes NO result "
+         "cell."),
+    98: ("D1 circuit 22 DEEP NOTE: Alias binds "
+         "name=target only when the target resolves "
+         "(through alias chains) to a def or a "
+         "composition; unresolvable or bare fails "
+         "alias_missing with no mutation; a binding "
+         "that would close a cycle fails "
+         "alias_cycle with no mutation. Publishes "
+         "NO result cell."),
+    99: ("D1 circuit 22 DEEP NOTE: Compose "
+         "'name=body' STORES the composition AND "
+         "EXECUTES IT IMMEDIATELY; ':: name' runs a "
+         "stored one (defs/aliases resolve as "
+         "bodies). Parts split on '>' or ',': digits "
+         "run that Dell as 'NN[ComposeStep]' (the "
+         "term doubles as its label), names resolve "
+         "recursively, a body with '[' runs "
+         "verbatim. Errors: malformed_composition, "
+         "compose_cycle, compose_depth (bound from "
+         "st.limit, default 8); a failing body "
+         "propagates its own error. EXHIBIT: a "
+         "composition whose define-mode run fails "
+         "is still stored."),
+}
+
+
+def english_named_dells() -> set:
+    """Dells translate() can name in an Intent (static scan of
+    Intent returns — the circuit-1 measurement)."""
+    path = os.path.join(os.path.dirname(__file__), "translate.py")
+    tree = ast.parse(open(path, encoding="utf-8").read())
+    dells = set()
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Call)
+                and getattr(node.func, "id", "") == "Intent"
+                and len(node.args) >= 2
+                and isinstance(node.args[1], ast.Constant)
+                and isinstance(node.args[1].value, int)):
+            dells.add(node.args[1].value)
+    return dells
+
+
+def _cleanup(owner: str, state_dir: str) -> None:
+    for pat in (f"program_{owner}.json", f"nursery_{owner}.json",
+                f"checkpoint_{owner}_*", f"confirm_{owner}.journal.json",
+                f"checkpoint_{owner}.journal.json", f"gen_{owner}_*",
+                f"current_{owner}.json"):
+        for f in glob.glob(os.path.join(state_dir, pat)):
+            try:
+                os.remove(f)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                raise
+    for d in glob.glob(os.path.join(state_dir, f"ideas_{owner}*")):
+        if os.path.isdir(d):
+            shutil.rmtree(d)
+
+
+def build_card(n: int, owner: str, state_dir: str,
+               named: set) -> Dict[str, Any]:
+    """Probe one Dell. The caller owns cleanup of `owner`."""
+    from form.open import Program
+    from .executor import execute_seed
+
+    entry = get_dell(n)  # registry view: adds dell + namespace
+    sig = get_signature(n)
+    card: Dict[str, Any] = {
+        "dell": n,
+        "name": entry["name"],
+        "manor": entry["manor"],
+        "namespace": entry["namespace"],
+        "typed_signature": None,
+        "english_named": n in named,
+        "bare": {"outcome": "error", "error": "not probed"},
+        "deep_note": DEEP_NOTES.get(n, ""),
+    }
+    if sig is not None:
+        card["typed_signature"] = {
+            "roles": [
+                {"name": r.name, "type": r.type,
+                 "required": bool(r.required)}
+                for r in (sig.roles or [])
+            ],
+            "output": sig.output,
+            "failures": sig.failures,
+            "derived_from": sig.derived_from,
+        }
+    p = Program(owner)
+    r = execute_seed(p, f"{n:02d}[{entry['name']}]")
+    if r.get("ok"):
+        card["bare"] = {"outcome": "executed", "error": ""}
+    else:
+        ars = r.get("atom_results") or []
+        reason = ""
+        if ars:
+            reason = str(ars[0].get("reason")
+                         or ars[0].get("error") or "")
+        card["bare"] = {
+            "outcome": "failed",
+            "error": reason or str(r.get("error") or ""),
+        }
+    return card
+
+
+def build_all_cards(owner_prefix: str = "D1Card",
+                    state_dir: str = None) -> List[Dict[str, Any]]:
+    if state_dir is None:
+        state_dir = os.path.join(os.path.dirname(__file__), "..",
+                                 "state")
+    named = english_named_dells()
+    cards = []
+    for n in sorted(DELLS):
+        owner = f"{owner_prefix}{n}"
+        _cleanup(owner, state_dir)
+        try:
+            cards.append(build_card(n, owner, state_dir, named))
+        finally:
+            _cleanup(owner, state_dir)
+    return cards
+
+
+def render_cards_md(cards: List[Dict[str, Any]]) -> str:
+    executed = [c for c in cards if c["bare"]["outcome"] == "executed"]
+    failed = [c for c in cards if c["bare"]["outcome"] != "executed"]
+    typed = [c for c in cards if c["typed_signature"] is not None]
+    named = [c for c in cards if c["english_named"]]
+    lines = [
+        "# Dell Proof Cards (D1 survey)",
+        "",
+        "Generated by form/mandell/dell_cards.py from live probes; "
+        "the D1 suite fails if this document drifts from a fresh "
+        "survey. Dimensions are kept separate by design: a typed "
+        "signature is not English reachability, and neither is a "
+        "bare-invocation outcome.",
+        "",
+        f"- Registry entries: {len(cards)}",
+        f"- Typed signatures: {len(typed)}",
+        f"- Named by translate() English patterns: {len(named)}",
+        f"- Bare invocation executed (empty field): {len(executed)}",
+        f"- Bare invocation failed with a named reason: {len(failed)}",
+        "",
+        "| Dell | Name | Typed | English-named | Bare outcome |",
+        "|------|------|-------|---------------|--------------|",
+    ]
+    for c in cards:
+        bare = ("executed" if c["bare"]["outcome"] == "executed"
+                else f"failed: {c['bare']['error']}")
+        lines.append(
+            f"| {c['dell']:02d} | {c['name']} | "
+            f"{'yes' if c['typed_signature'] else 'no'} | "
+            f"{'yes' if c['english_named'] else 'no'} | {bare} |")
+    lines += ["", "## Typed signatures (roles / output / failures)", ""]
+    for c in typed:
+        sig = c["typed_signature"]
+        roles = ", ".join(
+            f"{r['name']}:{r['type']}"
+            f"{' (required)' if r['required'] else ''}"
+            for r in sig["roles"]) or "none"
+        lines += [
+            f"### {c['dell']:02d}[{c['name']}] — {c['manor']}",
+            f"- roles: {roles}",
+            f"- output: {sig['output']}",
+            f"- failures: {sig['failures']}",
+            f"- derived_from: {sig['derived_from']}",
+            "",
+        ]
+    noted = [c for c in cards if c.get("deep_note")]
+    if noted:
+        lines += ["## Deep-contract notes (D1 deepening circuits)", ""]
+        for c in noted:
+            lines += [f"### {c['dell']:02d}[{c['name']}]",
+                      f"- {c['deep_note']}", ""]
+    return "\n".join(lines) + "\n"

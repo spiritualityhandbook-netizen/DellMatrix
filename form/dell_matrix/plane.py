@@ -1,0 +1,405 @@
+#!/usr/bin/env python3
+"""
+Dell Matrix Plane — L3 surface.
+
+Ideas carry detail + goals so growth is aimed, not random.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+from enum import Enum
+import math
+import sys
+
+try:
+    from form.mandell.floor import FLOOR, assert_floor_intact
+    from form.mandell.manifest import Manifest
+except ImportError:
+    import os
+
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+    from form.mandell.floor import FLOOR, assert_floor_intact
+    from form.mandell.manifest import Manifest
+
+
+class MalformedSandboxClaim(RuntimeError):
+    """F-d fail-closed refusal (GS-4 precedent): a unit claims sandbox
+    isolation (sandboxed=True) but the claim cannot be verified
+    against the Plane's box records — sandbox_id missing/invalid, no
+    such Sandbox record, or the unit absent from the record's
+    member_ids (form/dell_matrix/ringed_growth.py _malformed_boxed,
+    the canonical verifier). Consumers refuse the unit explicitly,
+    naming it; the claim is never silently collapsed to unboxed.
+    The F-d stale state (sandboxed=False + stale sandbox_id) is NOT
+    malformed: it is canonically UNBOXED and never raises this."""
+
+    def __init__(self, unit_id: str, sandbox_id: Any = None):
+        self.unit_id = unit_id
+        self.sandbox_id = sandbox_id
+        super().__init__(
+            f"unit {unit_id!r} claims sandbox isolation but its claim "
+            f"cannot be verified (sandbox_id={sandbox_id!r}); refusing "
+            "the malformed sandbox claim — never silently unboxed")
+
+
+class Perspective(str, Enum):
+    TABLE = "table"
+    PAGE = "page"
+    CUBE = "cube"
+    CIRCLE = "circle"
+    FLOWER = "flower"
+    SPHERE = "sphere"
+
+
+class Skin(str, Enum):
+    CUBE = "cube"
+    SPHERE = "sphere"
+    SEED = "seed"
+    FLOWER = "flower"
+    BUILDING = "building"
+    WORDS = "words"
+    CIRCLE = "circle"
+    CORE = "core"
+
+
+@dataclass
+class Unit:
+    id: str
+    label: str
+    words: str = ""
+    detail: str = ""
+    goals: List[str] = field(default_factory=list)
+    skin: Skin = Skin.CUBE
+    x: float = 0.0
+    y: float = 0.0
+    sandboxed: bool = False
+    sandbox_id: Optional[str] = None
+    manifest: Optional[Dict[str, Any]] = None
+    parents: List[str] = field(default_factory=list)
+    origin: str = "placed"
+    lineage_version: int = 1
+    # Track D TD-1 (S1 binding): optional pointer to the unit's
+    # canonical Idea. Recorded mapping only — containment authority
+    # remains SemanticGraph; this field grants no graph semantics.
+    idea_id: Optional[str] = None
+
+    def display(self) -> str:
+        box = f"[box:{self.sandbox_id}]" if self.sandboxed else "[connected]"
+        g = f" goals={len(self.goals)}" if self.goals else ""
+        return f"{self.skin.value}:{self.label}@{self.x:.1f},{self.y:.1f}{box}{g}"
+
+    def goal_text(self) -> str:
+        return " | ".join(g for g in self.goals if g)
+
+    def full_text(self) -> str:
+        parts = [self.label, self.detail, self.words, self.goal_text()]
+        return " ".join(p for p in parts if p)
+
+
+@dataclass
+class Sandbox:
+    id: str
+    label: str = "sandbox"
+    member_ids: List[str] = field(default_factory=list)
+    # Record-carried provenance: who created this record, in the
+    # creator's own namespace ("" = unattributed — user-created,
+    # restored from a pre-provenance save, or pack-imported).
+    # Plane.box writes it ONLY at record creation and never
+    # rewrites it, so it is durable evidence of origin across
+    # save/load (the persist pair round-trips it). Consumers that
+    # need positive ownership evidence (the confirm-placement
+    # staging guard) check it; it grants nothing by itself.
+    provenance: str = ""
+
+
+@dataclass
+class Plane:
+    perspective: Perspective = Perspective.TABLE
+    zoom_target: Optional[str] = None
+    units: Dict[str, Unit] = field(default_factory=dict)
+    sandboxes: Dict[str, Sandbox] = field(default_factory=dict)
+    focus: Optional[str] = None
+    level: int = 3
+
+    def __post_init__(self):
+        assert_floor_intact()
+
+    def place(
+        self,
+        id: str,
+        label: str,
+        *,
+        words: str = "",
+        detail: str = "",
+        goals: Optional[List[str]] = None,
+        skin: Skin = Skin.CUBE,
+        x: float = 0.0,
+        y: float = 0.0,
+        manifest: Optional[Manifest] = None,
+        parents: Optional[List[str]] = None,
+        origin: str = "placed",
+        lineage_version: Optional[int] = None,
+        restore: bool = False,
+        idea_id: Optional[str] = None,
+    ) -> Unit:
+        from form.dell_matrix.lineage import assign_lineage
+        rec = assign_lineage(self.units, parents, origin=origin, lineage_version=lineage_version, child_id=id, restore=restore or (lineage_version is not None))
+        if not rec.get("ok"):
+            raise ValueError(rec.get("error") or "invalid_lineage")
+        g = [str(x).strip() for x in (goals or []) if str(x).strip()]
+        u = Unit(
+            id=id,
+            label=label,
+            words=words,
+            detail=(detail or "").strip(),
+            goals=g,
+            skin=skin,
+            x=x,
+            y=y,
+            manifest=manifest.to_dict() if manifest else None,
+            parents=list(rec["parents"]),
+            origin=str(rec["origin"]),
+            lineage_version=int(rec["lineage_version"]),
+            idea_id=idea_id,
+        )
+        self.units[id] = u
+        return u
+
+    def inspect_lineage(self, unit_id: str) -> Dict[str, Any]:
+        from form.dell_matrix.lineage import inspect_lineage
+        return inspect_lineage(self, unit_id)
+
+    def remove(self, id: str) -> bool:
+        if id not in self.units:
+            return False
+        self.unbox(id)
+        del self.units[id]
+        if self.zoom_target == id:
+            self.zoom_out()
+        return True
+
+    def move(self, id: str, x: float, y: float) -> bool:
+        u = self.units.get(id)
+        if not u:
+            return False
+        u.x, u.y = x, y
+        return True
+
+    def set_skin(self, id: str, skin: Skin) -> bool:
+        u = self.units.get(id)
+        if not u:
+            return False
+        u.skin = skin
+        return True
+
+    def set_detail(self, id: str, detail: str) -> bool:
+        u = self.units.get(id)
+        if not u:
+            return False
+        u.detail = (detail or "").strip()
+        return True
+
+    def set_goals(self, id: str, goals: List[str]) -> bool:
+        u = self.units.get(id)
+        if not u:
+            return False
+        u.goals = [str(g).strip() for g in goals if str(g).strip()]
+        return True
+
+    def box(self, unit_ids: List[str], sandbox_id: str = "box1",
+            label: Optional[str] = None,
+            provenance: Optional[str] = None) -> Sandbox:
+        sb = self.sandboxes.get(sandbox_id)
+        if sb is None:
+            # Provenance is creation evidence: stamped once, here,
+            # and never rewritten onto an existing record — a
+            # later caller must not be able to launder a foreign
+            # record into a program-created one.
+            sb = Sandbox(id=sandbox_id,
+                         provenance=provenance or "")
+        if label is not None:
+            sb.label = label
+        for uid in unit_ids:
+            u = self.units.get(uid)
+            if not u:
+                continue
+            u.sandboxed = True
+            u.sandbox_id = sandbox_id
+            if uid not in sb.member_ids:
+                sb.member_ids.append(uid)
+        self.sandboxes[sandbox_id] = sb
+        return sb
+
+    def unbox(self, unit_id: str) -> bool:
+        u = self.units.get(unit_id)
+        if not u:
+            return False
+        sid = u.sandbox_id
+        u.sandboxed = False
+        u.sandbox_id = None
+        if sid and sid in self.sandboxes:
+            self.sandboxes[sid].member_ids = [m for m in self.sandboxes[sid].member_ids if m != unit_id]
+        return True
+
+    def set_perspective(self, p: Perspective) -> None:
+        self.perspective = p
+
+    def zoom_in(self, unit_id: str) -> bool:
+        if unit_id not in self.units:
+            return False
+        self.zoom_target = unit_id
+        self.focus = unit_id
+        return True
+
+    def zoom_out(self) -> None:
+        self.zoom_target = None
+        self.focus = None
+
+    def enhance_scope(self, unit_id: str) -> List[str]:
+        u = self.units.get(unit_id)
+        if not u:
+            return []
+        # F-d fail-closed (GS-4 precedent; audit PR #409 consumer #4):
+        # a malformed sandbox claim is refused explicitly, naming the
+        # unit — never silently treated as unboxed. The F-d stale
+        # state (sandboxed=False + stale id) is NOT malformed and
+        # still scopes as unboxed below.
+        from form.dell_matrix.ringed_growth import _malformed_boxed
+        if _malformed_boxed(self, unit_id):
+            raise MalformedSandboxClaim(unit_id, u.sandbox_id)
+        if u.sandboxed and u.sandbox_id:
+            sb = self.sandboxes.get(u.sandbox_id)
+            return [m for m in (sb.member_ids if sb else []) if m != unit_id]
+        return [i for i, o in self.units.items() if i != unit_id and not o.sandboxed]
+
+    def neighbors(self, unit_id: str, radius: float = 2.0) -> List[str]:
+        u = self.units.get(unit_id)
+        if not u:
+            return []
+        out = []
+        for i, o in self.units.items():
+            if i == unit_id:
+                continue
+            d = math.hypot(o.x - u.x, o.y - u.y)
+            if d <= radius:
+                out.append(i)
+        return out
+
+    def relation_middle(self, left_id: str, right_id: str) -> Dict[str, Any]:
+        a, b = self.units.get(left_id), self.units.get(right_id)
+        if not a or not b:
+            return {"ok": False}
+        return {"ok": True, "left": a.label, "right": b.label, "middle": f"relation({a.label}⊗{b.label})", "distance": math.hypot(a.x - b.x, a.y - b.y), "note": "Flower/Vesica — shared middle from two centers"}
+
+    def _layout_hint(self, u: Unit) -> str:
+        if self.perspective == Perspective.CIRCLE:
+            ang = math.degrees(math.atan2(u.y, u.x)) if (u.x or u.y) else 0.0
+            rad = math.hypot(u.x, u.y)
+            return f"θ={ang:.0f}° r={rad:.1f}"
+        if self.perspective == Perspective.CUBE:
+            return f"grid({int(round(u.x))},{int(round(u.y))})"
+        if self.perspective == Perspective.SPHERE:
+            return f"field({u.x:.1f},{u.y:.1f})"
+        return f"({u.x:.1f},{u.y:.1f})"
+
+    def render(self, scores: Optional[Dict[str, float]] = None) -> str:
+        scores = scores or {}
+        lines = [f"+- DellMatrix PLANE L{self.level} · perspective={self.perspective.value} -+", f"| Floor: {' · '.join(FLOOR)} (LOCKED)", f"| zoom={'overview' if not self.zoom_target else self.zoom_target}  units={len(self.units)}"]
+        if self.zoom_target and self.zoom_target in self.units:
+            u = self.units[self.zoom_target]
+            lines.append(f"| —— PAGE / CELL ——")
+            lines.append(f"| title: {u.label}")
+            lines.append(f"| skin: {u.skin.value}  pos: {self._layout_hint(u)}")
+            # F-d (audit PR #409 consumer #8): never concatenate an
+            # unverified sandbox_id — a malformed claim renders an
+            # explicit refusal line instead of crashing (TypeError on
+            # None) or printing a misleading box name. The F-d stale
+            # state (flag False) still renders CONNECTED.
+            from form.dell_matrix.ringed_growth import _malformed_boxed
+            if _malformed_boxed(self, u.id):
+                state_text = ("SANDBOX CLAIM UNVERIFIABLE "
+                              f"(malformed: sandbox_id={u.sandbox_id!r})"
+                              " — REFUSED")
+            elif u.sandboxed:
+                state_text = f"SANDBOX {u.sandbox_id}"
+            else:
+                state_text = "CONNECTED"
+            lines.append(f"| state: {state_text}")
+            lines.append(f"| score: {scores.get(u.id, 0.0):.2f}")
+            if u.detail:
+                lines.append(f"| detail: {u.detail[:120]}")
+            if u.goals:
+                lines.append(f"| goals: {' · '.join(u.goals)[:120]}")
+            if u.parents:
+                lines.append(f"| parents: {' · '.join(u.parents)[:120]}")
+            lines.append(f"| words:")
+            text = u.words or "(empty)"
+            for chunk in text.split("\n"):
+                lines.append(f"|   {chunk}")
+            try:
+                enhance_text = f"{self.enhance_scope(u.id)}"
+            except MalformedSandboxClaim as refused:
+                enhance_text = f"REFUSED ({refused})"
+            lines.append(f"| enhance → {enhance_text}")
+            lines.append(f"| neighbors → {self.neighbors(u.id)}")
+        else:
+            mode = {Perspective.PAGE: "top-down page (cells)", Perspective.CIRCLE: "circular plane", Perspective.FLOWER: "flower / vesica", Perspective.SPHERE: "expanded sphere field", Perspective.CUBE: "cube-based grid", Perspective.TABLE: "table plane"}.get(self.perspective, self.perspective.value)
+            lines.append(f"| view: {mode}")
+            for u in sorted(self.units.values(), key=lambda z: (z.y, z.x, z.id)):
+                sc = scores.get(u.id)
+                sc_s = f" sc={sc:.2f}" if sc is not None else ""
+                lines.append(f"|  · {u.display()} {self._layout_hint(u)}{sc_s}")
+            if self.perspective == Perspective.FLOWER and len(self.units) >= 2:
+                ids = list(self.units.keys())
+                rel = self.relation_middle(ids[0], ids[1])
+                if rel.get("ok"):
+                    lines.append(f"|  vesica: {rel['middle']}")
+            for sb in self.sandboxes.values():
+                lines.append(f"|  box {sb.id}: {sb.member_ids}")
+        lines.append("+" + "-" * 52 + "+")
+        return "\n".join(lines)
+
+    def status(self) -> Dict[str, Any]:
+        return {"level": self.level, "perspective": self.perspective.value, "zoom": self.zoom_target, "unit_count": len(self.units), "units": {i: u.display() for i, u in self.units.items()}, "sandboxes": {i: sb.member_ids for i, sb in self.sandboxes.items()}, "floor": list(FLOOR)}
+
+
+def smoke() -> bool:
+    print("=== PLANE L3 SMOKE ===")
+    r = []
+    def rec(n, ok, d=""):
+        print(f"[{len(r)+1}] {n}: {'PASS' if ok else 'FAIL'}" + (f" | {d}" if d else ""))
+        r.append(bool(ok))
+    p = Plane()
+    p.place("a", "A", words="line1", detail="about A", goals=["ship clarity"], skin=Skin.CUBE)
+    p.place("b", "B", skin=Skin.CIRCLE, x=1, parents=["a"], origin="confirmed")
+    rec("level 3", p.level == 3)
+    rec("place", "a" in p.units)
+    rec("detail", p.units["a"].detail == "about A")
+    rec("goals", p.units["a"].goals == ["ship clarity"])
+    rec("lineage", p.units["b"].parents == ["a"] and p.units["b"].origin == "confirmed")
+    rec("neighbors", "b" in p.neighbors("a"))
+    p.zoom_in("a")
+    txt = p.render(scores={"a": 1.5})
+    rec("page detail", "about A" in txt)
+    rec("page goals", "ship clarity" in txt)
+    p.zoom_out()
+    p.remove("b")
+    rec("remove", "b" not in p.units)
+    rec("floor", p.status()["floor"] == list(FLOOR))
+    print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
+    return all(r)
+
+
+def main() -> None:
+    if "--smoke" in sys.argv:
+        sys.exit(0 if smoke() else 1)
+    p = Plane()
+    p.place("biz", "Business", detail="ops", goals=["reliability"], words="CRM", skin=Skin.BUILDING, x=1)
+    p.zoom_in("biz")
+    print(p.render())
+
+
+if __name__ == "__main__":
+    main()

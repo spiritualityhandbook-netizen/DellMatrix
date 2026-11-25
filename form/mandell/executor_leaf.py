@@ -1,0 +1,743 @@
+#!/usr/bin/env python3
+"""Mandell seed executor — dense Dell coverage."""
+
+from __future__ import annotations
+
+from typing import Any, Dict
+from datetime import datetime, timezone
+import re
+
+from .seed import parse_seed
+from .registry import get_dell
+
+
+# DIR-F13: the ONE count grammar for leaf count labels (Dells 6/13/48).
+# A count is valid iff it is 1..9 ASCII decimal digits, checked BEFORE
+# any int() conversion. str.isdigit() is NOT proof int() succeeds:
+# it accepts superscripts (int() raises) and non-ASCII decimal digits
+# (int() silently accepts them, an unrecorded grammar expansion), and
+# oversized digit strings raise past CPython's conversion limit
+# before any clamp can run. Non-ASCII digits and oversized strings
+# are therefore refused/defaulted by callers — never converted.
+_MAX_COUNT_DIGITS = 9
+_ASCII_DIGITS = frozenset("0123456789")
+
+
+def _parse_count(text: str):
+    """Return the int value of a count label, or None if the label is
+    not in the count grammar (empty, non-ASCII, non-digit, oversized).
+    int() is only ever called on a validated bounded ASCII string."""
+    if not text or len(text) > _MAX_COUNT_DIGITS:
+        return None
+    if not text.isascii() or any(c not in _ASCII_DIGITS for c in text):
+        return None
+    return int(text)
+
+
+def execute_seed(program: Any, seed_text: str) -> Dict[str, Any]:
+    from form.dell_matrix.plane import Skin
+    from form.avatar import Locomotion, Posture, Expression
+
+    s = parse_seed(seed_text)
+    if not s.ok:
+        return {"ok": False, "error": s.error, "messages": [f"Seed error: {s.error}"]}
+
+    # DAF-02/B5: for a seed containing Dell 41[Sanitize], EVERY echo
+    # of the seed (generic Mandell/English lines, returned seed /
+    # english metadata) is built from the redacted copy, so the raw
+    # secret-shaped input never reaches a surface. Other seeds are
+    # returned unchanged by redacted_seed (identity).
+    from .redaction import redacted_seed
+    _echo = redacted_seed(s)
+    messages = [f"Mandell: {_echo.as_mandel()}", f"English: {_echo.as_english()}"]
+    primary = s.primary_dell()
+    terms = {a.term.lower() for a in s.atoms}
+    label = s.label or ""
+    # TOAM-I C3: For Dell 8 with typed args, use the 'name' arg as the label.
+    # This wires the typed representation to the existing Create authority.
+    create_skin = Skin.CUBE
+    if primary == 8 and s.atoms:
+        atom_args = getattr(s.atoms[0], "args", None) or {}
+        if atom_args:
+            from form.mandell.signatures import get_signature, has_signature
+            if has_signature(8):
+                sig = get_signature(8)
+                errors = sig.validate(atom_args)
+                if errors:
+                    err_msg = f"TOAM validation failed for 08[Create]: {'; '.join(errors)}"
+                    messages.append(err_msg)
+                    return {"ok": False, "error": errors[0], "messages": messages}
+                # Use typed name; conflict law: if legacy label differs, fail safely
+                typed_name = atom_args.get("name", "")
+                from form.idea_create import slug_id
+                if label and label != typed_name and label != slug_id(typed_name):
+                    # Legacy label is the uid (underscored); typed name is human-readable.
+                    # They refer to the same thing if uid matches. Only fail on true conflict.
+                    err_msg = f"ARGUMENT_CONFLICT for 08[Create]: typed name='{typed_name}' vs legacy label='{label}'"
+                    messages.append(err_msg)
+                    return {"ok": False, "error": "ARGUMENT_CONFLICT", "messages": messages}
+                if typed_name:
+                    label = typed_name
+                    messages.append(f"TOAM: typed name='{typed_name}' wired to Create")
+                # R4: skin was enum-validated above (validate()
+                # refuses non-members before any mutation), so
+                # this resolution cannot fail; wire it through.
+                if "skin" in atom_args:
+                    create_skin = Skin[atom_args["skin"]]
+                    messages.append(f"TOAM: typed skin='{atom_args['skin']}' wired to Create")
+    new_program = None
+    # 72-17 R-B: structured result directive (e.g. bare Show sets
+    # "render"); machine directives never ride the human messages list.
+    directive = None
+    # C7.Schema (DD-29): Dell 39's structured board rides the
+    # result dict under "schema_board" (set only for Dell 39).
+    schema_detail = None
+    # C7.Profile (DD-39): Dell 49's structured report rides the
+    # result dict under "profile_report" (set only for Dell 49).
+    profile_detail = None
+
+    def place_idea(name: str, skin: Skin = Skin.CUBE) -> None:
+        # Canonical slug + collision dedup (form/idea_create.py, P3/TD-5):
+        # raw-Mandell creation produces the same id parse_and_place would
+        # for the same label, and dedups instead of silently overwriting.
+        from form.idea_create import slug_id, unique_unit_id
+        raw_uid = slug_id(name)
+        uid = unique_unit_id(program.cube.session.plane.units, name)
+        program.place(uid, name.replace("_", " "), words=name, skin=skin)
+        if uid == raw_uid:
+            messages.append(f'Created idea: "{name}"')
+        else:
+            messages.append(f'Created idea: "{name}" (id: {uid})')
+
+    if primary == 0:
+        messages.append("Nova is cheat/edge only — floor stays locked.")
+    elif primary == 1:
+        messages.append(f"Initiated. owner={program.owner}")
+    elif primary == 2:
+        st = program.avatar_status()
+        messages.append(f"{st['look']}  {st['describe']}")
+    elif primary == 3:
+        messages.append("Logic constraints (live):")
+        messages.append("  · Floor locked (Alpha · Delta · Omega · Omni)")
+        messages.append("  · Growth never auto-writes live matrix (Nursery only)")
+        messages.append("  · RingedGrowth is sole public growth entrypoint")
+        messages.append("  · Origin offline — no network required for acceptance")
+        if label:
+            messages.append(f"  · noted rule: {label}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(3, "Logic", label or "constraints")
+    elif primary == 4:
+        lab = label.lower()
+        if "left" in lab:
+            messages.append(f"Turned left. Facing {program.avatar.turn_left()}.")
+        elif "right" in lab:
+            messages.append(f"Turned right. Facing {program.avatar.turn_right()}.")
+        elif "sit" in lab:
+            program.avatar.set_posture(Posture.SIT)
+            messages.append("Sat down.")
+        elif "stand" in lab:
+            program.avatar.set_posture(Posture.STAND)
+            messages.append("Stood up.")
+        elif "jump" in lab:
+            program.avatar.set_posture(Posture.JUMP)
+            program.avatar.set_posture(Posture.STAND)
+            messages.append("Jumped.")
+        elif "toggle" in lab:
+            new = program.lattice.toggle_form()
+            messages.append(f"Form toggled → {new.value}")
+        else:
+            messages.append("Transform ready.")
+    elif primary == 5:
+        expr_map = {
+            "joy": Expression.JOY, "smile": Expression.JOY,
+            "calm": Expression.CALM, "focus": Expression.FOCUS,
+            "soft": Expression.SOFT, "intense": Expression.INTENSE,
+            "curious": Expression.CURIOUS, "neutral": Expression.NEUTRAL,
+        }
+        expr = expr_map.get((label or "neutral").lower(), Expression.NEUTRAL)
+        face = program.face.set(expr)
+        messages.append(f"{face}  tone={expr.value}")
+    elif primary == 6:
+        # DIR-F13: count grammar via _parse_count; int() never sees an
+        # unvalidated string.
+        # R19 (Director ruling 2026-11-18, point 3): a genuinely
+        # omitted count keeps Cycle's default of 1, but an explicitly
+        # malformed count (non-ASCII, oversized, negative, garbage)
+        # is a typed refusal with no growth — consistently with
+        # Loop's B2 refusal — never a silent default.
+        raw_label = (label or "").strip()
+        _parsed = _parse_count(raw_label) if raw_label else 1
+        if raw_label and _parsed is None:
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [
+                    f"Cycle refused: invalid count '{raw_label}' — "
+                    f"no cycles run."],
+                "new_program": new_program,
+                "error": "invalid_cycle_count",
+            }
+        # R19: mirror the Loop B2 pattern — keep the requested count,
+        # clamp only the executed count, and disclose both (plus the
+        # unexecuted remainder) on the receipt. A request of 20
+        # executing 5 must never read as a successful request for 20;
+        # no automatic continuation is authorized.
+        requested = _parsed
+        n = max(1, min(requested, 5))
+        out = program.grow_ideas(n)
+        _cycle_line = (f"Cycle x{n}: +{out.get('proposed_new', 0)} new "
+                       f"+{out.get('proposed_evolved', 0)} evolved")
+        _dup = out.get("duplicates_suppressed", 0)
+        if _dup:
+            # G-DUP.2: the public transcript discloses suppressions;
+            # a growth run that only re-derived duplicates must not
+            # read as if nothing happened.
+            _cycle_line += (f" ({_dup} duplicate"
+                            f"{'s' if _dup != 1 else ''} suppressed)")
+        messages.append(_cycle_line)
+        if requested > n:
+            messages.append(
+                f"Cycle: requested {requested}, executed {n}, "
+                f"remaining {requested - n}. (clamped to 1..5)")
+        elif requested < n:
+            messages.append(
+                f"Cycle: requested {requested}, executed {n}. "
+                f"(clamped to 1..5)")
+        else:
+            messages.append(f"Cycle: requested {requested}, executed {n}.")
+        messages.append(f"rings: {' → '.join(program.duo.rings)}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(6, "Cycle", str(n))
+    elif primary == 7:
+        place_idea(f"link_{label or 'link'}")
+    elif primary == 8:
+        place_idea(label or "idea", skin=create_skin)
+    elif primary == 9:
+        lab = (label or "").lower()
+        if "embed" in terms or "visual" in lab or 47 in [a.dell for a in s.atoms]:
+            paths = program.visual()
+            messages.append("Visual ready.")
+            messages.append(paths.get("easy") or paths.get("html", ""))
+        elif "avatar" in lab:
+            st = program.avatar_status()
+            messages.append(f"{st['look']}  {st['describe']}")
+        elif "lattice" in lab:
+            messages.append(program.lattice.render_ascii())
+        else:
+            directive = "render"
+    elif primary == 10:
+        path = program.save()
+        ns = program.nursery.summary()
+        messages.append("Session saved.")
+        messages.append(f"ideas={len(program.cube.session.plane.units)} nursery={ns['pending']}")
+        messages.append(f"file={path}")
+    elif primary == 11:
+        messages.append("Architect schema:")
+        messages.append(f"  owner={program.owner}")
+        messages.append(f"  ideas={len(program.cube.session.plane.units)}")
+        messages.append(f"  lattice size={program.lattice.size} form={program.lattice.perception.form.value}")
+        messages.append(f"  cells={len(program.lattice.cells)}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(11, "Architect")
+    elif primary == 12:
+        checks = [
+            ("floor", True),
+            ("lattice", hasattr(program, "lattice") and program.lattice is not None),
+            ("growth", hasattr(program, "growth")),
+            ("nursery", hasattr(program, "nursery")),
+            ("ideas", len(program.cube.session.plane.units) >= 0),
+        ]
+        ok_n = sum(1 for _, v in checks if v)
+        for name, ok in checks:
+            messages.append(f"  {'PASS' if ok else 'FAIL'}  {name}")
+        messages.append(f"Test: {ok_n}/{len(checks)}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(12, "Test", f"{ok_n}/{len(checks)}")
+    elif primary == 13:
+        # B2 (Director FIX, step 6): Loop uses Cycle's finite 1..5
+        # bound, reports requested vs executed counts and any clamp,
+        # and refuses malformed/non-numeric labels explicitly instead
+        # of silently running one cycle. No growth on refusal.
+        raw_label = (label or "").strip()
+        # DIR-F13: the count grammar is _parse_count (ASCII digits,
+        # bounded length, checked before conversion). Labels outside
+        # it — malformed, non-ASCII digits, oversized — take the B2
+        # refusal below; int() never sees an unvalidated string.
+        _parsed = _parse_count(raw_label) if raw_label else 1
+        if raw_label and _parsed is None:
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [
+                    f"Loop refused: invalid count '{raw_label}' — "
+                    f"no cycles run."],
+                "new_program": new_program,
+                "error": "invalid_loop_count",
+            }
+        requested = _parsed
+        executed = max(1, min(requested, 5))
+        out = program.grow_ideas(executed)
+        _growth_line = (
+            f"Ringed growth: +{out.get('proposed_new', 0)} new "
+            f"+{out.get('proposed_evolved', 0)} evolved")
+        _dup = out.get("duplicates_suppressed", 0)
+        if _dup:
+            # G-DUP.2: see the Cycle branch — disclose, never hide.
+            _growth_line += (f" ({_dup} duplicate"
+                             f"{'s' if _dup != 1 else ''} suppressed)")
+        messages.append(_growth_line)
+        _count_line = f"Loop: requested {requested}, executed {executed}."
+        if executed != requested:
+            _count_line += " (clamped to 1..5)"
+        messages.append(_count_line)
+        messages.append(f"Nursery pending: {out.get('nursery', {}).get('pending', 0)}")
+    elif primary == 14:
+        place_idea(label or "bind")
+    elif primary == 15:
+        lab = (label or "").lower()
+        if lab in ("cube", "sphere", "core", "flower"):
+            getattr(program.lattice, f"to_{lab}")()
+            messages.append(f"Form → {lab}")
+        elif label:
+            place_idea(label)
+        else:
+            messages.append(f"Mapped units={len(program.cube.session.plane.units)}")
+    elif primary == 16:
+        factor = 0.9
+        if label.replace(".", "", 1).isdigit():
+            # DIR-F13 sibling guard: isdigit() also accepts characters
+            # float() cannot parse (e.g. superscript two). An
+            # unparseable factor keeps the default 0.9, exactly as a
+            # non-digit label does; it must never raise.
+            try:
+                factor = max(0.1, min(1.0, float(label)))
+            except ValueError:
+                factor = 0.9
+        # B1 (Director FIX, step 6): the gate's verdict is the truth.
+        # When EnhanceGate.decay refuses (enhance OFF), report the
+        # refusal, leave scores unchanged, and never claim decay.
+        # The manual fallback respects the same gate — it must not
+        # become a bypass around it.
+        _decay_res = None
+        if hasattr(program.enhance, "decay"):
+            _decay_res = program.enhance.decay(factor)
+        if _decay_res is not None and not _decay_res.get("ok"):
+            _reason = _decay_res.get("reason") or "enhance OFF"
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [
+                    f"Decay refused: {_reason} — scores unchanged."],
+                "new_program": new_program,
+                "error": _reason,
+            }
+        if _decay_res is None:
+            if not getattr(program.enhance, "on", False):
+                return {
+                    "ok": False,
+                    "seed": _echo.as_mandel(),
+                    "english": _echo.as_english(),
+                    "primary": primary,
+                    "messages": messages + [
+                        "Decay refused: enhance OFF — scores unchanged."],
+                    "new_program": new_program,
+                    "error": "enhance OFF",
+                }
+            st = program.enhance.state
+            for k in list(st.scores.keys()):
+                st.scores[k] = float(st.scores[k]) * factor
+            messages.append(f"Scores decayed ×{factor} (manual).")
+        else:
+            messages.append(f"Scores decayed ×{factor}.")
+        if hasattr(program, "note_seed"):
+            program.note_seed(16, "Decay", str(factor))
+    elif primary == 17:
+        shadow_id = f"shadow_{(label or 'bg').replace(' ', '_')[:20]}"
+        messages.append(f"Shadow track: {shadow_id} (parallel — not live)")
+        if hasattr(program, "note_seed"):
+            program.note_seed(17, "Shadow", shadow_id)
+    elif primary == 18:
+        ids = list(program.cube.session.plane.units.keys())
+        messages.append(f"Mirror: {len(ids)} live ideas")
+        for uid in ids[:16]:
+            u = program.cube.session.plane.units[uid]
+            messages.append(f"  · {uid}: {u.label} [{u.skin.value}]")
+        if hasattr(program, "note_seed"):
+            program.note_seed(18, "Mirror")
+    elif primary == 19:
+        lab = (label or "walk").lower()
+        if "run" in lab:
+            program.avatar.set_locomotion(Locomotion.RUN)
+            messages.append(f"Ran to {program.avatar.step(2)}.")
+        elif "stop" in lab:
+            program.avatar.set_locomotion(Locomotion.IDLE)
+            messages.append("Stopped.")
+        else:
+            program.avatar.set_locomotion(Locomotion.WALK)
+            messages.append(f"Walked to {program.avatar.step(1)}.")
+    elif primary == 20:
+        messages.append("Alpha close:")
+        messages.append(f"  ideas={len(program.cube.session.plane.units)}")
+        messages.append(f"  form={program.lattice.perception.form.value}")
+        messages.append("  Tip: save before exit — 10[Keep]")
+        if hasattr(program, "note_seed"):
+            program.note_seed(20, "Alpha", label or "close")
+    elif primary == 21:
+        # GDP-001 0.3.1: Dell 21/22 have ONE semantic authority — the front
+        # door (executor.execute_seed) via live_identity lineage. The leaf's
+        # previous arms reimplemented merge/split with divergent semantics
+        # (plain place_idea) and were unreachable through the canonical front
+        # door (executor.py intercepts 21/22 before delegating here). They now
+        # delegate so every entry path executes the same authority.
+        from .executor import execute_seed as _front_door
+        _fd = _front_door(program, seed_text)
+        _fd_msgs = [m for m in (_fd.get("messages") or [])
+                    if not (m.startswith("Mandell:") or m.startswith("English:"))]
+        return {**_fd, "messages": messages + _fd_msgs}
+    elif primary == 22:
+        # GDP-001 0.3.1: same single-authority delegation as Dell 21 above.
+        from .executor import execute_seed as _front_door
+        _fd = _front_door(program, seed_text)
+        _fd_msgs = [m for m in (_fd.get("messages") or [])
+                    if not (m.startswith("Mandell:") or m.startswith("English:"))]
+        return {**_fd, "messages": messages + _fd_msgs}
+    elif primary == 23:
+        program.sandbox_on()
+        messages.append("Sandbox ON.")
+    elif primary == 24:
+        program.sandbox_off()
+        messages.append("Sandbox OFF.")
+    elif primary == 25:
+        lab = (label or "").lower()
+        if "enhance_on" in lab or lab == "on":
+            program.enhance_on()
+            messages.append("Enhance ON.")
+        else:
+            # DD-18: the receipt reports the gate's actual outcome.
+            # The gate refuses (enhance OFF / budget exhausted) with
+            # ok=False; claiming "Pulse sent." anyway was the defect.
+            out = program.pulse()
+            if out and out.get("ok"):
+                messages.append("Pulse sent.")
+            else:
+                reason = (out or {}).get("reason", "refused")
+                messages.append(f"Pulse NOT sent ({reason}).")
+                return {
+                    "ok": False,
+                    "seed": _echo.as_mandel(),
+                    "english": _echo.as_english(),
+                    "primary": primary,
+                    "messages": messages,
+                    "new_program": new_program,
+                    "error": f"Pulse refused: {reason}",
+                }
+    elif primary == 26:
+        lab = (label or "warm").lower()
+        if lab in ("cold", "cool"):
+            if program.enhance.on:
+                program.enhance_off()
+            messages.append("Temp → cold (enhance OFF)")
+        elif lab in ("hot", "heat"):
+            program.enhance_on()
+            out = program.pulse()
+            if out and out.get("ok"):
+                messages.append("Temp → hot (enhance ON + pulse)")
+            else:
+                # DD-18: the temp change executed; the pulse did not.
+                reason = (out or {}).get("reason", "refused")
+                messages.append(
+                    f"Temp → hot (enhance ON; pulse refused: {reason})")
+        else:
+            program.enhance_on()
+            messages.append("Temp → warm (enhance ON)")
+        if hasattr(program, "note_seed"):
+            program.note_seed(26, "Temp", lab)
+    elif primary == 29:
+        short = program.distill_label(label) if hasattr(program, "distill_label") else (label or "x")
+        place_idea(f"compress_{short}", Skin.SEED)
+        messages.append(f"Compressed → {short}")
+    elif primary == 30:
+        source = label
+        if not source and program.cube.session.plane.units:
+            last = list(program.cube.session.plane.units.values())[-1]
+            source = f"{last.label} {last.words}".strip()
+        parts = [t for t in (source or "expand").replace("_", " ").split() if t]
+        expanded = " ".join(parts) if parts else "expand"
+        place_idea(f"expand_{expanded.replace(' ', '_')[:24]}", Skin.CUBE)
+        messages.append(f"Expanded → {expanded}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(30, "Expand", expanded[:40])
+    elif primary == 31:
+        # C13 (DD-21): a leaf-reached Simulate is bare or carries
+        # only a data label — a seed operand arrives as FOLLOWING
+        # CHAIN ATOMS (a "::" followed by an atom is the DeepFlowBy
+        # operator, never a label marker) and is rehearsed by
+        # chain_exec's Simulate-head interception against the
+        # simulate board's isolated copy. With nothing handed over
+        # there is nothing to rehearse: the atom is honestly
+        # unexecuted. No status() read (its transitive
+        # persona_matrix write-on-read is a documented trap) and
+        # no note_seed — the pre-C13 arm appended a history entry
+        # under a "no mutation" banner (grounding G2).
+        from form.dell_matrix.simulate_board import no_argument_receipt
+        rcpt = no_argument_receipt()
+        messages.extend(rcpt["lines"])
+        return {
+            "ok": False,
+            "skipped": True,
+            "seed": _echo.as_mandel(),
+            "english": _echo.as_english(),
+            "primary": primary,
+            "messages": messages,
+            "new_program": new_program,
+            "error": "no_argument",
+            "reason": rcpt["reason"],
+            "simulate": rcpt,
+        }
+    elif primary == 32:
+        if "enhance" in (label or "").lower():
+            program.enhance_off()
+            messages.append("Enhance OFF.")
+        else:
+            program.avatar.set_locomotion(Locomotion.IDLE)
+            messages.append("Paused.")
+    elif primary == 33:
+        program.avatar.set_locomotion(Locomotion.WALK)
+        if not program.enhance.on:
+            program.enhance_on()
+            messages.append("Resumed walk + enhance ON.")
+        else:
+            messages.append("Resumed walk.")
+        if hasattr(program, "note_seed"):
+            program.note_seed(33, "Resume")
+    elif primary == 36:
+        name = label or "inject"
+        place_idea(name, Skin.SEED)
+        messages.append(f"Injected into scope: {name}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(36, "Inject", name)
+    elif primary == 38:
+        source = label
+        if not source and program.cube.session.plane.units:
+            last = list(program.cube.session.plane.units.values())[-1]
+            source = f"{last.label} {last.words}"
+        short = program.distill_label(source)
+        place_idea(short, Skin.SEED)
+        messages.append(f"Distilled → {short}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(38, "Distill", short)
+    elif primary == 39:
+        # C7.Schema (DD-29): the read-only nervous-system board.
+        # build_schema_board probes every inventoried organ in
+        # isolation through the organ's own status provider —
+        # probing never mutates user work. The operand stays
+        # ignored by design: Schema interrogates the program,
+        # not the label (bare and labeled runs return the same
+        # board). Verdict tokens keep the historical forms, so
+        # the history receipt '39[Schema] :: valid' is preserved
+        # for a healthy program.
+        from form.dell_matrix.schema_board import build_schema_board
+        board = build_schema_board(program)
+        messages.extend(board["lines"])
+        schema_detail = board
+        if hasattr(program, "note_seed"):
+            program.note_seed(39, "Schema",
+                              "valid" if board["verdict"] == "VALID"
+                              else "invalid")
+    elif primary == 41:
+        # DAF-02/B5: the IN line shows the SANITIZED representation,
+        # never the raw input — Sanitize must not disclose the very
+        # values its OUT line redacts. Redaction semantics are the
+        # shared authority in form/mandell/redaction.py.
+        from .redaction import sanitize_text
+        raw = label or ""
+        cleaned = sanitize_text(raw)
+        messages.append(f"Sanitize in:  {cleaned or '(empty)'}")
+        messages.append(f"Sanitize out: {cleaned or '(empty)'}")
+        if hasattr(program, "note_seed"):
+            program.note_seed(41, "Sanitize")
+    elif primary == 42:
+        items = program.replay(1) if hasattr(program, "replay") else []
+        if not items:
+            messages.append("Retry: history empty.")
+        else:
+            last = items[-1]
+            messages.append(f"Retry last: {last}")
+            if hasattr(program, "replay_exec"):
+                out = program.replay_exec(1)
+                messages.append(f"Retry ran={len(out.get('ran', []))} skipped={len(out.get('skipped', []))}")
+            if hasattr(program, "note_seed"):
+                program.note_seed(42, "Retry", last[:40])
+    elif primary == 43:
+        messages.append("Fallback safe path:")
+        messages.append("  1. status / 31[Simulate]")
+        messages.append("  2. save / 10[Keep]")
+        messages.append("  3. acceptance: create → grow → confirm → sphere → save → load → visual")
+        if hasattr(program, "note_seed"):
+            program.note_seed(43, "Fallback")
+    elif primary == 45:
+        # B6 (Director FIX, step 6): empty input has nothing to
+        # translate — report it; never fabricate a Show intent.
+        if not (label or "").strip():
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [
+                    "Translate: nothing_to_translate — no input, "
+                    "nothing executed."],
+                "new_program": new_program,
+                "error": "nothing_to_translate",
+            }
+        from form.mandell.bridge import bridge
+        rep = bridge(label or "")
+        messages.append(f"mandel: {rep.get('mandel')}")
+        messages.append(f"english: {rep.get('english')}")
+    elif primary == 46:
+        ranked = program.ranked_proposals() if hasattr(program, "ranked_proposals") else program.list_proposals()
+        ranked = sorted(ranked, key=lambda p: -float(p.get("affinity", 0)))
+        messages.append(f"Ranked {len(ranked)} proposals:")
+        for i, prop in enumerate(ranked[:12], 1):
+            messages.append(
+                f"  {i}. aff={float(prop.get('affinity', 0)):.3f} [{prop.get('kind')}] "
+                f"{prop.get('id')} — {prop.get('label')}"
+            )
+    elif primary == 48:
+        lab = (label or "").lower()
+        n = 3
+        for tok in lab.replace("_", " ").split():
+            # DIR-F13: tokens outside the count grammar keep the
+            # current n (macro's existing default semantics); they
+            # must never raise inside int().
+            _tok_n = _parse_count(tok)
+            if _tok_n is not None:
+                n = _tok_n
+        if "replay" in lab or "replay" in terms:
+            if hasattr(program, "replay_exec"):
+                out = program.replay_exec(n)
+                messages.append(
+                    f"Replay exec n={n} ran={len(out.get('ran', []))} "
+                    f"skipped={len(out.get('skipped', []))}"
+                )
+            else:
+                for item in program.replay(n):
+                    messages.append(f"  · {item}")
+        else:
+            # DIR-F13: same grammar; out-of-grammar labels take
+            # macro's existing default of 5 instead of raising.
+            _lab_n = _parse_count((label or "").strip())
+            n = _lab_n if _lab_n is not None else 5
+            messages.append(program.macro_seed(n))
+    elif primary == 49:
+        # C7.Profile (DD-39): the speedometer. Dell 49 runs a
+        # DELIBERATE BENCHMARK on disposable state (profile_board):
+        # named stages timed with a monotonic clock, per-stage
+        # shares, overhead disclosed, embedding ABSENT standalone.
+        # The live program is never the measured system and is
+        # never read on this path — the status echo (Schema's
+        # territory since DD-29) and status()'s transitive persona
+        # write-on-read both leave Dell 49 here. Operand grammar:
+        # bare = the standard benchmark; ':: <stage>' = that stage
+        # only ('resonance' aliases pulse); an unknown label
+        # REFUSES — the atom does not execute and notes nothing.
+        from form.dell_matrix.profile_board import (
+            STAGE_ORDER, run_profile_benchmark)
+        lab = (label or "").strip().lower()
+        _aliases = {"resonance": "pulse"}
+        _known = set(STAGE_ORDER) | {"embedding"} | set(_aliases)
+        if lab and lab not in _known:
+            if lab in ("nursery", "nursery update"):
+                _why = ("Profile: refused — 'nursery update' is a "
+                        "sub-stage of growth, not a standalone "
+                        "stage; benchmark 'growth' to time it.")
+            else:
+                _why = (f"Profile: refused — unknown stage '{lab}'. "
+                        f"Known stages: {', '.join(STAGE_ORDER)} "
+                        f"(+ embedding, ABSENT standalone).")
+            return {
+                "ok": False,
+                "skipped": True,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": messages + [_why],
+                "new_program": new_program,
+                "error": _why,
+            }
+        report = run_profile_benchmark(
+            only_stage=_aliases.get(lab, lab) if lab else None)
+        messages.extend(report["lines"])
+        profile_detail = report
+        if hasattr(program, "note_seed"):
+            program.note_seed(49, "Profile")
+    elif primary == 50:
+        lab = (label or "").lower()
+        if lab in ("acceptance", "accept"):
+            messages.append("Acceptance: create → grow → confirm → sphere → save → load → visual")
+        elif label:
+            place_idea(label)
+            messages.append("Manifested.")
+        else:
+            messages.append("Manifest needs :: label.")
+    else:
+        # P0-R2 MUST_FIX + ARGUS 2a: dells this leaf cannot execute must
+        # honestly refuse. Previously this branch answered ok=True
+        # "runtime thin" for ANY unmapped primary AND placed an idea as a
+        # side effect, reachable via the public raw-seed path.
+        # - >99 / None: reserved/not-active (no authority anywhere).
+        # - 51-99: Core-II authority lives in chain_exec/core_ii_exec;
+        #   the leaf has no Core-II executor. Production routes these via
+        #   the front door before the leaf; direct leaf calls refuse.
+        # - HANDLED set {27, 28, 34, 35, 37, 40, 44, 47}: production
+        #   authority is core_i_ops (the front door intercepts these
+        #   before the leaf on every production path). The leaf has NO
+        #   arms for them: MPC-011 removed 37's dead Stream branch, and
+        #   P1/TD-1 removed the seven divergent shadow arms (legacy
+        #   timestamp checkpoints + silent save fallback for 27, a
+        #   save-reload mislabeled as rollback for 28, success claims
+        #   for the honestly-refused 44/47, and divergent 34/35/40
+        #   copies). Direct leaf calls refuse rather than shadow the
+        #   real authority.
+        # 0-50 with explicit arms execute below (message-only "runtime thin"
+        # for registered-but-armless dells: pre-existing, documented).
+        if primary is None or primary > 50 or primary in (27, 28, 34, 35, 37, 40, 44, 47):
+            name = {27: "Checkpoint", 28: "Rollback", 34: "Stamp",
+                    35: "Discover", 37: "Nurture", 40: "TokenCount",
+                    44: "Bridge", 47: "Embed"}.get(
+                        primary, "reserved/not-active")
+            return {
+                "ok": False,
+                "seed": _echo.as_mandel(),
+                "english": _echo.as_english(),
+                "primary": primary,
+                "messages": [f"Dell {primary}[{name}] refused: no executor on this path."],
+                "new_program": new_program,
+                "error": f"Dell {primary} not executable via single-seed leaf",
+            }
+        d = get_dell(primary)
+        name = d["name"] if d else str(primary)
+        messages.append(f"Dell {primary:02d}[{name}] recognized — runtime thin.")
+        if label:
+            place_idea(label)
+
+    out = {
+        "ok": True,
+        "seed": _echo.as_mandel(),
+        "english": _echo.as_english(),
+        "primary": primary,
+        "messages": messages,
+        "new_program": new_program,
+        "directive": directive,
+    }
+    if schema_detail is not None:
+        out["schema_board"] = schema_detail
+    if profile_detail is not None:
+        out["profile_report"] = profile_detail
+    return out

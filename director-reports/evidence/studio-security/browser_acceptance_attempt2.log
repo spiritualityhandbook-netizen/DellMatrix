@@ -1,0 +1,34 @@
+BROWSER ACCEPTANCE — ATTEMPT 2 (parent-run managed browser)
+Circuit: STUDIO SECURITY + BROWSER ACCEPTANCE, PR #255 addendum.
+Date: 2026-11-03, 13:31-13:33 CST (harness-measured run window).
+Server: gui.server from PR #255 final head c3d32543f5b0604c2e70a84ab32b2a2567a855d3,
+owner BrowserAccept, bound 127.0.0.1:8791 on this VM.
+Server reachability from the VM itself: VERIFIED — GET / returned 200 and
+GET /api/dells returned the 100-Dell registry immediately before the attempt;
+server confirmed still listening (200) after the attempt, then stopped by PID.
+
+Attempt: the parent agent delegated a genuine UI drive to the harness-managed
+browser (load page; count Dell Rack entries; load an example seed; click Run;
+read canvas outcome classes and console errors).
+
+RESULT: NOT PERFORMED — environment boundary, mechanism identified:
+- Direct navigation to http://127.0.0.1:8791/ and http://localhost:8791/ was
+  rejected by the browser tool as invalid_request before any network access.
+- Loopback-resolving public hostnames for the same port (lvh.me,
+  127.0.0.1.nip.io) loaded the browser's own error page:
+  ERR_CONNECTION_REFUSED.
+- A public site (example.com) loaded normally in the same session, so the
+  browser itself was functional.
+Conclusion: the managed browser runs in a network environment that does not
+share this VM's loopback; nothing was listening on port 8791 *in the
+browser's environment*, while the server verifiably listened on the VM's.
+
+Steps 2-6 of the acceptance drive (rack count, example load, Run click,
+canvas verdicts, console errors) were therefore NOT performed and remain
+UNVERIFIED. No JavaScript errors from the app were observed (the app never
+loaded). Real-browser acceptance remains OUTSTANDING after two documented,
+mechanistically distinct blocked routes (direct-launch policy refusal;
+managed-browser loopback isolation). Remaining routes: a human opening the
+Studio in their own browser (a genuine REAL_USER_PATH check), or a future
+environment with a launchable Chromium for the preserved CDP driver
+(browser_acceptance.py).

@@ -1,0 +1,13 @@
+# requirements.txt — generated (automated scan)
+
+# Core runtime: no external non-stdlib Python packages were detected in the
+# primary `form/` runtime files scanned (form/open.py, form/repl.py, form/persist.py, etc.).
+# The project requires Python 3.10+.
+
+# If you enable SIDE modules (form/llm, form/trading, or other optional integrations),
+# add their required packages here and pin versions (example):
+# requests==2.31.0
+# openai==1.0.0
+
+# Please run a requirements discovery or add packages you need for distribution.
+

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>DellMatrix · Full Enhancement Audit Report</title>
+<style>
+:root { color-scheme: dark; --bg:#070b12; --card:#0e1520; --line:#243044; --text:#eef2f7; --muted:#8b97ab;
+  --ok:#34d399; --accent:#5b9dff; --warn:#fbbf24; --bad:#f87171; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:
+  radial-gradient(ellipse 80% 50% at 50% -10%, #152238 0%, transparent 55%), var(--bg); color: var(--text); line-height:1.5; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 28px 18px 64px; }
+header { margin-bottom: 28px; }
+h1 { margin:0 0 8px; font-size: clamp(22px,4vw,34px); background: linear-gradient(90deg,#eef2f7,#7dd3fc,#a78bfa);
+  -webkit-background-clip:text; background-clip:text; color:transparent; }
+.sub { color: var(--muted); font-size: 14px; }
+.grade { display:inline-flex; align-items:center; gap:10px; margin-top:14px; padding:10px 16px; border-radius:999px;
+  background:#0c1522; border:1px solid #1f6b4a; color: var(--ok); font-weight:700; font-size:18px; }
+.grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap:12px; margin: 20px 0; }
+.card { background: var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+.card h3 { margin:0 0 6px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+.card .big { font-size:28px; font-weight:700; color:var(--ok); }
+.card .muted { color:var(--muted); font-size:12px; }
+table { width:100%; border-collapse: collapse; font-size:13px; }
+th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }
+.ok { color: var(--ok); font-weight:600; }
+.bad { color: var(--bad); font-weight:600; }
+.chip { display:inline-block; font:11px ui-monospace,monospace; background:#0c1522; border:1px solid var(--line);
+  border-radius:999px; padding:3px 8px; margin:2px; color:#9fd4ff; }
+pre.box { background:#080c14; border:1px solid var(--line); border-radius:10px; padding:12px; font:12px ui-monospace,monospace;
+  overflow:auto; white-space:pre-wrap; color:#9fd4ff; }
+h2 { margin:28px 0 12px; font-size:18px; }
+ul { margin:0; padding-left:18px; color:var(--muted); }
+li { margin:4px 0; }
+.foot { margin-top:36px; font-size:12px; color:var(--muted); border-top:1px solid var(--line); padding-top:14px; }
+.pillars { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+@media(max-width:800px){ .pillars { grid-template-columns:1fr; } }
+.pillar h3 { color:var(--accent); font-size:14px; text-transform:none; letter-spacing:0; }
+a { color:#7dd3fc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>DellMatrix Full Enhancement Audit</h1>
+  <div class="sub">Final 150-loop · page-by-page · step-by-step · synchronicity · functionality · usability</div>
+  <div class="sub">Generated 2026-08-07T23:37:09Z UTC · offline report</div>
+  <div class="grade">★ GRADE A+ · 100% · SUS READY</div>
+</header>
+
+<section class="grid">
+  <div class="card"><h3>Sync / UX loop</h3><div class="big">100%</div><div class="muted">65/65 checks · A+</div></div>
+  <div class="card"><h3>Buttons &amp; paths</h3><div class="big">100%</div><div class="muted">137/137 checks · 266 buttons</div></div>
+  <div class="card"><h3>Pages polish</h3><div class="big">100%</div><div class="muted">82/82 checks</div></div>
+  <div class="card"><h3>Smoke suite</h3><div class="big">32/32</div><div class="muted">SUS: READY</div></div>
+  <div class="card"><h3>Unique commands</h3><div class="big">59</div><div class="muted">all exercised in coverage loops</div></div>
+  <div class="card"><h3>Routes</h3><div class="big">14/14</div><div class="muted">assets load OK</div></div>
+</section>
+
+<h2>1. Final 150-loop result</h2>
+<div class="card">
+  <pre class="box">GRADE A+ · final=100.0% best=100.0%
+checks 65/65
+all sync/function/usability checks PASS
+
+Walk order:
+menu → walk → lattice → nursery → program
+  → personas → forces → geometry → matrices → console
+
+Milestones (every page held 100%):
+[001] menu 100% · [015] menu · [030] walk · [045] lattice · [060] nursery
+[075] program · [090] personas · [105] forces · [120] geometry
+[135] matrices · [150] console 100% · GRADE A+</pre>
+</div>
+
+<h2>2. Three pillars</h2>
+<div class="pillars">
+  <div class="card pillar">
+    <h3>Synchronicity</h3>
+    <ul>
+      <li><code>DM.formatSyncLine(s)</code> shared status string</li>
+      <li><code>.sync-strip</code> on every page</li>
+      <li>Footer: owner · ideas · nursery · gen · form · position</li>
+      <li>State cache bust after successful commands</li>
+      <li>Same Program state across all surfaces</li>
+    </ul>
+  </div>
+  <div class="card pillar">
+    <h3>Functionality</h3>
+    <ul>
+      <li>Every page primary commands executed live</li>
+      <li>59 unique UI commands verified</li>
+      <li>All 14 app routes serve assets</li>
+      <li>Nursery / lattice / walk / BIMO / forces / geometry</li>
+      <li>Acceptance path smoke: create→…→visual</li>
+    </ul>
+  </div>
+  <div class="card pillar">
+    <h3>Usability</h3>
+    <ul>
+      <li>Keyboard hints per page</li>
+      <li>Empty-state guidance</li>
+      <li>Full nav hub on content pages</li>
+      <li>Menu keys 1–9 · toast · loading bar</li>
+      <li>Button titles · clear feedback</li>
+    </ul>
+  </div>
+</div>
+
+<h2>3. Page-by-page functionality</h2>
+<div class="card" style="padding:0;overflow:auto">
+<table>
+  <thead><tr><th>Page</th><th>Commands exercised this loop</th><th>Status</th></tr></thead>
+  <tbody>
+  <tr><td><b>menu</b></td><td>status · look</td><td class='ok'>PASS</td></tr>
+<tr><td><b>walk</b></td><td>fp forward · fp turn right · look · home</td><td class='ok'>PASS</td></tr>
+<tr><td><b>lattice</b></td><td>look · home · nearest · cube · sphere</td><td class='ok'>PASS</td></tr>
+<tr><td><b>nursery</b></td><td>grow ideas 1 · proposals · rank · pulse</td><td class='ok'>PASS</td></tr>
+<tr><td><b>program</b></td><td>status · audit · evolve · pulse · save · look</td><td class='ok'>PASS</td></tr>
+<tr><td><b>personas</b></td><td>personas · persona manny · bimo · persona clear</td><td class='ok'>PASS</td></tr>
+<tr><td><b>forces</b></td><td>forces · force tick · weather rain · weather clear · pulse</td><td class='ok'>PASS</td></tr>
+<tr><td><b>geometry</b></td><td>geometry · flower · verita · cube · toggle</td><td class='ok'>PASS</td></tr>
+<tr><td><b>matrices</b></td><td>matrices · entities · status · audit</td><td class='ok'>PASS</td></tr>
+<tr><td><b>console</b></td><td>status · look · home · radar · lattice</td><td class='ok'>PASS</td></tr>
+
+  </tbody>
+</table>
+</div>
+
+<h2>4. Routes</h2>
+<div class="card" style="padding:0;overflow:auto">
+<table>
+  <thead><tr><th>Path</th><th>Asset load</th></tr></thead>
+  <tbody>
+  <tr><td><code>/</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/menu</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/index.html</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/ui</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/walk</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/walk/world</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/lattice</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/nursery</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/program</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/personas</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/forces</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/geometry</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/matrices</code></td><td class='ok'>PASS</td></tr>
+<tr><td><code>/console</code></td><td class='ok'>PASS</td></tr>
+
+  </tbody>
+</table>
+</div>
+
+<h2>5. Cross-page navigation</h2>
+<div class="card">
+  <p class="muted">Hrefs discovered across HTML surfaces:</p>
+  <p><code>/</code> <code>/console</code> <code>/css/app.css</code> <code>/forces</code> <code>/geometry</code> <code>/lattice</code> <code>/matrices</code> <code>/nursery</code> <code>/personas</code> <code>/program</code> <code>/walk</code> </p>
+  <p class="muted">Every content page includes a full nav hub: Menu · Walk · Lattice · Nursery · Program · Personas · Forces · Geometry · Matrices · Console.</p>
+</div>
+
+<h2>6. Command surface (59 unique)</h2>
+<div class="card"><span class='chip'>audit</span><span class='chip'>bimo</span><span class='chip'>bimo clear</span><span class='chip'>bimo defaults</span><span class='chip'>bimo fuse</span><span class='chip'>bimo pilot manny</span><span class='chip'>confirm all</span><span class='chip'>core</span><span class='chip'>cube</span><span class='chip'>entities</span><span class='chip'>evolve</span><span class='chip'>find matrix</span><span class='chip'>flower</span><span class='chip'>force tick</span><span class='chip'>forces</span><span class='chip'>fp back</span><span class='chip'>fp down</span><span class='chip'>fp forward</span><span class='chip'>fp turn left</span><span class='chip'>fp turn right</span><span class='chip'>fp up</span><span class='chip'>fractal</span><span class='chip'>geometry</span><span class='chip'>grow ideas 1</span><span class='chip'>grow ideas 2</span><span class='chip'>guide</span><span class='chip'>home</span><span class='chip'>lattice</span><span class='chip'>look</span><span class='chip'>matrices</span><span class='chip'>matrix personas</span><span class='chip'>mode depth</span><span class='chip'>nearest</span><span class='chip'>persona aetheris</span><span class='chip'>persona clear</span><span class='chip'>persona manny</span><span class='chip'>persona melody</span><span class='chip'>personas</span><span class='chip'>plant Console Seed</span><span class='chip'>proposals</span><span class='chip'>pulse</span><span class='chip'>radar</span><span class='chip'>rank</span><span class='chip'>reject all</span><span class='chip'>save</span><span class='chip'>sphere</span><span class='chip'>status</span><span class='chip'>strafe left</span><span class='chip'>strafe right</span><span class='chip'>toggle</span><span class='chip'>verita</span><span class='chip'>voynich</span><span class='chip'>weather calm</span><span class='chip'>weather clear</span><span class='chip'>weather fog</span><span class='chip'>weather rain</span><span class='chip'>weather storm</span><span class='chip'>workshop matrix</span><span class='chip'>workshops</span></div>
+
+<h2>7. Executive verdict</h2>
+<div class="card">
+<table>
+  <tr><th>Axis</th><th>Grade</th></tr>
+  <tr><td>Core runtime / Nursery / Floor</td><td class="ok">A+</td></tr>
+  <tr><td>Offline acceptance smoke</td><td class="ok">A+ (32/32)</td></tr>
+  <tr><td>Live multi-page app</td><td class="ok">A+</td></tr>
+  <tr><td>Synchronicity</td><td class="ok">A+</td></tr>
+  <tr><td>Functionality (buttons/paths/cmds)</td><td class="ok">A+</td></tr>
+  <tr><td>Usability</td><td class="ok">A+</td></tr>
+  <tr><td>150 enhance loops (sync UX final)</td><td class="ok">A+</td></tr>
+  <tr><td><b>Overall</b></td><td class="ok"><b>A+</b></td></tr>
+</table>
+</div>
+
+<h2>8. How to reproduce</h2>
+<div class="card">
+<pre class="box"># Final page-by-page 150 loop
+python3 -u -m form.dell_matrix.sync_ux_150_loop --cycles 150
+
+# Related coverage loops
+python3 -u -m form.dell_matrix.button_path_enhance_loop --cycles 150
+python3 -u -m form.dell_matrix.page_enhance_loop --cycles 150
+
+# Smoke
+python3 -m form.smoke_all
+
+# Live UI
+python3 launch.py
+# you> live</pre>
+</div>
+
+<h2>9. Related documentation</h2>
+<div class="card">
+<ul>
+  <li><code>docs/SYNC_UX_150.md</code></li>
+  <li><code>docs/BUTTON_PATH_ENHANCE_150.md</code></li>
+  <li><code>docs/PAGE_ENHANCE_150.md</code></li>
+  <li><code>docs/FULL_PROGRAM_AUDIT_150.md</code></li>
+  <li><code>docs/LIVE_VISUAL.md</code> · <code>docs/USER_READY.md</code></li>
+</ul>
+</div>
+
+<div class="foot">
+  DellMatrix · Mandell Origin · Floor locked · Nursery → confirm · Offline core · Live opt-in localhost only<br/>
+  Report is static HTML — open this file offline in any browser.
+</div>
+</div>
+</body>
+</html>

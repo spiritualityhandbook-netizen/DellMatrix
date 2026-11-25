@@ -1,0 +1,69 @@
+== SECTION 1: chain census + parity (typed, all 51) ==
+  00[Nova      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  01[Initiate  ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  02[Persona   ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  03[Logic     ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  04[Transform ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  05[Tone      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  06[Cycle     ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  07[Link      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  08[Create    ] surf=leaf          single=(False, 'MISSING_REQUIRED') chain=(False, 'MISSING_REQUIRED') parity=True
+  09[Show      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  10[Keep      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  11[Architect ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  12[Test      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  13[Loop      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  14[Bind      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  15[Map       ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  16[Decay     ] surf=leaf          single=(False, 'enhance OFF') chain=(False, 'enhance OFF') parity=True
+  17[Shadow    ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  18[Mirror    ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  19[Drive     ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  20[Alpha     ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  21[Merge     ] surf=live_identity single=(False, 'missing_source') chain=(False, 'missing_source') parity=True
+  22[Split     ] surf=live_identity single=(False, 'missing_source') chain=(False, 'missing_source') parity=True
+  23[Lock      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  24[Unlock    ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  25[Pulse     ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  26[Temp      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  27[Checkpoint] surf=intercept     single=(True, '') chain=(True, '') parity=True
+  28[Rollback  ] surf=intercept     single=(False, 'rollback_target_invalid') chain=(False, 'rollback_target_invalid') parity=True
+  29[Compress  ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  30[Expand    ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  31[Simulate  ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  32[Pause     ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  33[Resume    ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  34[Stamp     ] surf=intercept     single=(True, '') chain=(True, '') parity=True
+  35[Discover  ] surf=intercept     single=(True, '') chain=(True, '') parity=True
+  36[Inject    ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  37[Nurture   ] surf=intercept     single=(False, 'add idea requires a label') chain=(False, 'add idea requires a label') parity=True
+  38[Distill   ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  39[Schema    ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  40[TokenCount] surf=intercept     single=(True, '') chain=(True, '') parity=True
+  41[Sanitize  ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  42[Retry     ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  43[Fallback  ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  44[Bridge    ] surf=intercept     single=(False, 'bridge_unavailable') chain=(False, 'bridge_unavailable') parity=True
+  45[Translate ] surf=leaf          single=(False, 'nothing_to_translate') chain=(False, 'nothing_to_translate') parity=True
+  46[Rank      ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  47[Embed     ] surf=intercept     single=(False, 'embed_unavailable') chain=(False, 'embed_unavailable') parity=True
+  48[Macro     ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  49[Profile   ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  50[Manifest  ] surf=leaf          single=(True, '') chain=(True, '') parity=True
+  PARITY BREAKS: none
+
+== SECTION 2: chain witnesses (intercept in chain) ==
+  34 chain: last_stamp={"mark": "stamp", "ts": "2026-11-03T21:02:36Z"}
+  27 chain: last_core_i={"dell": 27, "generation_id": "gf9adfaf4c1014f76", "ok": true}
+  37 chain typed-label-only: atom0 ok=False error='add idea requires a label' (label requirement NOT met by the typed arg)
+
+== SECTION 3: Dell 8 chain battery ==
+  valid          atom0 ok=True error='' units=['chain_wish:Skin.SPHERE', 'welcome:Skin.WORDS']
+  invalid skin   atom0 ok=False error="INVALID_VALUE: skin=TRIANGLE not in ['CUBE', 'SPHERE', 'SEED', 'FLOWER', 'BUILDING', 'WORDS', 'CIRCLE', 'CORE']" units=['welcome:Skin.WORDS']
+  unknown role   atom0 ok=False error='UNKNOWN_ROLE: bogus' units=['welcome:Skin.WORDS']
+  missing name   atom0 ok=False error='MISSING_REQUIRED: name' units=['welcome:Skin.WORDS']
+
+== SECTION 4: 21/22 chain differential (setup) ==
+  21[Merge] bare==typed in chain: True (bare ok=True)
+  22[Split] bare==typed in chain: True (bare ok=True)
+PROBE B DONE

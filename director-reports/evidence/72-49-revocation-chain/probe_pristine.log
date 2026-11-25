@@ -1,0 +1,65 @@
+== Phase 1: session A, pre-revocation positive controls ==
+[PASS] A-pre:grant_root: allowed=True want=True
+[PASS] A-pre:grant_child: allowed=True want=True
+[PASS] A-pre:grant_grandchild: allowed=True want=True
+[PASS] A-pre:plain: allowed=True want=True
+[PASS] A-pre:plain2: allowed=True want=True
+[PASS] A-pre:derived_appr: allowed=True want=True
+[PASS] A-pre:derived_optin: allowed=True want=True
+[PASS] A-pre:optin_direct: allowed=True want=True
+== Phase 2: mid-chain revocation in A, retry x2 ==
+[PASS] A-retry1:grant_root: allowed=True want=True
+[PASS] A-retry1:grant_child: allowed=False want=False
+[PASS] A-retry1:grant_grandchild: allowed=False want=False
+[PASS] A-retry1:plain: allowed=True want=True
+[PASS] A-retry1:plain2: allowed=False want=False
+[PASS] A-retry1:derived_appr: allowed=False want=False
+[PASS] A-retry1:derived_optin: allowed=False want=False
+[PASS] A-retry1:optin_direct: allowed=False want=False
+[PASS] A-retry2:grant_root: allowed=True want=True
+[PASS] A-retry2:grant_child: allowed=False want=False
+[PASS] A-retry2:grant_grandchild: allowed=False want=False
+[PASS] A-retry2:plain: allowed=True want=True
+[PASS] A-retry2:plain2: allowed=False want=False
+[PASS] A-retry2:derived_appr: allowed=False want=False
+[PASS] A-retry2:derived_optin: allowed=False want=False
+[PASS] A-retry2:optin_direct: allowed=False want=False
+== Phase 3: restart = fresh policy in-process, retry x2 ==
+[PASS] B-retry1:grant_root: allowed=False want=False
+[PASS] B-retry1:grant_child: allowed=False want=False
+[PASS] B-retry1:grant_grandchild: allowed=False want=False
+[PASS] B-retry1:plain: allowed=False want=False
+[PASS] B-retry1:plain2: allowed=False want=False
+[PASS] B-retry1:derived_appr: allowed=False want=False
+[PASS] B-retry1:derived_optin: allowed=False want=False
+[PASS] B-retry1:optin_direct: allowed=False want=False
+[PASS] B-retry2:grant_root: allowed=False want=False
+[PASS] B-retry2:grant_child: allowed=False want=False
+[PASS] B-retry2:grant_grandchild: allowed=False want=False
+[PASS] B-retry2:plain: allowed=False want=False
+[PASS] B-retry2:plain2: allowed=False want=False
+[PASS] B-retry2:derived_appr: allowed=False want=False
+[PASS] B-retry2:derived_optin: allowed=False want=False
+[PASS] B-retry2:optin_direct: allowed=False want=False
+== Phase 4: restart = genuine child OS process ==
+{"grant_root": false, "grant_child": false, "grant_grandchild": false, "plain": false, "plain2": false, "derived_appr": false, "derived_optin": false, "optin_direct": false}
+[PASS] C-child:grant_root: allowed=False want=False
+[PASS] C-child:grant_child: allowed=False want=False
+[PASS] C-child:grant_grandchild: allowed=False want=False
+[PASS] C-child:plain: allowed=False want=False
+[PASS] C-child:plain2: allowed=False want=False
+[PASS] C-child:derived_appr: allowed=False want=False
+[PASS] C-child:derived_optin: allowed=False want=False
+[PASS] C-child:optin_direct: allowed=False want=False
+== Phase 5: re-issuance in new session B ==
+[PASS] B-new-grant: allowed=True want=True
+[PASS] B-new-approval: allowed=True want=True
+[PASS] B-old-still-denied:grant_root: allowed=False want=False
+[PASS] B-old-still-denied:grant_child: allowed=False want=False
+[PASS] B-old-still-denied:grant_grandchild: allowed=False want=False
+[PASS] B-old-still-denied:plain: allowed=False want=False
+[PASS] B-old-still-denied:plain2: allowed=False want=False
+[PASS] B-old-still-denied:derived_appr: allowed=False want=False
+[PASS] B-old-still-denied:derived_optin: allowed=False want=False
+[PASS] B-old-still-denied:optin_direct: allowed=False want=False
+PROBE VERDICT: CONTRACT HOLDS

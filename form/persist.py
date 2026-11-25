@@ -1,0 +1,719 @@
+#!/usr/bin/env python3
+"""Persist v7 — matrix + avatar + nursery + lattice + history + LatinMandell customs + idea detail/goals."""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+import json
+import math
+import os
+import sys
+from datetime import datetime, timezone
+
+try:
+    from form.mandell.floor import FLOOR, assert_floor_intact
+    from form.dell_matrix.plane import Perspective, Skin
+    from form.dell_matrix.resonance import ResonanceState
+    from form.dell_matrix.main_field import MainContribution, PullRecord
+    from form.dell_matrix.nursery import Nursery, Proposal, NURSERY_PATH
+    from form.dell_matrix.harmonic_lattice import HarmonicLattice, OverlayMode, Perspective as LatPerspective
+    from form.dell_matrix.perception import Form, Perception
+    from form.avatar import Facing, Posture, Locomotion, Reach, Expression
+    from form.open import Program, open_program
+except ImportError:
+    ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if ROOT not in sys.path:
+        sys.path.insert(0, ROOT)
+    from form.mandell.floor import FLOOR, assert_floor_intact
+    from form.dell_matrix.plane import Perspective, Skin
+    from form.dell_matrix.resonance import ResonanceState
+    from form.dell_matrix.main_field import MainContribution, PullRecord
+    from form.dell_matrix.nursery import Nursery, Proposal, NURSERY_PATH
+    from form.dell_matrix.harmonic_lattice import HarmonicLattice, OverlayMode, Perspective as LatPerspective
+    from form.dell_matrix.perception import Form, Perception
+    from form.avatar import Facing, Posture, Locomotion, Reach, Expression
+    from form.open import Program, open_program
+
+_STATE_DIR = os.path.join(os.path.dirname(__file__), "state")
+os.makedirs(_STATE_DIR, exist_ok=True)
+LEVEL = 7
+VERSION = 7
+
+from form.persist_core_ii import (
+    CORE_II_DURABLE,
+    CORE_II_STATE_VERSION,
+    restore_core_ii,
+    serialize_core_ii,
+)
+
+
+def _safe_owner(owner: str) -> str:
+    return "".join(c if c.isalnum() or c in "-_" else "_" for c in owner) or "operator"
+
+
+def _path(owner: str) -> str:
+    return os.path.join(_STATE_DIR, f"program_{_safe_owner(owner)}.json")
+
+
+def _cp_path(owner: str, stamp: Optional[str] = None) -> str:
+    stamp = stamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return os.path.join(_STATE_DIR, f"program_{_safe_owner(owner)}_cp_{stamp}.json")
+
+
+class OwnerCollisionError(RuntimeError):
+    """72-34 / DD-12: the canonical program file for this owner's
+    normalized (safe) name is bound to a DIFFERENT raw owner.
+
+    _safe_owner collapses distinct raw owners ("a/b", "a_b") onto
+    one safe name and therefore one canonical file. The stored
+    file's raw ``owner`` field is the identity authority for that
+    file: a request from any other raw owner is refused loudly,
+    before load / adoption / construction / save, and no bytes
+    are written. Renaming or migrating the colliding namespace
+    is a separate gated circuit — never done silently here."""
+
+
+class LatticeModuleSaveError(RuntimeError):
+    """P0-R: a lattice SnapModule cannot be represented losslessly in
+    the modules_format=2 record shape (bad identity fields, non-dict
+    or non-finite-JSON meta, malformed cell coordinates, a coordinate
+    absent from the lattice cells, or a coordinate claimed by two
+    modules).
+
+    Raised inside serialize(), i.e. before any bytes are written, so
+    the previous generation at the target path stays intact. The
+    alternative -- silently dropping or stringifying module identity
+    data -- is the write-time loss this circuit repairs."""
+
+
+def _finite_json_violation(value: Any, where: str = "meta",
+                           _active: frozenset = frozenset()) -> Optional[str]:
+    """P0-R nested metadata contract (Director CORRECTION_REQUIRED
+    7136690717): return a short description of the first way ``value``
+    falls outside the finite-JSON value contract, or None when it is
+    exactly representable.
+
+    ONE contract at both doors: the save door (here) and the load
+    door (persist_rest._stage_lattice_modules) both apply this
+    checker, so neither door can accept what the other refuses.
+    Object keys must be strings at EVERY depth; values may only be
+    None / bool / int / finite float / str / list / dict. Types that
+    json.dumps would silently coerce (non-string keys become text,
+    tuples become lists) are violations here, as are non-finite
+    numbers at any depth and any other unrepresentable type.
+
+    Cycle rule (Director REVIEW 7137053864): a circular container is
+    a violation, reported typed by the callers -- never a raw
+    RecursionError. ``_active`` holds the ids of the containers on
+    the CURRENT recursion path only, so an ordinary shared-but-
+    acyclic sub-value (the same dict/list referenced from two
+    places) remains valid."""
+    if isinstance(value, dict):
+        if id(value) in _active:
+            return f"{where} is a circular reference"
+        active = _active | {id(value)}
+        for k, v in value.items():
+            if not isinstance(k, str):
+                return f"{where} has a non-string key {k!r}"
+            bad = _finite_json_violation(v, f"{where}.{k}", active)
+            if bad is not None:
+                return bad
+        return None
+    if isinstance(value, list):
+        if id(value) in _active:
+            return f"{where} is a circular reference"
+        active = _active | {id(value)}
+        for i, v in enumerate(value):
+            bad = _finite_json_violation(v, f"{where}[{i}]", active)
+            if bad is not None:
+                return bad
+        return None
+    if value is None or isinstance(value, (str, bool, int)):
+        return None
+    if isinstance(value, float):
+        return None if math.isfinite(value) else f"{where} is a non-finite number"
+    return f"{where} has unrepresentable type {type(value).__name__}"
+
+
+def stored_program_owner(path: str) -> Optional[str]:
+    """Raw owner recorded in the program file at ``path``.
+
+    Returns the stored owner string when the file exists and
+    carries one; None when the file is absent, unreadable, not a
+    JSON object, or carries no owner field (legacy envelope —
+    no reliable identity to check against; the caller's normal
+    validation still applies). Only a PROVEN mismatch (a stored
+    owner different from the requested owner) is a collision."""
+    try:
+        with open(path, "rb") as f:
+            data = json.loads(f.read().decode("utf-8"))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    owner = data.get("owner")
+    return owner if isinstance(owner, str) and owner else None
+
+
+def assert_program_owner_access(owner: str, path: str,
+                                context: str) -> None:
+    """Refuse ``context`` when the program file at ``path`` is
+    proven to belong to a different raw owner than ``owner``.
+
+    Fail-closed on proven foreign identity only; the file's
+    bytes are never touched by this check."""
+    stored = stored_program_owner(path)
+    if stored is not None and stored != owner:
+        raise OwnerCollisionError(
+            f"{context}: owner namespace collision — the canonical "
+            f"program file {os.path.basename(path)} belongs to owner "
+            f"{stored!r}, not {owner!r} (both normalize to safe name "
+            f"{_safe_owner(owner)!r}). Refusing to load, adopt, or "
+            f"overwrite another owner's state; the stored bytes are "
+            f"preserved unchanged. Resolve by using the stored "
+            f"owner's exact name, or by an authorized namespace "
+            f"migration (72-34/DD-12).")
+
+
+def _serialize_avatar(program: Program) -> Dict[str, Any]:
+    b = program.avatar.body
+    return {
+        "name": program.avatar.name,
+        "pos": list(b.pos),
+        "facing": b.facing.name,
+        "posture": b.posture.name,
+        "locomotion": b.locomotion.name,
+        "reach": b.reach.name,
+        "holding": b.holding,
+        "expression": program.face.current.value,
+        "custom_face": program.face.custom_face,
+    }
+
+
+def _serialize_nursery(program: Program) -> Dict[str, Any]:
+    return {k: v.to_dict() for k, v in program.nursery.proposals.items()}
+
+
+def _serialize_lattice_modules(lat) -> List[Dict[str, Any]]:
+    """P0-R (Director 7085151190 item 2): lossless SnapModule records.
+
+    Each record carries the module's full id/kind/axis/index/meta and
+    its EXACT membership as sorted [h, v, f] coordinate references
+    into the serialized lattice cells (Option B). Membership is the
+    module's OWN cell set -- including coordinates snap_in did not
+    copy because they were already occupied; restore rebinds those
+    coordinates to the restored lattice cells and never reconstructs
+    membership from geometry.
+
+    Writer honesty: any module that cannot be represented exactly
+    raises LatticeModuleSaveError here, inside serialize(), before
+    any bytes are written.
+
+    Writer/reader closure (Director CORRECTION CHOICE 7088582500):
+    the writer proves every record loader-acceptable before writing:
+    each module coordinate must exist in lat.cells (a module orphaned
+    by rebuild_from_plane is unrepresentable -- no geometry is
+    manufactured to repair it), no coordinate may be claimed by two
+    modules (mirroring the loader's disjoint-ownership check), and
+    meta must be finite JSON. Live snap_in / rebuild_from_plane
+    semantics are unchanged; the refusal makes their documented
+    limitation explicit at the save door instead of persisting a
+    file the next load would refuse.
+    """
+    records: List[Dict[str, Any]] = []
+    claimed = {}
+    for key, mod in lat.modules.items():
+        mid = getattr(mod, "id", None)
+        if not isinstance(mid, str) or not mid or mid != key:
+            raise LatticeModuleSaveError(
+                f"lattice module registry key {key!r} does not match module id {mid!r}: refusing save")
+        kind = getattr(mod, "kind", None)
+        if not isinstance(kind, str) or not kind:
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} has invalid kind {kind!r}: refusing save")
+        axis = getattr(mod, "axis", None)
+        if not isinstance(axis, str) or not axis:
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} has invalid axis {axis!r}: refusing save")
+        index = getattr(mod, "index", None)
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} has invalid index {index!r}: refusing save")
+        meta = getattr(mod, "meta", None)
+        if not isinstance(meta, dict):
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} meta is not a string-keyed object: refusing save")
+        violation = _finite_json_violation(meta)
+        if violation is not None:
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} meta is not finite JSON ({violation}): refusing save")
+        try:
+            json.dumps(meta, allow_nan=False)
+        except (TypeError, ValueError) as e:
+            raise LatticeModuleSaveError(
+                f"lattice module {mid!r} meta is not finite JSON-serializable ({e}): refusing save")
+        coords: List[List[int]] = []
+        for coord in mod.cells.keys():
+            if (not isinstance(coord, tuple) or len(coord) != 3
+                    or any(isinstance(c, bool) or not isinstance(c, int) for c in coord)):
+                raise LatticeModuleSaveError(
+                    f"lattice module {mid!r} has malformed cell coordinate {coord!r}: refusing save")
+            if coord not in lat.cells:
+                raise LatticeModuleSaveError(
+                    f"lattice module {mid!r} references cell {coord} absent "
+                    "from the lattice cells: refusing save (the loader "
+                    "refuses this record; membership is proven here, "
+                    "before any bytes move)")
+            if coord in claimed:
+                raise LatticeModuleSaveError(
+                    f"lattice modules {claimed[coord]!r} and {mid!r} overlap "
+                    f"at cell {coord}: refusing save")
+            claimed[coord] = mid
+            coords.append([coord[0], coord[1], coord[2]])
+        coords.sort()
+        records.append({
+            "id": mid, "kind": kind, "axis": axis, "index": index,
+            "meta": dict(meta), "cells": coords,
+        })
+    return records
+
+
+def _serialize_lattice(program: Program) -> Dict[str, Any]:
+    lat = program.lattice
+    cells = {}
+    for (h, v, f), cell in lat.cells.items():
+        cells[f"{h},{v},{f}"] = {
+            "h": cell.h, "v": cell.v, "f": cell.f,
+            "label": cell.label,
+            "tags": list(cell.tags),
+            "content": cell.content if isinstance(cell.content, (str, int, float, bool, type(None))) else str(cell.content),
+            # P4-DIR-01: persist lossless membership
+            "members": list(cell.members),
+        }
+    return {
+        "size": lat.size,
+        "overlay": lat.overlay.value,
+        "perspective": lat.perspective.value,
+        "form": lat.perception.form.value,
+        "origin_note": lat.origin_note,
+        "cells": cells,
+        # P0-R: versioned lossless module records + lattice-local
+        # format marker (NOT an envelope version bump). Pre-fix files
+        # carry an IDs-only list with no marker; restore treats a
+        # nonempty one as irrecoverable and fails closed.
+        "modules": _serialize_lattice_modules(lat),
+        "modules_format": 2,
+    }
+
+
+def _counted_sections(owner: str):
+    """PP2b (charter ruling B2): the bounded kit sections whose
+    retention evictions are counted. Each row: (section key,
+    program attribute, id field, sort field, max keep, record
+    validator bound to the owner). A max keep of None marks a
+    section whose retention Ace has since superseded (DD-37 dock
+    two-tier contract): no trimming or counting runs for it, and
+    its total is the frozen historical eviction count."""
+    from form.dell_matrix import (
+        design_loop, director_records, dock_session, exchange,
+        unknowns)
+    return (
+        ("dock_sessions", "dock_sessions", "session_id", "started",
+         None,
+         lambda rec: dock_session.validate(rec, owner)),
+        ("director_records", "director_records", "entry_id", "ts",
+         director_records._MAX_ENTRIES,
+         lambda rec: director_records.validate(rec, owner)),
+        ("unknowns", "unknowns", "entry_id", "opened",
+         unknowns._MAX_ENTRIES,
+         lambda rec: unknowns.validate(rec, owner)),
+        ("design_loop", "design_loop", "entry_id", "ts",
+         design_loop._MAX_EVENTS,
+         lambda rec: design_loop.validate(rec, owner)),
+        ("exchange_receipts", "exchange_receipts", "entry_id", "ts",
+         exchange._MAX_RECEIPT_ENTRIES,
+         lambda rec: exchange._validate_receipt_entry(rec, owner)),
+        ("exchange_seeds", "exchange_seeds", "entry_id", "ts",
+         exchange._MAX_SEED_ENTRIES,
+         lambda rec: exchange._validate_seed_entry(rec, owner)),
+    )
+
+
+def serialize(program: Program) -> Dict[str, Any]:
+    assert_floor_intact()
+    # R6.4 directive §4: canonical hook — synchronize live agent
+    # observations into the payload staging before serialization.
+    # NO broad suppression: a sync failure propagates and no durable
+    # write occurs; previous bytes and observations are preserved.
+    from form.dell_matrix.intrinsic_agent import sync_all_agents_to_program
+    from form.dell_matrix.perspective_studio import serialize_section
+    from form.dell_matrix.workshop_session import (
+        serialize_section as serialize_workshop_section)
+    from form.dell_matrix.onboarding_session import (
+        serialize_section as serialize_onboarding_section)
+    from form.dell_matrix.bimo_forge import (
+        serialize_sessions_section as serialize_forge_section,
+        serialize_configurations_section as serialize_configurations_section)
+    from form.dell_matrix.connection_session import (
+        serialize_section as serialize_connection_section)
+    from form.dell_matrix.dock_session import (
+        serialize_section as serialize_dock_section)
+    from form.dell_matrix.director_records import (
+        serialize_section as serialize_director_section)
+    from form.dell_matrix.unknowns import (
+        serialize_section as serialize_unknowns_section)
+    from form.dell_matrix.design_loop import (
+        serialize_section as serialize_design_loop_section)
+    from form.dell_matrix.exchange import (
+        serialize_receipts_section as serialize_exchange_section)
+    from form.dell_matrix.exchange import (
+        serialize_seeds_section as serialize_exchange_seeds_section)
+    sync_all_agents_to_program(program)
+    from form.mandell.language import dump_language, language_of
+    lang = language_of(program)
+    plane = program.cube.session.plane
+    units = {
+        uid: {
+            "label": u.label,
+            "words": u.words,
+            "detail": getattr(u, "detail", "") or "",
+            "goals": list(getattr(u, "goals", []) or []),
+            "skin": u.skin.value,
+            "x": u.x,
+            "y": u.y,
+            "sandboxed": u.sandboxed,
+            "sandbox_id": u.sandbox_id,
+            "parents": list(getattr(u, "parents", []) or []),
+            "origin": getattr(u, "origin", "placed") or "placed",
+            "lineage_version": int(getattr(u, "lineage_version", 1) or 1),
+            # Track D TD-1: the Unit -> canonical Idea binding pointer.
+            "idea_id": getattr(u, "idea_id", None),
+        }
+        for uid, u in plane.units.items()
+    }
+    # Phase M: persist the sandbox label alongside members — a named
+    # group must keep its name across save/load. The restorer accepts
+    # both this shape and the legacy {sid: [member_ids]} shape.
+    # Gate-2 (2026-11-13): the record's provenance rides along —
+    # creation evidence must survive save/load verbatim; records
+    # saved before this field existed restore as unattributed ("").
+    sandboxes = {
+        sid: {"label": sb.label, "members": list(sb.member_ids),
+              "provenance": getattr(sb, "provenance", "")}
+        for sid, sb in plane.sandboxes.items()
+    }
+    main = program.main
+    amb = program.ambient
+    # PP2b (charter ruling B2): eviction accounting for the
+    # bounded kit sections. Evictions are counted ONCE, at this
+    # persistence boundary: the in-memory register is trimmed to
+    # exactly what will be serialized, so re-serializing the
+    # same population can never recount a drop. The running
+    # total rides inside the section as "dropped_total" and is
+    # restored on load by persist_rest. Records preserved as
+    # malformed evidence are never counted as evictions.
+    from form.dell_matrix.session_section import (
+        collect_valid as _collect_valid,
+        retention_order as _retention_order)
+    _totals: Dict[str, int] = {}
+    for _key, _attr, _id_field, _sort, _max_keep, _vrec in \
+            _counted_sections(program.owner):
+        _entries = getattr(program, _attr, None)
+        _total = getattr(program, _attr + "_dropped_total", 0)
+        if not isinstance(_total, int) or isinstance(_total, bool) \
+                or _total < 0:
+            _total = 0
+        if _max_keep is None:
+            # DD-37: retention superseded for this section — no
+            # eviction can occur, so the total is carried verbatim
+            # as the frozen historical count. It must never grow,
+            # never reset, and never count a history compaction.
+            setattr(program, _attr + "_dropped_total", _total)
+            _totals[_key] = _total
+            continue
+        if isinstance(_entries, dict) and _entries:
+            _valid = _collect_valid(
+                _entries, _vrec, _id_field, {},
+                key_not_string="entry key not a string",
+                mismatch="entry key/ID mismatch", serialize=True)
+            _evictions = max(0, len(_valid) - _max_keep)
+            if _evictions:
+                _total += _evictions
+                # Trim to the kept valid records — but records
+                # that failed validation are NOT evictions: they
+                # stay in the register so the serializer below
+                # preserves them as malformed evidence.
+                _kept = _retention_order(_valid, _sort, _max_keep)
+                _invalid = {k: v for k, v in _entries.items()
+                            if k not in _valid}
+                _invalid.update(_kept)
+                setattr(program, _attr, _invalid)
+        setattr(program, _attr + "_dropped_total", _total)
+        _totals[_key] = _total
+    return {
+        "type": "DellMatrixProgramState",
+        "version": VERSION,
+        "level": LEVEL,
+        "saved": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "floor": list(FLOOR),
+        "owner": program.owner,
+        "enhance_on": program.enhance.on,
+        "sandbox_on": program.sandbox.on,
+        "network_url": program.network_url or "",
+        "internet": program.internet.to_dict() if getattr(program, "internet", None) and hasattr(program.internet, "to_dict") else {"on": False},
+        "ambient": {"master_on": amb.master_on, "enabled": dict(amb.enabled)},
+        "resonance": {
+            "scores": dict(program.enhance.state.scores),
+            "tags": {k: dict(v) for k, v in program.enhance.state.tags.items()},
+            "pulse_count": getattr(program.enhance.state, "pulse_count", 0),
+        },
+        "main": {
+            "tags": dict(main.tags),
+            "contributions": [
+                {
+                    "from_units": list(c.from_units),
+                    "labels": list(c.labels),
+                    "note": c.note,
+                    "weight": c.weight,
+                    "ts": getattr(c, "ts", ""),
+                }
+                for c in main.contributions
+            ],
+            "pulls": [
+                {"unit_id": p.unit_id, "tag": p.tag, "weight": p.weight, "ts": p.ts}
+                for p in main.pulls
+            ],
+        },
+        "plane": {
+            "perspective": plane.perspective.value,
+            "zoom": plane.zoom_target,
+            "units": units,
+            "sandboxes": sandboxes,
+        },
+        "duo_generation": program.duo.generation,
+        # DCC-I: persist the actual DuoBeta growth ledger so a later load can
+        # restore the real history instead of fabricating synthetic entries.
+        "duo_ledger": [
+            # R26: detail serialized WHOLE (former [:120] re-imposed
+            # the producer cuts at save for any entry that arrived whole).
+            {"gen": int(e.gen), "detail": str(e.detail), "ts": str(e.ts),
+             # DBEL-I: structured learning metadata (additive; {} for legacy).
+             "meta": dict(getattr(e, "meta", None) or {})}
+            for e in program.duo.ledger
+        ],
+        "avatar": _serialize_avatar(program),
+        "companion": program.companion.to_dict() if hasattr(program, "companion") else {},
+        "inspire": program.inspire.to_dict() if hasattr(program, "inspire") and hasattr(program.inspire, "to_dict") else {},
+        "self_knowledge": program.self_knowledge.to_dict() if hasattr(program, "self_knowledge") and hasattr(program.self_knowledge, "to_dict") else {},
+        "ux": {
+            "mode": getattr(program, "ux_mode", "builder"),
+            "skin_filter": getattr(program, "skin_filter", None),
+            "persona_lens": getattr(program, "persona_lens", None),
+            "grid_snap": bool(getattr(program, "grid_snap", False)),
+            "active_workshop": getattr(program, "active_workshop", None),
+            "click_mode": getattr(program, "click_mode", "inspect"),
+            "camera_follow": bool(getattr(program, "camera_follow", True)),
+            "show_nursery_ghosts": bool(getattr(program, "show_nursery_ghosts", True)),
+            "user_trail": list(getattr(program, "user_trail", []) or [])[-16:],
+            "active_view": getattr(program, "active_view", "growth"),
+            "body_style": getattr(program, "body_style", "stick"),
+            "auto_confirm_grow": bool(getattr(program, "auto_confirm_grow", False)),
+            # Q-LC.1: the undo-depth SETTING persists per owner; the
+            # action/redo stacks themselves stay ephemeral by design.
+            "undo_depth": int(getattr(program, "undo_depth", 30) or 30),
+        },
+        "forces": program.forces.to_dict() if hasattr(program, "forces") else {},
+        "spatial": program.spatial.to_dict() if hasattr(program, "spatial") else {},
+        "bimo": program.bimo.to_dict() if hasattr(program, "bimo") else {},
+        "nursery": _serialize_nursery(program),
+        "lattice": _serialize_lattice(program),
+        # R5-D S7: history is read ONLY through the locked snapshot
+        # reader (Program.history_snapshot, per-Program admission
+        # RLock) so a save cannot observe a half-appended state.
+        # Lock order: owner_state_lock (outer, save transaction) ->
+        # admission lock (inner, brief) — the only nesting. The
+        # [-24:] slice of the snapshot is the DEFERRED T3 cut,
+        # unchanged by this build.
+        "history": (program.history_snapshot()
+                    if hasattr(program, "history_snapshot")
+                    else list(getattr(program, "history", []) or [])
+                    )[-24:],
+        # One language source per owner (form.mandell.language.language_of): both keys carry the same customs.
+        "latinmandell_customs": {k: dict(v) for k, v in lang["customs"].items()},
+        "mandell_language": dump_language(lang),
+        "core_ii": serialize_core_ii(program),
+        # DCC-XX: durable execution-outcome ledger (Outcome Record V1).
+        # Execution evidence -> program authority. Sealed into checkpoint
+        # generations via the program member. OBSERVATION, never truth.
+        "outcome_ledger": {
+            "outcome_version": 1,
+            "outcome_seq": int(getattr(program, "outcome_seq", 0) or 0),
+            "records": {
+                oid: dict(rec)
+                for oid, rec in (getattr(program, "outcome_records", None) or {}).items()
+                if isinstance(rec, dict)
+            },
+        },
+        # R7.2: Perspective Studio session evidence. Closed session records
+        # only; the active studio mode is session-only and never persists.
+        # Uses the shared strict schema (serialize_section): valid records
+        # are saved; invalid records (active, malformed, foreign-owner,
+        # key/ID-mismatched) are preserved in "malformed", not silently
+        # saved as valid or discarded.
+        "studio_sessions": serialize_section(
+            getattr(program, "studio_sessions", None),
+            getattr(program, "studio_sessions_malformed", None),
+            program.owner,
+        ),
+        # R7.3: General workshop session evidence. Same contract as the
+        # studio section: closed records only, shared strict schema,
+        # malformed evidence preserved, never silently filtered.
+        "workshop_sessions": serialize_workshop_section(
+            getattr(program, "workshop_sessions", None),
+            getattr(program, "workshop_sessions_malformed", None),
+            program.owner,
+        ),
+        # R7.4: onboarding session evidence (draft 7.1.4, D1/D2). Same
+        # contract as the studio/workshop sections — closed records
+        # only, shared strict schema, malformed evidence preserved —
+        # plus the section-level "begun" fact that drives the D1
+        # starting-level state machine. Programs that never touched
+        # onboarding serialize begun=False (legacy-equivalent).
+        "onboarding_sessions": serialize_onboarding_section(
+            getattr(program, "onboarding_sessions", None),
+            getattr(program, "onboarding_sessions_malformed", None),
+            program.owner,
+            begun=getattr(program, "onboarding_begun", False),
+        ),
+        # R7.5: BIMO Forge evidence + named configurations. Same strict
+        # schema contract: closed session records only; configurations
+        # hold slot->persona mappings and a pilot ONLY (behavior, never
+        # authority); malformed evidence preserved, never filtered.
+        "forge_sessions": serialize_forge_section(
+            getattr(program, "forge_sessions", None),
+            getattr(program, "forge_sessions_malformed", None),
+            program.owner,
+        ),
+        "bimo_configurations": serialize_configurations_section(
+            getattr(program, "bimo_configurations", None),
+            getattr(program, "bimo_configurations_malformed", None),
+            program.owner,
+        ),
+        # R7.6: Connected World session evidence. Same strict schema
+        # contract: closed records only, provenance steps (host, status,
+        # byte counts, outcome codes) — never prompts, never fetched
+        # content, never credentials.
+        "connection_sessions": serialize_connection_section(
+            getattr(program, "connection_sessions", None),
+            getattr(program, "connection_sessions_malformed", None),
+            program.owner,
+        ),
+        # SD-1: dock session evidence. Same strict schema contract,
+        # with one documented difference: a record may persist OPEN
+        # (closed = null) because docked proposals are durable the
+        # moment they land, so their session link must be too.
+        # DD-37: serialized as the two-tier section (live uncapped
+        # + compact history); "dropped_total" is the frozen
+        # pre-DD-37 rotation count, carried verbatim.
+        "dock_sessions": serialize_dock_section(
+            getattr(program, "dock_sessions", None),
+            getattr(program, "dock_sessions_malformed", None),
+            program.owner,
+            extra={"dropped_total": _totals["dock_sessions"]},
+        ),
+        # SD-4: Director records (recommendations, evidence
+        # requests, directive links, refusals). Records only —
+        # never decisions; AcceptancePolicy is untouched by them.
+        "director_records": serialize_director_section(
+            getattr(program, "director_records", None),
+            getattr(program, "director_records_malformed", None),
+            program.owner,
+            extra={"dropped_total": _totals["director_records"]},
+        ),
+        # PP3: the unknowns register (encountered unknowns with
+        # an evidence-gated discovery path; records only).
+        "unknowns": serialize_unknowns_section(
+            getattr(program, "unknowns", None),
+            getattr(program, "unknowns_malformed", None),
+            program.owner,
+            extra={"dropped_total": _totals["unknowns"]},
+        ),
+        # SD-5: the inside-out loop ledger (filed / gate /
+        # implemented events per design proposal).
+        "design_loop": serialize_design_loop_section(
+            getattr(program, "design_loop", None),
+            getattr(program, "design_loop_malformed", None),
+            program.owner,
+            extra={"dropped_total": _totals["design_loop"]},
+        ),
+        # P9: Exchange receipts recorded against proposals
+        # (run transcripts; assembled into packets at export).
+        "exchange_receipts": serialize_exchange_section(
+            getattr(program, "exchange_receipts", None),
+            getattr(program, "exchange_receipts_malformed", None),
+            program.owner,
+            extra={"dropped_total": _totals["exchange_receipts"]},
+        ),
+        # Completion-order residual repair: imported seed
+        # payloads (the original label/chain/Keep/requirements a
+        # packet arrived with; export reads these, not the
+        # rendered proposal detail).
+        "exchange_seeds": serialize_exchange_seeds_section(
+            getattr(program, "exchange_seeds", None),
+            getattr(program, "exchange_seeds_malformed", None),
+            program.owner,
+            extra={"dropped_total": _totals["exchange_seeds"]},
+        ),
+        # TPP-I: Temporal Presence Projection (NBD-Ω-048).
+        # Presence metadata for ideas. Uses existing persistence.
+        "lifecycle": dict(getattr(program, "lifecycle", None) or {}),
+        # R6.4: agent-local behavioral state (IntrinsicAgent observations),
+        # isolated per subject within the owner. Versioned, validated on
+        # restore; genuine absence (pre-R6.4) -> fresh default.
+        "agent_local": {
+            "agent_local_version": 1,
+            "agents": {
+                str(subj): dict(state)
+                for subj, state in (getattr(program, "agent_local_states", None) or {}).items()
+                if isinstance(subj, str) and isinstance(state, dict)
+            },
+        },
+        # R6.4: agent-action audit trail (structured outcome capture).
+        # OBSERVATION, never permission. Grant handles never logged.
+        # Directive §5: preserved malformed evidence (complete originals)
+        # is written back through this same section — no parallel store —
+        # so a malformed load followed by save cannot silently discard it.
+        "agent_audit": {
+            "audit_version": 1,
+            "audit_seq": int(getattr(program, "agent_audit_seq", 0) or 0),
+            "records": {
+                aid: dict(rec)
+                for aid, rec in (getattr(program, "agent_audit_records", None) or {}).items()
+                if isinstance(aid, str) and isinstance(rec, dict)
+            },
+            "malformed": [
+                dict(m) for m in
+                (getattr(program, "agent_audit_malformed", None) or [])
+                if isinstance(m, dict)
+            ],
+        },
+    }
+
+
+# save/load/checkpoint/smoke/main live in form.persist_rest, which imports this module. They are re-exported
+# lazily (PEP 562) so that either import order works (no form.persist <-> form.persist_rest import cycle).
+_REST_EXPORTS = ("save", "checkpoint", "list_checkpoints", "load", "smoke", "main")
+
+
+def __getattr__(name: str) -> Any:
+    if name in _REST_EXPORTS:
+        from form import persist_rest
+        value = getattr(persist_rest, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module 'form.persist' has no attribute {name!r}")
+
+
+if __name__ == "__main__":
+    from form.persist_rest import main as _main
+    sys.exit(_main())

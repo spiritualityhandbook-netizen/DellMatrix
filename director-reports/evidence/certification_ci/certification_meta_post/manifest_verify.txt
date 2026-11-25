@@ -1,0 +1,33 @@
+environment.txt: OK
+execution_meta.txt: OK
+probe_sources/probe_dirf13_malformed_count.py: OK
+probe_sources/probe_dirf15_absent_vs_none.py: OK
+probe_sources/probe_dirf16_send_boundary.py: OK
+probe_sources/probe_t2_omitted_node.py: OK
+probes/probe_dirf13_malformed_count.stderr.txt: OK
+probes/probe_dirf13_malformed_count.stdout.txt: OK
+probes/probe_dirf15_absent_vs_none.stderr.txt: OK
+probes/probe_dirf15_absent_vs_none.stdout.txt: OK
+probes/probe_dirf16_send_boundary.stderr.txt: OK
+probes/probe_dirf16_send_boundary.stdout.txt: OK
+probes/probe_t2_omitted_node.stderr.txt: OK
+probes/probe_t2_omitted_node.stdout.txt: OK
+suites/suite_dirf12.stderr.txt: OK
+suites/suite_dirf12.stdout.txt: OK
+suites/suite_dirf13.stderr.txt: OK
+suites/suite_dirf13.stdout.txt: OK
+suites/suite_dirf14.stderr.txt: OK
+suites/suite_dirf14.stdout.txt: OK
+suites/suite_dirf15.stderr.txt: OK
+suites/suite_dirf15.stdout.txt: OK
+suites/suite_dirf16.stderr.txt: OK
+suites/suite_dirf16.stdout.txt: OK
+suites/suite_step10.stderr.txt: OK
+suites/suite_step10.stdout.txt: OK
+suites/suite_step11.stderr.txt: OK
+suites/suite_step11.stdout.txt: OK
+suites/suite_t2.stderr.txt: OK
+suites/suite_t2.stdout.txt: OK
+summary.txt: OK
+strict digest check: 31 files, 0 mismatched
+sha256sum -c exit: 0 ; strict python check exit: 0

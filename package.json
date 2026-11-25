@@ -1,0 +1,20 @@
+{
+  "description": "DellMatrix — Form is the only front door. Legacy JS under src/ is frozen. Not distributed as an npm package.",
+  "keywords": [
+    "dellmatrix",
+    "mandell",
+    "form",
+    "dual-lattice"
+  ],
+  "license": "MIT",
+  "name": "dellmatrix",
+  "scripts": {
+    "boot": "python -m form.boot",
+    "form": "python -m form.repl",
+    "legacy-status": "node -e \"import { createUnifiedRuntime } from './src/unify.js'; const dm = createUnifiedRuntime(); console.log(JSON.stringify({ unified: dm.unified, era: dm.era, note: 'LEGACY' }, null, 2));\"",
+    "smoke": "python -m form.boot --smoke",
+    "start": "python -m form.repl --owner Operator"
+  },
+  "type": "module",
+  "version": "0.4.0"
+}

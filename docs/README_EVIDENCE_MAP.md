@@ -1,0 +1,391 @@
+> HISTORICAL RECORD — preserved as evidence of the state at its writing; it does NOT describe current behavior. The live system is under form/.
+
+# DellMatrix README Code-Truth Evidence Map
+
+**Research date:** 2026-10-04 America/Chicago
+**Source SHA:** `f3c9007ea446af4aeb7f2f2f7a7a8add74a2704f` (production main at review time, PR #75 merge, 2026-10-04)
+**Current production:** `2f98844` (main, post PR #106 merge, 2026-10-26 — README Completion Program Phase N; this map's per-claim evidence remains as researched on the dates shown)
+**Phase 5:** MERGED to production via PR #79 (Director admission PASS)
+
+> This map is historical evidence for the 2026-10-04 review. It was not
+> fully re-executed on the Phase-5 candidate. Phase-5 behaviors were
+> candidate-only until PR #79 merged (2026-10-07); they are production
+> behavior as of `ea9b76a`. The walkthrough evidence below remains dated
+> historical evidence at the cited SHAs.
+**Research env:** isolated clone at /tmp/dm_readme_research, Python 3.12.3, Linux
+**Method:** source reads + live REPL walkthroughs with temp owners (`README_TEST_*`), state cleaned after.
+
+---
+
+## 1. Entrypoints
+
+### 1a. `launch.py` (repo root)
+- **SOURCE:** `launch.py` (20 lines)
+- **REACHABILITY:** Public. `python launch.py [OwnerName]`, also `Launch DellMatrix.bat` / `.command`.
+- **COMMAND:** `python launch.py` → prints banner → `from form.repl import run` → `run(owner="Operator")`.
+- **OBSERVED RESULT:** VERIFIED WORKING. Launched REPL with owner `README_LAUNCH_TEST`, prompt `you>` appeared.
+- **EVIDENCE STATUS:** Tested this session. No dependencies beyond stdlib (requirements.txt confirms: no non-stdlib packages in core runtime; Python 3.10+ required).
+
+### 1b. `form/repl.py` — `run(owner, do_load)`
+- **SOURCE:** `form/repl.py` (2783 lines), `run()` at line 2704, `main()` at 2773.
+- **REACHABILITY:** Public via `python3 -m form.repl [--owner NAME] [--load]`, `python launch.py`, `python -m form` (via `form/__main__.py` → `form.open.main()`, which only renders — does NOT start REPL).
+- **WHAT IT DOES:** Opens/creates a `Program` for owner, binds Mandell language, prints render, then loops on `you>` input. Each line mints a UUIDv4 interaction_id, then dispatches via `_dispatch_public_line` in this order: ROS-I read-only commands → DuoBeta learn → KIE why → lifecycle → Greek floor operators → Mandell flow (`>`/`:`) → seed execution → English multi-step composer ("and then") → `translate(line)` → `_execute_intent`.
+- **OBSERVED RESULT:** VERIFIED WORKING. All walkthroughs below used `python3 -m form.repl --owner <name>`.
+- **EVIDENCE STATUS:** Tested this session (piped stdin, EOF exits cleanly).
+
+### 1c. `form/open.py` — `Program` class + `open_program`
+- **SOURCE:** `form/open.py` (1631 lines). `class Program` at line 103, `open_program(owner)` at 1581, `confirm_proposal(pid)` at 1334.
+- **REACHABILITY:** Python API (`from form.open import open_program`). Not directly user-facing; REPL is the public path.
+- **KEY METHODS (verified present):** `confirm_proposal`, `nursery` (Nursery with proposals), `cube.session.plane.units` (Idea store), `place`, `render`, `save/load` via `form.persist` / `form.persist_rest`, `look_around`, `zoom_to`, `evolve`, `audit`, Greek/floor ops, `spatial_*`, lifecycle, DuoBeta hooks.
+- **OBSERVED RESULT:** `open_program` + `confirm_proposal` + `persist_rest.save/load` verified working in walkthroughs and API probes.
+- **EVIDENCE STATUS:** Tested this session.
+
+### 1d. Command registry
+- **SOURCE:** The canonical operator registry is `form/mandell/registry.py` (True Dell registry, numbered operators CORE_I 00-50, CORE_II 51-99). Dispatch is in `form/repl.py::_dispatch_public_line` → `form/mandell/translate.py::translate()` → `_execute_intent`. `form/dell_matrix/actions_registry.py` provides UI action lists (`actions_flat`, `actions_for_mode`) for visual modes, not the language operator definitions.
+- **CORRECTION (2026-10-04):** An earlier draft incorrectly called `actions_registry.py` the Dell/operator registry. The canonical registry is `form/mandell/registry.py`.
+- **REACHABILITY:** Internal. Users interact via English lines at the `you>` prompt.
+- **EVIDENCE STATUS:** Code-verified. `help` lists 9 categories: create, knowledge, learn, explain, save, recover, look, dell, system.
+
+---
+
+## 2. Docs claims vs code
+
+### `docs/INSTALL.md`
+- **CLAIMS:** Python 3.10+, `python launch.py`, offline core loop, acceptance path `create → grow → confirm → sphere → save → load → visual`.
+- **MATCHES CODE:** YES. All verified working this session (see walkthroughs). Windows `.bat` / Mac `.command` launchers exist at root but were NOT executed (Linux env); do not claim tested.
+
+### `docs/TUTORIAL.md`
+- **CLAIMS:** `tutorial` command walks the acceptance path; manual table matches.
+- **MATCHES CODE:** YES. `tutorial` ran and walked steps 1–3+ correctly.
+
+### `docs/START_HERE.md`
+- **CLAIMS:** Labeled "(DEV)". Commands `create … detail: … goals: …`, `what next`, `ready`, `history`, `undo`, `self`.
+- **MATCHES CODE:** Partially verified. `create` with `detail:`/`goals:` inline syntax observed working in help text; `what next`/`ready` not executed this session — UNVERIFIED, do not claim.
+
+### Root `README.md` (current)
+- **CLAIMS:** "**Status:** [User-ready (offline)](docs/USER_READY.md)".
+- **MATCHES CODE:** NO — unsupported blanket claim. The system works for the tested acceptance path, but "user-ready" implies a completeness not established by evidence (known RED suites in CI, partial features below). This is the claim the rewrite must remove/replace with a scoped status table.
+
+---
+
+## 3. Walkthrough results (historical: all on f3c9007, temp owners, cleaned up, 2026-10-04)
+
+### W1. Create / store / reload an idea — WORKING
+- **COMMANDS:** `create an idea called walktest` → `save` → new process `python3 -m form.repl --owner README_TEST_02 --load`
+- **OBSERVED:** `Created idea: "walktest" id=walktest`; save wrote `form/state/program_README_TEST_02.json`; `--load` printed "Loaded session for README_TEST_02."
+- **STATUS:** VERIFIED.
+
+### W2. Propose / review / confirm — WORKING
+- **COMMANDS:** `grow ideas 2` → `proposals` → `confirm all`
+- **OBSERVED:** Grow executed Dell 13, nursery pending 1; `proposals` listed `welcome_walktest_4794 [evolved]` with affinity; `confirm all` → "Confirmed 1 proposal(s)."
+- **STATUS:** VERIFIED.
+
+### W3. Inspect relationships — WORKING
+- **COMMANDS:** `lineage welcome_walktest_4794`, `rank`, `look`
+- **OBSERVED:** lineage showed parents/affinity/status; `rank` sorted 3 proposals by affinity; `look` showed facing/range/entities.
+- **STATUS:** VERIFIED. (Note: `lineage` needs the proposal ID, not the idea label — `lineage walktest` returned "No proposal or idea for id".)
+
+### W4. Resonance / harmony — PARTIAL
+- **COMMANDS:** `resonance` → "Not understood".
+- **OBSERVED:** No REPL command named `resonance`/`harmony`. Resonance exists as library code (`resonance_rank` in `form/dell_matrix/first_person.py`) and surfaces in `page` output as `res=` scores and in `rank` affinity ordering. Phase-3 geometry proofs exist as test files, not user commands.
+- **STATUS:** PARTIAL — scoring machinery exists and is exercised by rank/page; no direct user-facing resonance command. Do not document as a runnable command.
+
+### W5. Supersession / history — WORKING (with correction)
+- **Python API:** `supersede_proposal(p, old_id, words=...)` → receipt with `{'ok': True, 'old_id': ..., 'new_id': ...}`, old lifecycle → `superseded`. VERIFIED WORKING.
+- **REPL:** `supersede idea <id> with <words>` → VERIFIED WORKING with genuine confirmed proposal ID (re-tested 2026-10-04). Earlier failure was due to testing with unconfirmed/unknown ID.
+- **History:** `history 3` → "History · 0 notes (empty — act, then history fills)". Command exists; empty state honest.
+- **STATUS:** API WORKING; REPL WORKING with genuine ID. 
+- **CORRECTION (2026-10-04):** An earlier draft labeled the REPL command BROKEN based on a test with an unconfirmed ID. That conclusion is withdrawn; the retest with a genuine confirmed ID succeeds.
+
+### W6. Visual output — WORKING
+- **COMMANDS:** `visual`, `sphere`, `lattice`
+- **OBSERVED:** `visual` generated `DellMatrix_UI.html` (29KB, offline); `sphere` → "Form → sphere (skin=sphere)"; `lattice` rendered harmonic lattice grid.
+- **STATUS:** VERIFIED (file generation; browser rendering not tested).
+
+### W7. DuoBeta learn lifecycle — WORKING (with real gating)
+- **COMMANDS:** `learn propose refinement 35 from outcome 1` → `learn inspect 2` → `learn gate 2` → `learn ledger`
+- **OBSERVED:** Proposal staged; inspect showed details; **gate REJECTED with `forbidden_kind`** (real policy enforcement, not a rubber stamp); ledger showed `[REJECTED]`.
+- **STATUS:** VERIFIED. Note: proposals are session-staged; `learn ledger` in a fresh process showed empty (not persisted across processes in this test).
+
+### W8. `tutorial` — WORKING
+- **COMMAND:** `tutorial`
+- **OBSERVED:** Walked acceptance path steps (create → grow → confirm → …).
+- **STATUS:** VERIFIED.
+
+### Additional verified commands
+`save`, `load` (via `--load`), `confirm <id>`, `proposals`, `help` (+9 categories), `quit`/`exit`, `outcomes` ("No outcomes recorded." — honest empty).
+
+---
+
+## 4. `python launch.py` / platform / deps
+
+- **SOURCE:** `launch.py` → `form.repl.run(owner)`.
+- **OBSERVED:** Works on Python 3.12.3, Linux, zero third-party deps (requirements.txt: stdlib only for core runtime; SIDE modules like `form/llm` may need extras).
+- **Offline:** TRUE for core loop — no network calls in tested paths.
+- **Windows/Mac launchers:** `Launch DellMatrix.bat`, `Launch DellMatrix.command` exist but were NOT executed. Do not claim tested platforms.
+
+---
+
+## 5. Directory roles
+
+| Dir | Role | Evidence |
+|-----|------|----------|
+| `form/` | **LIVE runtime** (Python) | All imports resolve here; `src/README.md` itself says "Live runtime is `form/` only". |
+| `src/` | **FROZEN legacy** (JavaScript) | `src/README.md`: "# src/ — LEGACY (frozen). Do not extend. This is the old JavaScript dual-era DellMatrix." Only "ported from" comments reference it. |
+| `preform/` | **Historical** (docs/notes) | Zero imports from `form/` (`grep` for `from preform`/`import preform` in `form/` → none). |
+| `docs/` | Documentation (large, mixed currency) | Many audit/packet docs; currency varies. |
+
+---
+
+## 6. Working vs broken/partial
+
+### WORKING (verified this session on f3c9007)
+- REPL launch (`launch.py`, `python3 -m form.repl`), `--owner`, `--load`, EOF/quit
+- `create an idea called <name>` (with strength/detail/goals coaching)
+- `grow ideas N` (Dell 13, nursery proposals)
+- `proposals`, `confirm <id>`, `confirm all`
+- `save` / `load` (file persistence + reload)
+- `lineage <proposal-id>`, `rank` (affinity-ordered), `look`, `page`
+- `sphere`, `lattice` (skin/form change + grid render)
+- `visual` (offline HTML generation)
+- `tutorial`, `help` (+9 categories)
+- `history`, `outcomes` (honest empty states)
+- DuoBeta `learn propose/inspect/gate/ledger` (real policy gating)
+- Python API: `open_program`, `confirm_proposal`, `persist_rest.save/load`, `supersede_proposal`
+- Offline operation; stdlib-only core deps; Python 3.10+ per requirements
+
+### PARTIAL
+- **Resonance/harmony:** scoring machinery real (`resonance_rank`, affinity in rank/page); no direct user command. Phase-3 proofs are test files, not features.
+- **DuoBeta learn:** works within a session; cross-process persistence of staged proposals not observed.
+- **`visual`:** file generates; in-browser rendering untested.
+
+### BROKEN / GAP (do not document as working)
+- **REPL `supersede idea <id> with <words>`:** fails on the normal user flow (`unknown_predecessor` for labels, `not_on_plane` for proposal IDs). Python API works.
+- **`lineage` by idea label:** requires proposal ID; label lookup fails.
+- **Root README "User-ready (offline)":** unsupported blanket claim.
+
+### UNVERIFIED (do not claim)
+- Windows `.bat` / Mac `.command` launchers; `what next`, `ready`, `undo`, `replay`, `reissue`, Spanish/French commands (`es`/`fr` claimed in README — not executed); `live`, `zoom`, avatar/persona features; any LLM/network features.
+
+---
+
+## 7. Honest status assessment
+
+DellMatrix at f3c9007 is a **working offline idea environment** for its tested core loop: create → grow → propose → confirm → inspect → save → reload, plus DuoBeta learning with real policy gates and offline HTML visual export. The claim "User-ready (offline)" overstates: it implies general readiness that the evidence (partial features, REPL gaps in supersession, CI RED suites on the repair branch, unverified platforms/languages) does not support. A scoped status table (WORKING / PARTIAL / IN REPAIR / PLANNED) with the exact reviewed SHA is the honest replacement.
+
+---
+
+## 8. Key sources for README claims
+
+- Entrypoints: `launch.py`, `form/repl.py` (run/dispatch/help), `form/__main__.py`, `form/open.py` (Program)
+- Routing: `form/mandell/translate.py`, `form/dell_matrix/actions_registry.py`
+- Persistence: `form/persist.py`, `form/persist_rest.py`, `form/mandell/checkpoint_generation.py`
+- Nursery/lifecycle: `form/dell_matrix/nursery.py`, `form/dell_matrix/confirm_lineage.py`, `form/lifecycle.py`
+- Supersession: `form/mandell/supersession.py`, `form/mandell/core_i_recovery.py`
+- Learning: DuoBeta handlers in `form/repl.py::_handle_learn_command`, `form/duobeta/`
+- Resonance: `form/dell_matrix/first_person.py::resonance_rank`, `form/mandell/harmonic_truths.py`
+- Visual: `visual` command in repl → `DellMatrix_UI.html`
+- Legacy note: `src/README.md`, `form/LEGACY.md`
+- Deps: `requirements.txt` (Python 3.10+, stdlib-only core)
+
+---
+
+## 9. R6.1 capability-authority circuit (candidate stage, 2026-10-07)
+
+> **Status:** CANDIDATE — implemented on branch `gdp-phase6-r61-authority`
+> (GDP_PHASE_6_CAPABILITY_AUTHORITY_CIRCUIT, Director 2026-10-07). NOT
+> merged to production. NOT certified. The claims below describe the
+> candidate branch, verified by the registered proof suite.
+
+- **SOURCE:** `form/dell_matrix/acceptance_policy.py` (grant issuance,
+  attenuation, revocation, `check()` grant branch), new module
+  `form/dell_matrix/agent_authority.py` (trusted dispatch adapter),
+  `form/open.py::Program.confirm_proposal` (`_subject` trusted binding),
+  `form/dell_matrix/confirm_lineage.py` (writer re-validation +
+  test-only `_BETWEEN_STAGES` hook, None in production).
+- **WHAT IT DOES:** opaque session-scoped grant handles
+  (`grant_<uuid4hex>`) backed by canonical issuance records; root
+  issuance is trusted-path-only; `attenuate_grant` narrows only
+  (subject/owner/operation equality, target/content narrow-or-equal,
+  strictly decreasing delegation depth); `_grant_chain_valid`
+  recursively validates the full ancestor chain at execution time;
+  revocation of any ancestor denies unfinished descendants; committed
+  history survives revocation/restart; audit references grants by
+  sequence number, never by handle value.
+- **SCOPE:** the `nursery.confirm` capability only. Human approval and
+  opt-in paths unchanged. Threat boundary: untrusted agent requests
+  through mediated interfaces; NOT malicious in-process Python; NOT
+  concurrent-execution race safety (single-threaded dispatcher).
+- **PROOFS:** `form/mandell/r61_authority_test.py` — 140/140 checks
+  (in-process INTEGRATION + CROSS_PROCESS via fixed child scripts
+  `form/mandell/r61_child.py` with JSON arguments), registered in
+  `form/regress.py` LIST. `form/mandell/r61_oracle_test.py` — 25/25
+  independent-oracle checks (stdlib-only model vs production, 11
+  scenarios, sensitivity proven).
+- **AMEND (Director 2026-10-07):** content defect fixed — `content=None`
+  is unconstrained (documented), every Mapping including `{}` is hashed
+  and bound; attenuation never drops inherited restrictions. Agent
+  identity boundary: `bind_agent(program, trusted_subject)` creates a
+  subject-bound `AgentEndpoint` whose request surface is exactly
+  `confirm(pid, grant_handle)` — no subject/issuer/producer/review
+  context accepted; mint/revoke/controller methods absent from the
+  surface.
+- **EVIDENCE STATUS:** candidate-branch only. Awaiting Director review;
+  no merge without authorization.
+
+## 10. Phase-6 R6.2 — inference docking circuit (MERGED)
+
+- **STATUS:** MERGED to main 2026-10-07 via `946812a` (parents
+  `f1d3337` + `2eea753`; merge tree = certified tree `9c421afc`).
+  Director-certified under GDP_PHASE_6_R62_ADMIT_MERGE_AND_ADVANCE.
+  Post-merge: regress --twice 107/107 GREEN, --order rev 107/107
+  GREEN on a fresh checkout.
+- **CIRCUIT:** host identity → explicit docking → read-only context →
+  inference → schema-validated PENDING Nursery proposal → human
+  review/issued authority → R6.1 bound endpoint → canonical writer →
+  receipt/save/reload.
+- **DESIGN:** `form/dell_matrix/inference_dock.py` (trusted host
+  adapter; NOT core path). Inference NEVER confers authority; model
+  output is data. Docking never mints/expands authority.
+  `form/llm/bridge.py` reused through lazy optional import only —
+  core open/repl paths never import it (SIDE lock preserved).
+  Explicit provider config; bridge auto-detection never enables.
+  Undocked = zero provider calls. Credentials stay with the adapter;
+  keys/grant handles never enter model context, proposal metadata,
+  errors, receipts, or logs; reflected errors sanitized.
+  Strict proposal schema (exactly label+words, typed, bounded);
+  authority-bearing fields rejected. No eval/shell/auto-confirm.
+- **PROOFS:** `form/mandell/r62_docking_test.py` — 170/170 checks
+  (walking skeleton fake→pending→grant→endpoint→writer→reload;
+  undocked zero-calls; pending-until-authorized; malformed/timeout/
+  failure preserve state; authority-requesting output confers nothing;
+  canary non-leak with negative control; pre-writer revocation denies;
+  persona/provider descriptive; inference-absent core works; save
+  guards hold; schema/bounds; no-eval; Director reproductions D1–D3
+  rejected; stubbed-HTTP transport contract D4; real child-process
+  reload D5; genuine save-guard D6; canary sensitivity D7;
+  representation boundaries E1–E7; structured outbound canaries
+  F1–F3), registered in regress LIST.
+- **RESEARCH:** `~/workspace/PHASE_6_R62_RESEARCH_DELTA20.md` —
+  ADOPT (output validation, writer authorization, secret hygiene),
+  ADAPT (bridge behind explicit docking, ocap-style least authority),
+  REJECT (inference as authority, duplicate policy/store, preform
+  autonomous threads). Delta-20 prospective falsifiers bound to the
+  skeleton for all 20 categories.
+- **PERF (bounded):** docked propose (fake) median 17.0ms vs direct
+  nursery.add 19.9ms (n=15, operation-only) — no substantial docking
+  overhead observed in this workload.
+- **LIMITS:** stubbed-HTTP transport evidence only; no live-provider
+  calls in this circuit. No network identity system. No concurrency
+  claims. Protected-material coverage is exactly: canonical issued
+  handles, active approval IDs, configured env credential values,
+  recognized formats (raw and \uXXXX-decoded forms) — arbitrary
+  unknown secrets and every possible encoding not claimed covered.
+
+## 11. Phase-6 R6.3 — authority-bound rollback circuit (MERGED/CLOSED)
+
+- **STATUS:** MERGED/CLOSED 2026-10-08. PR #82 → merge
+  `84a59137fe75d4ad5206642f8ba8a42183fdcef2` (parents b896304 + cedac79;
+  tree 9a0f90b1). Director certified via
+  GDP_PHASE_6_R63_ADMIT_MERGE_AND_ADVANCE. Post-merge production
+  verification green (fresh clone: regress --twice 109/109, rev 109/109).
+- **CIRCUIT:** freeze target (CURRENT resolved once; manifest + member
+  fingerprints bound) → issue grant/approval → bound endpoint →
+  private validation → safety checkpoint (retention keeps target) →
+  canonical authorized rollback → production reload → truthful receipt.
+- **DESIGN:** `form/dell_matrix/rollback_authority.py` (trusted side:
+  freeze_rollback_target, issue_rollback_grant, RollbackEndpoint,
+  bind_rollback_agent). `Program.confirm_rollback` (open.py) is the
+  single enforcement point: entry check → safety checkpoint →
+  live revalidation (commit decision) → intent journal → canonical
+  `core_i_recovery.rollback` (requires `_mediation`; owner string
+  alone denies). Dell28, REPL revert/restore, and Program entrypoints
+  route through it. No second permission store.
+- **AUTHORITY:** AcceptancePolicy GRANTABLE_OPERATIONS =
+  {"nursery.confirm", "checkpoint.rollback"} (frozen allowlist;
+  never interchangeable). Content binds target generation +
+  live-at-issuance fingerprints (fail closed on drift). Revocation
+  honored at entry and at the execution boundary. Session-scoped;
+  restart requires re-issuance.
+- **RECOVERY:** rollback intent journal (no handles/credentials)
+  extends the existing machinery; commit decision = live revalidation.
+  After it, restart completes the recorded outcome without the
+  session credential. Stale initiating instances refuse save
+  (RollbackRecoveryError). Rollback never resurrects revoked authority.
+- **PROOFS:** `form/mandell/r63_rollback_test.py` — 29/29 checks
+  (positive grant/human paths; missing/forged/foreign credentials;
+  wrong operation/owner/subject/target; manifest drift; live drift;
+  revoked grant/ancestor; retention interference; activation ordering;
+  interrupted restoration + child-process restart; malformed journal;
+  stale-save protection; journal secret hygiene; compensation
+  round-trip; endpoint isolation; Dell28 denial; sensitivity),
+  registered in regress LIST.
+- **RESEARCH:** `~/workspace/PHASE_6_R63_RESEARCH_DELTA20.md` —
+  ADOPT complete mediation + exact-resource binding; ADAPT rollback
+  journal + checkpoint retention; REJECT duplicate authority,
+  moving-target approval, early activation.
+- **LIMITS:** No protection claimed against malicious in-process
+  Python or concurrent races (declared mediated-interface boundary).
+  Human REPL path requires explicit "restore confirm <generation>".
+
+## 12. Phase-6 R6.4 — multi-intelligence shared-state circuit (candidate)
+
+- **STATUS:** candidate-branch only (`gdp-phase6-r64-multi-intelligence`).
+  NOT CERTIFIED. DO NOT MERGE without Director authorization.
+  AMEND-4 (GDP_PHASE_6_R64_FINISH_OUTPUT_COLLISION_AND_ERROR_CONTRACT)
+  corrections applied.
+- **CIRCUIT:** host-bound agent identity → typed request envelope →
+  serialized HostCoordinator dispatch → canonical R6.1 writer →
+  idempotent receipt → structured audit. Two agents, one owner, one
+  knowledge system; identity, permission, memory, outcomes separate.
+- **DESIGN:** `form/dell_matrix/agent_coordinator.py` (HostCoordinator,
+  AgentIdentity, RequestEnvelope, AgentRequestSurface, agent audit).
+  `form/dell_matrix/intrinsic_agent.py` (agent-local behavioral state,
+  versioned persistence). Program payload gains `agent_local` and
+  `agent_audit` sections (`form/persist.py`, `form/persist_rest.py`).
+- **AUTHORITY:** All permission decisions owned by AcceptancePolicy via
+  the R6.1 `agent_confirm` writer path. BIMO slots/personas descriptive
+  only (PERSONA != PERMISSION). Agents get detached snapshots + narrow
+  interfaces, never mutable objects or credentials.
+- **PROTOCOL:** request_id idempotency namespaced by (owner, subject,
+  request_id) with canonical descriptor comparison; the VALIDATED
+  envelope snapshot is retained at enqueue (post-enqueue mutation cannot
+  reach execution); conflicting reuse never overwrites established
+  history; content freshness revalidated at dispatch; rollback epoch
+  invalidates stale queued requests; recovery-required blocks dispatch;
+  reentrant dispatch rejected.
+- **SECRETS:** complete envelope screened by value (identifiers, target,
+  keys, values); ONE complete outward boundary sanitizes snapshots,
+  receipts, audit records, nested dict keys+values (collision-free via
+  full reservation), identifiers, provenance, error details. Protection
+  failure rejects explicitly at entry; sanitization failure never
+  releases the original (minimal fixed-schema receipts; snapshots fail
+  closed with fixed non-reflecting errors).
+- **OUTCOMES:** audit failures aggregated across the lifecycle and
+  observable (audit_ok + audit block; in-memory vs persisted
+  distinguished); incomplete compensation classified by the canonical
+  writer contract and preserved as incomplete_recovery with sanitized
+  structured details.
+- **PERSISTENCE:** behavioral sync is fail-honest (no suppression;
+  staged/validated before stored state changes; failed save preserves
+  previous bytes); explicit null rejected via sentinels (section,
+  subject, for_agent); outer and inner versions strictly validated;
+  damaged audit evidence preserved as complete originals through the
+  payload (malformed load → save → reload keeps evidence).
+- **PROOFS:** `form/mandell/r64_multi_intelligence_test.py` — 168 checks
+  (identity, protocol, audit, IntrinsicAgent, cross-process, rollback,
+  recovery, reference model, sensitivity, AMEND through AMEND-4 boundary
+  proofs), registered in regress LIST.
+  `form/mandell/r64_child.py` — fixed cross-process scripts.
+  `form/mandell/r64_reference_model.py` — independent decision model.
+- **RESEARCH:** Erlang message-passing ADAPTED (typed envelopes through
+  serialized coordinator, not shared mutable objects); Python queues
+  REJECTED as a transaction-safety claim. Copy semantics: a validated
+  detached copy is only independent if RETAINED (enqueue now stores the
+  validated snapshot, not the caller's envelope). OWASP: logging
+  failures must not leak information; outward errors generic, not
+  reflected internals.
+- **LIMITS:** No distributed consensus, concurrent-writer safety, or
+  malicious in-process Python protection claimed. No crash-safe
+  exactly-once execution claimed. Secret screening covers recognized
+  formats/values only (no unknown-secret guarantee).

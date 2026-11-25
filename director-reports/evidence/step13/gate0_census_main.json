@@ -1,0 +1,1357 @@
+{
+ "census": {
+  "00": {
+   "error": "",
+   "ok": true,
+   "seed": "00[Nova] :: census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "01": {
+   "error": "",
+   "ok": true,
+   "seed": "01[Initiate] :: census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "02": {
+   "error": "",
+   "ok": true,
+   "seed": "02[Persona]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "03": {
+   "error": "",
+   "ok": true,
+   "seed": "03[Logic] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "04": {
+   "error": "",
+   "ok": true,
+   "seed": "04[Transform] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "05": {
+   "error": "",
+   "ok": true,
+   "seed": "05[Tone] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "06": {
+   "error": "",
+   "ok": true,
+   "seed": "06[Cycle] :: 2",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "plane",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "nursery"
+   ]
+  },
+  "07": {
+   "error": "",
+   "ok": true,
+   "seed": "07[Link] :: garden_gate",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "08": {
+   "error": "",
+   "ok": true,
+   "seed": "08[Create] :: Census Idea",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "09": {
+   "error": "",
+   "ok": true,
+   "seed": "09[Show] :: garden_gate",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "10": {
+   "error": "",
+   "ok": true,
+   "seed": "10[Save]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "11": {
+   "error": "",
+   "ok": true,
+   "seed": "11[Architect]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "12": {
+   "error": "",
+   "ok": true,
+   "seed": "12[Test] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "13": {
+   "error": "",
+   "ok": true,
+   "seed": "13[Loop] :: 2",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "plane",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "nursery"
+   ]
+  },
+  "14": {
+   "error": "",
+   "ok": true,
+   "seed": "14[Bind] :: census_bind",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "15": {
+   "error": "",
+   "ok": true,
+   "seed": "15[Map] :: census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "16": {
+   "error": "enhance OFF",
+   "ok": false,
+   "seed": "16[Decay] :: 0.9",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "17": {
+   "error": "",
+   "ok": true,
+   "seed": "17[Shadow] :: garden_gate",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "18": {
+   "error": "",
+   "ok": true,
+   "seed": "18[Mirror]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "plane",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "19": {
+   "error": "",
+   "ok": true,
+   "seed": "19[Drive] :: 2",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "20": {
+   "error": "",
+   "ok": true,
+   "seed": "20[Alpha]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "21": {
+   "error": "missing_source",
+   "ok": false,
+   "seed": "21[Merge] :: garden_gate",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "22": {
+   "error": "",
+   "ok": true,
+   "seed": "22[Split] :: garden_gate",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "23": {
+   "error": "",
+   "ok": true,
+   "seed": "23[Lock]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "24": {
+   "error": "",
+   "ok": true,
+   "seed": "24[Unlock]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "25": {
+   "error": "",
+   "ok": true,
+   "seed": "25[Pulse]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "26": {
+   "error": "",
+   "ok": true,
+   "seed": "26[Temp] :: census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "27": {
+   "error": "",
+   "ok": true,
+   "seed": "27[Checkpoint] :: census",
+   "sensitive_to": [
+    "selected",
+    "store",
+    "weights",
+    "scope",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "28": {
+   "error": "acceptance_policy_denied",
+   "ok": false,
+   "seed": "28[Rollback]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "29": {
+   "error": "",
+   "ok": true,
+   "seed": "29[Compress] :: garden gate path",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "30": {
+   "error": "",
+   "ok": true,
+   "seed": "30[Expand] :: census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "31": {
+   "error": "",
+   "ok": true,
+   "seed": "31[Simulate] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "plane",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "32": {
+   "error": "",
+   "ok": true,
+   "seed": "32[Pause]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "33": {
+   "error": "",
+   "ok": true,
+   "seed": "33[Resume]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "34": {
+   "error": "",
+   "ok": true,
+   "seed": "34[Stamp] :: census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "35": {
+   "error": "",
+   "ok": true,
+   "seed": "35[Discover] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "plane",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "36": {
+   "error": "",
+   "ok": true,
+   "seed": "36[Inject] :: census_inject",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "37": {
+   "error": "",
+   "ok": true,
+   "seed": "37[Nurture] :: census_seed",
+   "sensitive_to": [
+    "selected",
+    "store",
+    "groups",
+    "weights",
+    "scope",
+    "plane",
+    "last_result"
+   ],
+   "writes": [
+    "nursery"
+   ]
+  },
+  "38": {
+   "error": "",
+   "ok": true,
+   "seed": "38[Distill] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "39": {
+   "error": "",
+   "ok": true,
+   "seed": "39[Schema]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "40": {
+   "error": "",
+   "ok": true,
+   "seed": "40[TokenCount]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "41": {
+   "error": "",
+   "ok": true,
+   "seed": "41[Sanitize] :: note=census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "42": {
+   "error": "",
+   "ok": true,
+   "seed": "42[Retry]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "43": {
+   "error": "",
+   "ok": true,
+   "seed": "43[Fallback] :: census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "44": {
+   "error": "bridge_unavailable",
+   "ok": false,
+   "seed": "44[Bridge] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "45": {
+   "error": "",
+   "ok": true,
+   "seed": "45[Translate] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "46": {
+   "error": "",
+   "ok": true,
+   "seed": "46[Rank]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "47": {
+   "error": "embed_unavailable",
+   "ok": false,
+   "seed": "47[Embed] :: garden",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "48": {
+   "error": "",
+   "ok": true,
+   "seed": "48[Macro] :: 2",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": []
+  },
+  "49": {
+   "error": "",
+   "ok": true,
+   "seed": "49[Profile]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len"
+   ]
+  },
+  "50": {
+   "error": "",
+   "ok": true,
+   "seed": "50[Manifest] :: Census Form",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "history_len",
+    "plane"
+   ]
+  },
+  "51": {
+   "error": "",
+   "ok": true,
+   "seed": "51[Select] :: garden",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "52": {
+   "error": "",
+   "ok": true,
+   "seed": "52[Filter] :: gate",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.selected",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "53": {
+   "error": "",
+   "ok": true,
+   "seed": "53[Scope] :: plane",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "54": {
+   "error": "",
+   "ok": true,
+   "seed": "54[Query] :: garden",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "55": {
+   "error": "",
+   "ok": true,
+   "seed": "55[Set] :: probe=1",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.snapshots",
+    "core_ii.store",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "56": {
+   "error": "",
+   "ok": true,
+   "seed": "56[Get] :: data",
+   "sensitive_to": [
+    "store"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "57": {
+   "error": "",
+   "ok": true,
+   "seed": "57[Compare] :: eq data real",
+   "sensitive_to": [
+    "store"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "58": {
+   "error": "",
+   "ok": true,
+   "seed": "58[Match] :: gate",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.selected",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "59": {
+   "error": "",
+   "ok": true,
+   "seed": "59[Route] :: alt",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.route",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "60": {
+   "error": "",
+   "ok": true,
+   "seed": "60[pass]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.branch",
+    "core_ii.frames",
+    "core_ii.last_control",
+    "core_ii.last_frame",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "61": {
+   "error": "",
+   "ok": true,
+   "seed": "61[Join]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.frames",
+    "core_ii.last_frame",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "62": {
+   "error": "",
+   "ok": true,
+   "seed": "62[Parallel] :: x",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.frames",
+    "core_ii.last_control",
+    "core_ii.last_frame",
+    "core_ii.parallel",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "63": {
+   "error": "",
+   "ok": true,
+   "seed": "63[Sequence] :: x",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.frames",
+    "core_ii.last_control",
+    "core_ii.last_frame",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "64": {
+   "error": "",
+   "ok": true,
+   "seed": "64[Until] :: true",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.frames",
+    "core_ii.last_control",
+    "core_ii.last_frame",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "65": {
+   "error": "",
+   "ok": true,
+   "seed": "65[While] :: false",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.frames",
+    "core_ii.last_control",
+    "core_ii.last_frame",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "66": {
+   "error": "",
+   "ok": true,
+   "seed": "66[ForEach]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.frames",
+    "core_ii.last_control",
+    "core_ii.last_frame",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "67": {
+   "error": "",
+   "ok": true,
+   "seed": "67[Any] :: gate",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "68": {
+   "error": "",
+   "ok": true,
+   "seed": "68[All] :: gate",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "69": {
+   "error": "",
+   "ok": true,
+   "seed": "69[None] :: zzz",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "70": {
+   "error": "",
+   "ok": true,
+   "seed": "70[Count]",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "71": {
+   "error": "",
+   "ok": true,
+   "seed": "71[Measure] :: data:count",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "72": {
+   "error": "",
+   "ok": true,
+   "seed": "72[Limit] :: 4",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.limit",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "73": {
+   "error": "",
+   "ok": true,
+   "seed": "73[Threshold] :: gte:count 1",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "74": {
+   "error": "",
+   "ok": true,
+   "seed": "74[Weight] :: count=0.5",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "core_ii.weights",
+    "history_len"
+   ]
+  },
+  "75": {
+   "error": "",
+   "ok": true,
+   "seed": "75[Normalize]",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "core_ii.weights",
+    "history_len"
+   ]
+  },
+  "76": {
+   "error": "",
+   "ok": true,
+   "seed": "76[Resolve] :: 70",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "77": {
+   "error": "",
+   "ok": true,
+   "seed": "77[Infer] :: garden",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "78": {
+   "error": "",
+   "ok": true,
+   "seed": "78[Cause] :: a > b",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.causes",
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "79": {
+   "error": "",
+   "ok": true,
+   "seed": "79[Depend] :: a > b",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.deps",
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "80": {
+   "error": "",
+   "ok": true,
+   "seed": "80[Context] :: census",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.context",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "81": {
+   "error": "",
+   "ok": true,
+   "seed": "81[Reference] :: ref1",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.refs",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "82": {
+   "error": "",
+   "ok": true,
+   "seed": "82[Group] :: squad",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.groups",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "83": {
+   "error": "ungroup_missing:squad",
+   "ok": false,
+   "seed": "83[Ungroup] :: squad",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.last_error",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "84": {
+   "error": "",
+   "ok": true,
+   "seed": "84[Copy] :: data",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.store",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "85": {
+   "error": "",
+   "ok": true,
+   "seed": "85[Move] :: count>moved_count",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.store",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "86": {
+   "error": "delete_missing:probe",
+   "ok": false,
+   "seed": "86[Delete] :: probe",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_error",
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "87": {
+   "error": "",
+   "ok": true,
+   "seed": "87[Replace] :: data>datum",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.snapshots",
+    "core_ii.store",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "88": {
+   "error": "",
+   "ok": true,
+   "seed": "88[Patch] :: data=real2",
+   "sensitive_to": [],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.snapshots",
+    "core_ii.store",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "89": {
+   "error": "",
+   "ok": true,
+   "seed": "89[Diff]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.last_diff",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "90": {
+   "error": "",
+   "ok": true,
+   "seed": "90[Trace]",
+   "sensitive_to": [
+    "selected",
+    "store",
+    "groups",
+    "weights",
+    "scope",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "91": {
+   "error": "",
+   "ok": true,
+   "seed": "91[Assert] :: true",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.last_assert",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "92": {
+   "error": "",
+   "ok": true,
+   "seed": "92[Guard] :: true",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "93": {
+   "error": "",
+   "ok": true,
+   "seed": "93[Try]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.traces",
+    "core_ii.try_depth",
+    "core_ii.tx",
+    "history_len"
+   ]
+  },
+  "94": {
+   "error": "catch_illegal",
+   "ok": false,
+   "seed": "94[Catch]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.last_error",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "95": {
+   "error": "commit_without_try",
+   "ok": false,
+   "seed": "95[Commit]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.last_error",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "96": {
+   "error": "",
+   "ok": true,
+   "seed": "96[Revert]",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.defs",
+    "core_ii.groups",
+    "core_ii.selected",
+    "core_ii.snapshots",
+    "core_ii.store",
+    "core_ii.traces",
+    "core_ii.weights",
+    "history_len"
+   ]
+  },
+  "97": {
+   "error": "",
+   "ok": true,
+   "seed": "97[Define] :: x=y",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.defs",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "98": {
+   "error": "",
+   "ok": true,
+   "seed": "98[Alias] :: al=note",
+   "sensitive_to": [
+    "selected",
+    "weights",
+    "last_result"
+   ],
+   "writes": [
+    "core_ii.aliases",
+    "core_ii.traces",
+    "history_len"
+   ]
+  },
+  "99": {
+   "error": "",
+   "ok": true,
+   "seed": "99[Compose] :: censuscomp=70",
+   "sensitive_to": [
+    "selected"
+   ],
+   "writes": [
+    "core_ii.compositions",
+    "core_ii.last_result",
+    "core_ii.traces",
+    "history_len"
+   ]
+  }
+ },
+ "owner": "Gate0Census",
+ "world": [
+  "08[Create] :: Garden Gate",
+  "08[Create] :: Garden Path",
+  "08[Create] :: Stone Arch",
+  "55[Set] :: data=real",
+  "55[Set] :: count=3",
+  "51[Select] :: garden",
+  "82[Group] :: crew",
+  "74[Weight] :: data=0.5",
+  "97[Define] :: note=memo"
+ ]
+}

@@ -1,0 +1,15 @@
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: kill missed the write window (rc=0, temp_size=None, expected=4015402); retrying
+    U.sigkill_mid_write: kill missed the write window (rc=0, temp_size=None, expected=4015402); retrying
+    U.sigkill_mid_write: kill missed the write window (rc=0, temp_size=None, expected=4015402); retrying
+    U.sigkill_mid_write: SIGKILL mid-write could not be established in 3 bounded attempts (missed)
+    U.sigkill_mid_write: RED
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: RED
+U-PROBE iter 1: FAIL ['U.sigkill_mid_write']

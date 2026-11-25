@@ -1,0 +1,12 @@
+diff --git a/form/dell_matrix/acceptance_policy.py b/form/dell_matrix/acceptance_policy.py
+index 25480f6..d544187 100644
+--- a/form/dell_matrix/acceptance_policy.py
++++ b/form/dell_matrix/acceptance_policy.py
+@@ -758,7 +758,6 @@ class AcceptancePolicy:
+             approval_id = review_context.get("approval_id")
+             rec = self._issued_approvals.get(approval_id) if approval_id else None
+             if (rec is not None
+-                    and approval_id not in self._revoked_approvals
+                     and rec["session_id"] == self._session_id
+                     and rec["operation"] == operation
+                     and rec["target"] == pid

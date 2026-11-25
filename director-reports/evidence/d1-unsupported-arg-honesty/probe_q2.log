@@ -1,0 +1,29 @@
+signatures total=17 core_ii=16 [51, 52, 53, 54, 55, 56, 57, 58, 67, 68, 69, 84, 85, 86, 87, 88]
+non-string roles: [(8, 'skin', 'enum')]
+[CONFIRMED] Q2-census: 17 signatures (16 Core II + Dell 8); the ONLY non-string role in the registry is Dell 8's enum 'skin' — no Core II role declares integer/boolean/enum, so no Core II wrong-value-type refusal surface exists
+  (cleanup ArgHonQ2C0: 0 entries removed)
+55[Set](bogus=x) -> ok=False error='MISSING_REQUIRED: key' store {'a': '1'} -> {'a': '1'}
+[CONFIRMED] Q2-unknown-role-masked: refusal + zero mutation hold, but the SURFACED error is MISSING_REQUIRED: validate() checks missing-required before unknown roles and the receipt carries errors[0] only
+55[Set](key=a, bogus=x) -> ok=False error='UNKNOWN_ROLE: bogus' store={'a': '1'}
+[CONFIRMED] Q2-unknown-role-surfaced: with required roles present, the unknown role surfaces as UNKNOWN_ROLE — error precedence is MISSING_REQUIRED > UNKNOWN_ROLE > INVALID_VALUE
+  (cleanup ArgHonQ2S1: 0 entries removed)
+55[Set](value=x) -> ok=False error='MISSING_REQUIRED: key' store={'a': '1'}
+[CONFIRMED] Q2-missing-required: missing required role refuses MISSING_REQUIRED, zero mutation
+  (cleanup ArgHonQ2S2: 0 entries removed)
+55[Set](key=a, key=b) -> ok=False error="duplicate role 'key'" store={'a': '1'}
+[CONFIRMED] Q2-duplicate-role: duplicate role refuses AT PARSE (DAF-07), before any execution
+  (cleanup ArgHonQ2S3: 0 entries removed)
+conflict -> ok=False error='ARGUMENT_CONFLICT' store={'a': '1'}; equal -> ok=True store={'a': '1'}
+[CONFIRMED] Q2-conflict: differing typed+legacy refuses ARGUMENT_CONFLICT before mutation; identical pair proceeds
+  (cleanup ArgHonQ2S4: 0 entries removed)
+86[Delete](key=ghost) -> ok=False error='delete_missing:ghost'
+[CONFIRMED] Q2-handler-refusal: validation PASSES; the refusal is the handler's own (delete_missing) — gate and handler refusals are distinguishable in the receipt
+  (cleanup ArgHonQ2S5: 0 entries removed)
+56[Get](key=ghost) -> ok=True atom_ok=True last_result_error='missing'
+[CONFIRMED] Q2-get-three-state: registered + valid args can still yield a soft miss inside the result cell with the atom ok=True
+  (cleanup ArgHonQ2S6: 0 entries removed)
+parse (key=5) unquoted -> ok=False error="unexpected at 7: '(key=5)'"; (key="5") quoted -> ok=True
+[CONFIRMED] Q2-unquoted-value: an unquoted value never reaches validation: the arg grammar carries quoted strings only, anything else is a parse refusal
+  (cleanup ArgHonQ2S7: 0 entries removed)
+
+Q2 SUMMARY: 9/9 expectations confirmed

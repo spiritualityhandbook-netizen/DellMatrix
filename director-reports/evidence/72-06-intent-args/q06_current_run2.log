@@ -1,0 +1,9 @@
+PASS  E19.word_count_honored  args={'count': 3} seed='06[Cycle] :: 3' (2026-11-05 census: count defaulted to 1)
+PASS  E20.word_count_honored  args={'cycles': 3} seed='13[Loop] :: 3' (2026-11-05 census: cycles defaulted to 1)
+PASS  A5.count9_preserved_upstream  args={'count': 9} seed='06[Cycle] :: 9' (census: translate clamped 9 -> 5 in args; execution-side bound is enforced and reported at the REPL, see repl probe G9)
+PASS  D17.no_dead_arg_explicit_refusal  args={} error="no verified correspondence for ('zoom', Dell 15) — refusing to guess" ideas 0->0 (census: dead arg produced, consumed nowhere)
+PASS  D18.no_dead_arg_explicit_refusal  args={} error="no verified correspondence for ('weather', Dell 25) — refusing to guess" ideas 0->0 (census: dead arg produced, consumed nowhere)
+PASS  CTL.digit_form_honored  args={'count': 3} seed='06[Cycle] :: 3'
+PASS  CTL.grow_digit_honored  args={'cycles': 3} seed='13[Loop] :: 3'
+
+7/7 checks passed

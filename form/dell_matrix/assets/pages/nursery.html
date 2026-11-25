@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>DellMatrix · Nursery</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1>Nursery</h1>
+        <p class="lede">Proposals wait here under Nursery law — grow creates them; confirm accepts onto the lattice. Floor stays locked. Keys: <kbd>G</kbd> grow · select then confirm/reject.</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" data-cmd="grow ideas 1" title="grow ideas 1">Grow ×1</button>
+        <button type="button" data-cmd="grow ideas 2" title="grow ideas 2">Grow ×2</button>
+        <button type="button" data-cmd="proposals" title="proposals">Refresh list</button>
+        <button type="button" data-cmd="rank" title="rank">Rank</button>
+        <button type="button" class="primary" data-cmd="confirm all" title="confirm all">Confirm all</button>
+        <button type="button" class="sm" data-cmd="reject all" title="reject all">Reject all</button>
+        <button type="button" data-cmd="pulse" title="pulse">Pulse</button>
+        <button type="button" data-cmd="prefs" title="preference ledger">Prefs</button>
+        <a href="/walk"><button type="button" class="sm">Walk</button></a>
+        <a href="/lattice"><button type="button" class="sm">Lattice</button></a>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:12px">
+      <span class="pill" id="pending">0 pending</span>
+      <span class="pill" id="ideas">0 ideas live</span>
+      <span class="pill" id="pillars">—</span>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3 style="margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Proposals</h3>
+        <div class="list" id="list"></div>
+        <div class="empty" id="empty" style="display:none;margin-top:8px">Nursery empty — grow ideas, then confirm what you want live.</div>
+      </div>
+      <div>
+        <div class="card">
+          <h3 id="det-title">Select a proposal to confirm or reject</h3>
+          <div class="d" id="det-meta"></div>
+          <pre id="det-body" class="mono-out" style="max-height:40vh;margin-top:8px">—</pre>
+          <div class="row" style="margin-top:10px">
+            <button type="button" class="primary" id="btn-confirm" disabled>Confirm this</button>
+            <button type="button" id="btn-reject" disabled>Reject this</button>
+          </div>
+        </div>
+        <pre id="out" class="mono-out" style="margin-top:12px;max-height:24vh">Command output…</pre>
+      </div>
+    </div>
+
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages" data-navhub="nursery">
+      <a href="/"><button type="button" class="sm">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm">Lattice</button></a>
+      <a href="/nursery"><button type="button" class="sm primary">Nursery</button></a>
+      <a href="/program"><button type="button" class="sm">Program</button></a>
+      <a href="/personas"><button type="button" class="sm">Personas</button></a>
+      <a href="/forces"><button type="button" class="sm">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm">Geometry</button></a>
+      <a href="/matrices"><button type="button" class="sm">Matrices</button></a>
+      <a href="/workshops"><button type="button" class="sm">Workshops</button></a>
+      <a href="/inspire"><button type="button" class="sm">Inspire</button></a>
+      <a href="/console"><button type="button" class="sm">Console</button></a>
+    </nav>
+  </div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell = DM.mountShell({ page: 'nursery' });
+  let SEL = null;
+  const $ = id => document.getElementById(id);
+
+  function select(p){
+    SEL = p;
+    $('btn-confirm').disabled = !p;
+    $('btn-reject').disabled = !p;
+    if (!p){
+      $('det-title').textContent = 'Select a proposal to confirm or reject';
+      $('det-meta').textContent = '';
+      $('det-body').textContent = '—';
+      return;
+    }
+    $('det-title').textContent = p.label || p.id;
+    const aff = p.affinity != null ? Number(p.affinity).toFixed(3) : (p.blended != null ? Number(p.blended).toFixed(3) : '—');
+    $('det-meta').innerHTML =
+      `id <b>${DM.esc(p.id)}</b> · aff ${DM.esc(aff)} · kind ${DM.esc(p.kind||'—')}` +
+      (p.pref_score != null ? ` · pref ${DM.esc(String(p.pref_score))}` : '');
+    $('det-body').textContent = p.words || p.reason || '—';
+  }
+
+  async function paint(){
+    try{
+      const s = await DM.getState();
+      const ns = s.nursery || [];
+      const pil = s.pillars || {};
+      shell.setMeta(`nursery · pending ${ns.length} · ideas ${s.ideas??0}`);
+      shell.setFoot(s);
+      try{ const sx=$('sync-text'); if(sx&&DM.formatSyncLine) sx.textContent=DM.formatSyncLine(s); }catch(_e){}
+      $('pending').textContent = ns.length + ' pending';
+      $('ideas').textContent = (s.ideas??0) + ' ideas live';
+      $('pillars').textContent = (pil.label||'—') + ' ' + (pil.average!=null?pil.average:'');
+      $('empty').style.display = ns.length ? 'none' : 'block';
+      $('list').innerHTML = ns.length
+        ? ns.map(p =>
+            `<button type="button" class="list-item" data-id="${DM.esc(p.id)}">`+
+            `<div class="t">${DM.esc(p.label||p.id)}</div>`+
+            `<div class="s">aff ${DM.esc(String(p.affinity??p.blended??'—'))} · ${DM.esc((p.words||'').slice(0,80))}</div>`+
+            `</button>`
+          ).join('')
+        : '';
+      document.querySelectorAll('#list [data-id]').forEach(b=>{
+        b.onclick = ()=>{
+          const id = b.getAttribute('data-id');
+          const hit = ns.find(x => x.id === id);
+          select(hit || null);
+        };
+      });
+      if (SEL){
+        const still = ns.find(x => x.id === SEL.id);
+        select(still || null);
+      }
+    }catch(e){
+      shell.setMeta('offline');
+    }
+  }
+
+  async function run(cmd){
+    const r = await DM.sendCmd(cmd);
+    $('out').textContent = (r.msg || r.error || '—').slice(0, 4000);
+    await paint();
+  }
+
+  document.querySelectorAll('[data-cmd]').forEach(b=>{
+    b.addEventListener('click', ()=> run(b.getAttribute('data-cmd')));
+  });
+  $('btn-confirm').onclick = ()=>{ if(SEL) run('confirm ' + SEL.id); };
+  $('btn-reject').onclick = ()=>{ if(SEL) run('reject ' + SEL.id); };
+
+  document.addEventListener('keydown', e=>{
+    if (e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
+    if (e.key==='g'||e.key==='G') run('grow ideas 1');
+  });
+
+  paint();
+  setInterval(paint, 3500);
+})();
+</script>
+</body>
+</html>

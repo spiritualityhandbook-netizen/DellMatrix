@@ -1,0 +1,133 @@
+{
+  "hcp_nn_count_origin": 12,
+  "hcp_nn_kinds": {
+    "below": 3,
+    "in-plane": 6,
+    "above": 3
+  },
+  "hcp_euclidean_shells_to_d2_9": [
+    {
+      "d2_exact": "1",
+      "d2_float": 1.0,
+      "count": 12,
+      "cumulative_incl_center": 13
+    },
+    {
+      "d2_exact": "2",
+      "d2_float": 2.0,
+      "count": 6,
+      "cumulative_incl_center": 19
+    },
+    {
+      "d2_exact": "8/3",
+      "d2_float": 2.6666666666666665,
+      "count": 2,
+      "cumulative_incl_center": 21
+    },
+    {
+      "d2_exact": "3",
+      "d2_float": 3.0,
+      "count": 18,
+      "cumulative_incl_center": 39
+    },
+    {
+      "d2_exact": "11/3",
+      "d2_float": 3.6666666666666665,
+      "count": 12,
+      "cumulative_incl_center": 51
+    },
+    {
+      "d2_exact": "4",
+      "d2_float": 4.0,
+      "count": 6,
+      "cumulative_incl_center": 57
+    },
+    {
+      "d2_exact": "5",
+      "d2_float": 5.0,
+      "count": 12,
+      "cumulative_incl_center": 69
+    },
+    {
+      "d2_exact": "17/3",
+      "d2_float": 5.666666666666667,
+      "count": 12,
+      "cumulative_incl_center": 81
+    },
+    {
+      "d2_exact": "6",
+      "d2_float": 6.0,
+      "count": 6,
+      "cumulative_incl_center": 87
+    },
+    {
+      "d2_exact": "19/3",
+      "d2_float": 6.333333333333333,
+      "count": 6,
+      "cumulative_incl_center": 93
+    },
+    {
+      "d2_exact": "20/3",
+      "d2_float": 6.666666666666667,
+      "count": 12,
+      "cumulative_incl_center": 105
+    },
+    {
+      "d2_exact": "7",
+      "d2_float": 7.0,
+      "count": 24,
+      "cumulative_incl_center": 129
+    },
+    {
+      "d2_exact": "22/3",
+      "d2_float": 7.333333333333333,
+      "count": 6,
+      "cumulative_incl_center": 135
+    },
+    {
+      "d2_exact": "25/3",
+      "d2_float": 8.333333333333334,
+      "count": 12,
+      "cumulative_incl_center": 147
+    },
+    {
+      "d2_exact": "9",
+      "d2_float": 9.0,
+      "count": 12,
+      "cumulative_incl_center": 159
+    }
+  ],
+  "hcp_step_shells_1_to_4": {
+    "1": 12,
+    "2": 44,
+    "3": 96,
+    "4": 170
+  },
+  "fcc_step_shells_1_to_4": {
+    "1": 12,
+    "2": 42,
+    "3": 92,
+    "4": 162
+  },
+  "hcp_volume_per_point": 0.7071067811865475,
+  "fcc_volume_per_point": 0.7071067811865476,
+  "packing_density_both": 0.7404804896930609,
+  "hcp_basal_layer_points_within_R4": 85,
+  "hcp_qualifying_flower_plane_orientations": [
+    {
+      "normal": [
+        -0.0,
+        -0.0,
+        1.0
+      ],
+      "layer_points_R4": 85,
+      "layer_points_within_d2": 19
+    }
+  ],
+  "hcp_candidate_normals_tested": 22,
+  "site_orbits": {
+    "FCC": 1,
+    "HCP": 2,
+    "note": "FCC is a Bravais lattice: one translation orbit. In HCP no translation of the structure maps an A site to a B site (the would-be translation (o, h) fails: 2o is not a triangular-lattice vector); A and B are two orbits."
+  }
+}

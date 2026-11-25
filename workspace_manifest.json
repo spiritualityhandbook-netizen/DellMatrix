@@ -1,0 +1,24 @@
+{
+  "projectName": "DellMatrix",
+  "version": "0.2.1",
+  "foundation": [
+    "src/core/dual_lattice.js",
+    "src/core/foundation.js",
+    "src/core/dell_functions.js",
+    "src/core/agent_categories.js",
+    "src/core/shared_canvas.js",
+    "src/core/six_pillar_audit.js",
+    "src/core/stigmergic.js",
+    "src/core/five_ring_bind.js",
+    "src/core/force_slots.js",
+    "src/forces/nature_forces.js"
+  ],
+  "snapIns": [
+    "view-rooms",
+    "workshops",
+    "personas-pack",
+    "mandel-station"
+  ],
+  "entry": "src/boot.js",
+  "demo": "src/demo_run.js"
+}

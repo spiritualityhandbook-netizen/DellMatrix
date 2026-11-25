@@ -1,0 +1,37 @@
+{
+  "status": "TRUE",
+  "matrix": "BLANK_SEED",
+  "offline": true,
+  "floor": ["Alpha", "Delta", "Omega", "Omni"],
+  "nova": "Cheat only",
+  "dells": [
+    {"dell": 0, "name": "Nova", "manor": "Origin / fresh start"},
+    {"dell": 1, "name": "Initiate", "manor": "Root command / entry"},
+    {"dell": 2, "name": "Persona", "manor": "Identity / role"},
+    {"dell": 3, "name": "Logic", "manor": "Rules / constraints"},
+    {"dell": 4, "name": "Transform", "manor": "Convert / reshape"},
+    {"dell": 5, "name": "Tone", "manor": "Vibe / style"},
+    {"dell": 6, "name": "Cycle", "manor": "Rhythm / timing"},
+    {"dell": 7, "name": "Link", "manor": "Connect / reference"},
+    {"dell": 8, "name": "Create", "manor": "Instantiate"},
+    {"dell": 9, "name": "Show", "manor": "Render / output"},
+    {"dell": 10, "name": "Keep", "manor": "Pin / persist"},
+    {"dell": 11, "name": "Architect", "manor": "Schema / blueprint"},
+    {"dell": 12, "name": "Test", "manor": "Validate / assert"},
+    {"dell": 13, "name": "Loop", "manor": "Iterate until"},
+    {"dell": 14, "name": "Bind", "manor": "Attach / semantic edge"},
+    {"dell": 15, "name": "Map", "manor": "Coordinate / index"},
+    {"dell": 20, "name": "Alpha", "manor": "Close / finalize"},
+    {"dell": 23, "name": "Lock", "manor": "Freeze immutable"},
+    {"dell": 25, "name": "Pulse", "manor": "Broadcast outward"},
+    {"dell": 26, "name": "Temp", "manor": "Cold / Warm / Hot planes"},
+    {"dell": 50, "name": "Manifest", "manor": "Make real / bring into form"}
+  ],
+  "flows": [
+    {"symbol": ">", "name": "Primary", "manor": "Default execution"},
+    {"symbol": ">>", "name": "Strong Primary", "manor": "Elevated intensity"},
+    {"symbol": ":", "name": "Bind", "manor": "Attach / sequence"},
+    {"symbol": "::", "name": "Deep Bind", "manor": "Nested attach"},
+    {"symbol": "<<[Delta]", "name": "Retrograde", "manor": "Reverse / correct"}
+  ]
+}

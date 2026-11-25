@@ -1,0 +1,22 @@
+browser: Chrome/156.0.8078.47
+[PASS] page title is the Studio 'DellMatrix Studio'
+[PASS] transport, rack, editor, canvas, receipts, RUN, examples all in the DOM missing=[]
+[PASS] served page carries the per-launch session token (not the placeholder) len=43
+[PASS] frontend init completed (engine ready status) 'engine ready · owner BrowserCI · store 0 · plants 0 · history 0'
+status after load: engine ready · owner BrowserCI · store 0 · plants 0 · history 0
+[PASS] Dell Rack renders exactly 100 Dells count=100
+[PASS] both Core I and Core II rack groups render 'CORE I — ACTION SPINE · 00–50 | CORE II — INSTRUCTION ARCHITECTURE · 51–99'
+[PASS] example select loads its seed into the editor '55[Set] :: tempo=120 >> 56[Get] :: tempo'
+[PASS] canvas renders the canonical parse (2 atoms) count=2
+[PASS] no outcome painted before the run painted=0
+RUN clicked at {'x': 347.890625, 'y': 684.5}
+[PASS] chain verdict shows CHAIN OK from the run's receipts '✓ CHAIN OK — 2 atoms'
+[PASS] both atoms painted atom-ok from real receipts ok=2
+[PASS] per-atom verdicts read 'ran' ['✓ ran', '✓ ran']
+[PASS] store panel shows the executed value (tempo = 120) 'tempostring120'
+[PASS] receipts panel records the run as OK rows=1
+status after run: done · ok
+[PASS] zero console errors / page exceptions (favicon excluded) 
+[PASS] screenshot is a real PNG of the page bytes=159387 dims=(1440, 857)
+screenshot saved: /home/runner/work/DellMatrix/DellMatrix/browser-evidence/studio_browser.png (159387 bytes, dims (1440, 857))
+BROWSER-ACCEPT: 16/16

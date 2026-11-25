@@ -1,0 +1,32 @@
+[
+  {
+    "candidate": "6d42e4dd0b4ba514963689bff05271c13ca009c3",
+    "merge": "484453f814cd094b64b28f6b4259c109a2e13ada",
+    "candidate_tree": "e4973c68c09d13c939d5b3f1a3f767e9e4df22bd",
+    "merge_tree": "e4973c68c09d13c939d5b3f1a3f767e9e4df22bd"
+  },
+  {
+    "candidate": "86df4af7d08fc77db81b406492b453461d646a42",
+    "merge": "87be4de7fc310baf9e93bbef0d805ec83373c8bc",
+    "candidate_tree": "bd1eeb411f933c25ee359099975fcfb950542dc7",
+    "merge_tree": "bd1eeb411f933c25ee359099975fcfb950542dc7"
+  },
+  {
+    "candidate": "1968414de8279a3d26d1c0c340c8905ed0d4abb8",
+    "merge": "2059d6a083b40d1065eb837454eff763a553dc1b",
+    "candidate_tree": "ed9cdeb44f2e8c32115502a4c55f1d86b5ad9bef",
+    "merge_tree": "ed9cdeb44f2e8c32115502a4c55f1d86b5ad9bef"
+  },
+  {
+    "candidate": "2b04300de7d6b97b35320cfdf6eacb6870a0b42e",
+    "merge": "625bb69004cad41e7c0ec4010071c2d5f5d2d31f",
+    "candidate_tree": "6e08d521e86de9b01f9d17b537cd4992952743a0",
+    "merge_tree": "6e08d521e86de9b01f9d17b537cd4992952743a0"
+  },
+  {
+    "candidate": "e78ada463b40790b7f0c4219e9809536defc6f9c",
+    "merge": "1607f338ddaa83b03207e387cb90af2b5fd5e181",
+    "candidate_tree": "b1692ad339656868d9f9055271be5b35586d72d3",
+    "merge_tree": "b1692ad339656868d9f9055271be5b35586d72d3"
+  }
+]

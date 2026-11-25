@@ -1,0 +1,276 @@
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 1: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 2: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 3: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 4: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 5: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 6: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 7: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 8: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 9: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 10: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 11: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 12: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 13: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 14: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 15: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 16: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 17: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 18: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 19: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 20: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 21: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 22: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 23: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 24: ok
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: GREEN
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: GREEN
+U-PROBE iter 25: ok
+U-PROBE: all ok

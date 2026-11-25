@@ -1,0 +1,51 @@
+verify_72_49: fresh clone into /tmp/tmp.6pVECHagub/repo
+environment: host=runnervmwuk1x | Linux 7.0.0-1019-azure x86_64 | git 2.56.0 | Python 3.14.4 | 2026-11-05T13:31:01Z
+
+=== 1. MANIFEST.sha256 integrity (PR #297 supplement head, pinned) ===
+supplement head (checked out): 5ef44c601f9de48bdac4c7e7fb35db227463b9a7
+supplement head (expected):    5ef44c601f9de48bdac4c7e7fb35db227463b9a7
+HEAD equality asserted before manifest verification
+EVIDENCE.md: OK
+fresh_clone.log: OK
+fresh_clone_main_ed4ac00.log: OK
+mr49_ground.md: OK
+mr49_probe.py: OK
+mutant_m1.diff: OK
+mutant_m1.log: OK
+mutant_m1_recon.log: OK
+mutant_m2.diff: OK
+mutant_m2.log: OK
+mutant_m2_recon.log: OK
+mutant_m3.diff: OK
+mutant_m3.log: OK
+mutant_m3_recon.log: OK
+probe_pristine.log: OK
+regress/main_chain.log: OK
+regress/main_leg1.log: OK
+regress/main_leg2.log: OK
+regress/main_leg3.log: OK
+suite_run1_tail.log: OK
+verify_72_49.sh: OK
+verify_pinned_run_cycle26.log: OK
+
+=== 2. Targeted suite at executed code head df88f72ce5711bb7e64f9a506e33c8a0eaf4470f ===
+[PASS] B-old-still-denied:derived_optin
+[PASS] B-old-still-denied:optin_direct
+SM32: 60/60 GREEN
+
+=== 3. Bundled probe against the code head (cross-process denial) ===
+[PASS] B-old-still-denied:derived_optin: allowed=False want=False
+[PASS] B-old-still-denied:optin_direct: allowed=False want=False
+PROBE VERDICT: CONTRACT HOLDS
+
+=== 4. Targeted suite at merged head ed4ac00fba08b81a7194dfd9d76618d07c74ec21 ===
+[PASS] B-old-still-denied:derived_optin
+[PASS] B-old-still-denied:optin_direct
+SM32: 60/60 GREEN
+
+=== 5. acceptance_policy.py byte identity (base / code / merged) ===
+base   0c062a152807392cbfc987eb3c998e99b5662069  f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c
+code   df88f72ce5711bb7e64f9a506e33c8a0eaf4470f  f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c
+merged ed4ac00fba08b81a7194dfd9d76618d07c74ec21  f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c
+
+VERIFY_72_49: ALL STEPS PASS (manifest OK; suite 60/60 at df88f72 and ed4ac00; probe exit 0; policy byte-identical)

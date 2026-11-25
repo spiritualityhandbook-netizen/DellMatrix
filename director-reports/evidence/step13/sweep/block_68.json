@@ -1,0 +1,2746 @@
+{
+"block": "block_68",
+"rows": [
+{
+"pair": "60->80",
+"a_seed": "60[pass]",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "60->81",
+"a_seed": "60[pass]",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "60->82",
+"a_seed": "60[pass]",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "60->83",
+"a_seed": "60[pass]",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "60->84",
+"a_seed": "60[pass]",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "60->85",
+"a_seed": "60[pass]",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "60->86",
+"a_seed": "60[pass]",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "60->87",
+"a_seed": "60[pass]",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "60->88",
+"a_seed": "60[pass]",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "60->89",
+"a_seed": "60[pass]",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.branch",
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "61->80",
+"a_seed": "61[Join]",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "61->81",
+"a_seed": "61[Join]",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "61->82",
+"a_seed": "61[Join]",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "61->83",
+"a_seed": "61[Join]",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "61->84",
+"a_seed": "61[Join]",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "61->85",
+"a_seed": "61[Join]",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "61->86",
+"a_seed": "61[Join]",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "61->87",
+"a_seed": "61[Join]",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "61->88",
+"a_seed": "61[Join]",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "61->89",
+"a_seed": "61[Join]",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "62->80",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "62->81",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "62->82",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "62->83",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "62->84",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "62->85",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "62->86",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "62->87",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "62->88",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "62->89",
+"a_seed": "62[Parallel] :: x",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame",
+"core_ii.parallel"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "63->80",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "63->81",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "63->82",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "63->83",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "63->84",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "63->85",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "63->86",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "63->87",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "63->88",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "63->89",
+"a_seed": "63[Sequence] :: x",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "64->80",
+"a_seed": "64[Until] :: true",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "64->81",
+"a_seed": "64[Until] :: true",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "64->82",
+"a_seed": "64[Until] :: true",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "64->83",
+"a_seed": "64[Until] :: true",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "64->84",
+"a_seed": "64[Until] :: true",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "64->85",
+"a_seed": "64[Until] :: true",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0007,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "64->86",
+"a_seed": "64[Until] :: true",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "64->87",
+"a_seed": "64[Until] :: true",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "64->88",
+"a_seed": "64[Until] :: true",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "64->89",
+"a_seed": "64[Until] :: true",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "65->80",
+"a_seed": "65[While] :: false",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "65->81",
+"a_seed": "65[While] :: false",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "65->82",
+"a_seed": "65[While] :: false",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "65->83",
+"a_seed": "65[While] :: false",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "65->84",
+"a_seed": "65[While] :: false",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "65->85",
+"a_seed": "65[While] :: false",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "65->86",
+"a_seed": "65[While] :: false",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "65->87",
+"a_seed": "65[While] :: false",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "65->88",
+"a_seed": "65[While] :: false",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "65->89",
+"a_seed": "65[While] :: false",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "66->80",
+"a_seed": "66[ForEach]",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "66->81",
+"a_seed": "66[ForEach]",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "66->82",
+"a_seed": "66[ForEach]",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "66->83",
+"a_seed": "66[ForEach]",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "66->84",
+"a_seed": "66[ForEach]",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "66->85",
+"a_seed": "66[ForEach]",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "66->86",
+"a_seed": "66[ForEach]",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "66->87",
+"a_seed": "66[ForEach]",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0006,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "66->88",
+"a_seed": "66[ForEach]",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "66->89",
+"a_seed": "66[ForEach]",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.frames",
+"core_ii.last_control",
+"core_ii.last_frame"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "67->80",
+"a_seed": "67[Any] :: gate",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "67->81",
+"a_seed": "67[Any] :: gate",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "67->82",
+"a_seed": "67[Any] :: gate",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "67->83",
+"a_seed": "67[Any] :: gate",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "67->84",
+"a_seed": "67[Any] :: gate",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "67->85",
+"a_seed": "67[Any] :: gate",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "67->86",
+"a_seed": "67[Any] :: gate",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "67->87",
+"a_seed": "67[Any] :: gate",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "67->88",
+"a_seed": "67[Any] :: gate",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "67->89",
+"a_seed": "67[Any] :: gate",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "68->80",
+"a_seed": "68[All] :: gate",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "68->81",
+"a_seed": "68[All] :: gate",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "68->82",
+"a_seed": "68[All] :: gate",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "68->83",
+"a_seed": "68[All] :: gate",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "68->84",
+"a_seed": "68[All] :: gate",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "68->85",
+"a_seed": "68[All] :: gate",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "68->86",
+"a_seed": "68[All] :: gate",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "68->87",
+"a_seed": "68[All] :: gate",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "68->88",
+"a_seed": "68[All] :: gate",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "68->89",
+"a_seed": "68[All] :: gate",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0005,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_diff']"
+},
+{
+"pair": "69->80",
+"a_seed": "69[None] :: zzz",
+"b_seed": "80[Context] :: census",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.context"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.002,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.context']"
+},
+{
+"pair": "69->81",
+"a_seed": "69[None] :: zzz",
+"b_seed": "81[Reference] :: ref1",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.refs"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.refs']"
+},
+{
+"pair": "69->82",
+"a_seed": "69[None] :: zzz",
+"b_seed": "82[Group] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.groups"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.groups']"
+},
+{
+"pair": "69->83",
+"a_seed": "69[None] :: zzz",
+"b_seed": "83[Ungroup] :: squad",
+"a_ok": true,
+"a_error": "",
+"b_ok": false,
+"b_error": "ungroup_missing:squad",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_error"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "NOT_POSSIBLE",
+"q1": "pair err 'ungroup_missing:squad'; standalone err 'ungroup_missing:squad' (R2 pair-context)",
+"q2": "ungroup_missing:squad"
+},
+{
+"pair": "69->84",
+"a_seed": "69[None] :: zzz",
+"b_seed": "84[Copy] :: data",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"copy_data"
+],
+"removed": [],
+"changed": []
+},
+"secs": 0.0009,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "69->85",
+"a_seed": "69[None] :: zzz",
+"b_seed": "85[Move] :: count>moved_count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"moved_count"
+],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "69->86",
+"a_seed": "69[None] :: zzz",
+"b_seed": "86[Delete] :: count",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [
+"count"
+],
+"changed": []
+},
+"secs": 0.0005,
+"class": "UNIQUE_CANDIDATE",
+"q1": "joint effect outside A-alone + B-alone channels",
+"q2": "extra channels ['core_ii.store']"
+},
+{
+"pair": "69->87",
+"a_seed": "69[None] :: zzz",
+"b_seed": "87[Replace] :: data>datum",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [
+"datum"
+],
+"removed": [
+"data"
+],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "69->88",
+"a_seed": "69[None] :: zzz",
+"b_seed": "88[Patch] :: data=real2",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_result",
+"core_ii.store"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": [
+"data"
+]
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL_INDEPENDENT",
+"q1": "no emergent requirement",
+"q2": "net B writes ['core_ii.last_result', 'core_ii.store']"
+},
+{
+"pair": "69->89",
+"a_seed": "69[None] :: zzz",
+"b_seed": "89[Diff]",
+"a_ok": true,
+"a_error": "",
+"b_ok": true,
+"b_error": "",
+"a_writes_net": [
+"core_ii.last_result"
+],
+"b_writes_net": [
+"core_ii.last_diff"
+],
+"store_b": {
+"added": [],
+"removed": [],
+"changed": []
+},
+"secs": 0.0004,
+"class": "FUNCTIONAL",
+"q1": "B's behavior depends on A's effects",
+"q2": "net B writes ['core_ii.last_diff']"
+}
+],
+"secs": 0.2
+}

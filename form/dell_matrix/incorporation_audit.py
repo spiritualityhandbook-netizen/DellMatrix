@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""
+Incorporation Audit — test universal properties across DellMatrix cores
+implemented in the recent educational wave (Nature, LA, eigen stability,
+logistic, Fourier).
+
+Run:
+  python -m form.dell_matrix.incorporation_audit
+"""
+from __future__ import annotations
+
+from typing import Any, Callable, Dict, List, Tuple
+import math
+
+
+def _rec(results: List[Tuple[str, bool]], name: str, ok: bool) -> None:
+    status = "PASS" if ok else "FAIL"
+    print(f"  [{status}] {name}")
+    results.append((name, ok))
+
+
+def audit_linear_algebra(results: List[Tuple[str, bool]]) -> None:
+    print("\n-- linear_algebra --")
+    from form.dell_matrix.linear_algebra import Mat2
+    from form.dell_matrix.nature_code import Vec2
+
+    # identity leaves vectors unchanged
+    v = Vec2(3, 4)
+    w = Mat2.identity().apply(v)
+    _rec(results, "identity_preserves", abs(w.x - 3) < 1e-12 and abs(w.y - 4) < 1e-12)
+
+    # rotation by π/2: (1,0) → (0,1)
+    r = Mat2.rotate(math.pi / 2).apply(Vec2(1, 0))
+    _rec(results, "rotate_pi2", abs(r.x) < 1e-9 and abs(r.y - 1) < 1e-9)
+
+    # det of rotation = 1 (area preserving)
+    _rec(results, "det_rotation_1", abs(Mat2.rotate(0.7).det() - 1) < 1e-9)
+
+    # compose scale then rotate has det = scale product
+    m = Mat2.rotate(0.3).compose(Mat2.scale(2, 3))
+    _rec(results, "compose_det", abs(m.det() - 6) < 1e-6)
+
+    # inverse of scale
+    inv = Mat2.scale(2, 4).inverse()
+    _rec(results, "inverse_exists", inv is not None and abs(inv.det() - 0.125) < 1e-9)
+
+
+def audit_eigen_stability(results: List[Tuple[str, bool]]) -> None:
+    print("\n-- eigen_stability --")
+    from form.dell_matrix.linear_algebra import Mat2
+    from form.dell_matrix.eigen_stability import stability_of_mat2, logistic_stability
+
+    # scale 0.5: continuous λ=0.5 > 0 → unstable source; discrete |λ|<1 → stable
+    c = stability_of_mat2(Mat2.scale(0.5), "continuous")
+    d = stability_of_mat2(Mat2.scale(0.5), "discrete")
+    _rec(results, "scale_0.5_discrete_stable", d["stable"] is True)
+    _rec(results, "scale_0.5_continuous_source", c["stable"] is False)
+
+    # expanding scale unstable continuously
+    c2 = stability_of_mat2(Mat2.scale(2.0), "continuous")
+    _rec(results, "scale_2_unstable", not c2["stable"])
+
+    # pure rotation by π/2 → continuous center (pure imaginary eigenvalues)
+    cr = stability_of_mat2(Mat2.rotate(math.pi / 2), "continuous")
+    _rec(results, "rotation_pi2_center", cr["kind"] == "center")
+    # any rotation matrix is marginal under discrete iteration (|λ|=1)
+    dr = stability_of_mat2(Mat2.rotate(1.0), "discrete")
+    _rec(results, "rotation_discrete_marginal", dr["kind"] in ("marginal", "asymptotically_stable") or abs(dr.get("max_mod", 0) - 1) < 1e-6)
+
+    # logistic r=2.5 has attracting fixed point
+    ls = logistic_stability(2.5)
+    _rec(results, "logistic_2.5_attracting", len(ls["attracting"]) >= 1)
+
+    # logistic r=3.5 fixed points lose stability
+    ls2 = logistic_stability(3.5)
+    unstable_carry = all(not p["stable"] for p in ls2["fixed_points"] if abs(p["x"]) > 1e-9)
+    _rec(results, "logistic_3.5_unstable_fp", unstable_carry)
+
+
+def audit_logistic(results: List[Tuple[str, bool]]) -> None:
+    print("\n-- logistic_map --")
+    from form.dell_matrix.logistic_map import iterate, classify_regime, LogisticDriver
+
+    xs = iterate(0.5, 2.0, 30)
+    _rec(results, "iterate_bounded", all(0 <= x <= 1 for x in xs))
+
+    _rec(results, "regime_stable", classify_regime(2.5) == "stable_fixed")
+    _rec(results, "regime_chaos", classify_regime(3.9) == "chaos")
+
+    d = LogisticDriver(r=3.2, x=0.4)
+    for _ in range(20):
+        d.step()
+    _rec(results, "driver_step_ok", 0 < d.x < 1)
+
+
+def audit_fourier(results: List[Tuple[str, bool]]) -> None:
+    print("\n-- fourier --")
+    from form.dell_matrix.fourier import (
+        dft, idft, make_sine, make_square,
+        dominant_frequencies, continuous_ft_sample, gaussian_pulse,
+    )
+
+    s = make_sine(64, 3.0)
+    X = dft(s)
+    recon = idft(X)
+    err = sum(abs(a - b) for a, b in zip(s, recon)) / len(s)
+    _rec(results, "dft_idft_roundtrip", err < 1e-9)
+
+    dom = dominant_frequencies(s, top=1)
+    _rec(results, "sine_peak_k3", abs(dom[0]["k"] - 3) <= 1)
+
+    sq = make_square(64, 1.0)
+    doms = dominant_frequencies(sq, top=5)
+    ks = {d["k"] for d in doms}
+    _rec(results, "square_odd_harmonics", 1 in ks or 3 in ks)
+
+    cg = continuous_ft_sample(gaussian_pulse, n_t=64, n_f=32)
+    _rec(results, "continuous_ft_runs", len(cg["magnitudes"]) == 32 and max(cg["magnitudes"]) > 0)
+
+
+def audit_universal_properties(results: List[Tuple[str, bool]]) -> None:
+    print("\n-- universal properties --")
+    # 1. Offline: no network imports required for cores
+    import sys
+    forbidden = {"requests", "urllib3", "http.client"}
+    leaked = [m for m in forbidden if m in sys.modules]
+    _rec(results, "no_network_modules_required", len(leaked) == 0)
+
+    # 2. Pure math consistency: det(AB)=det(A)det(B)
+    from form.dell_matrix.linear_algebra import Mat2
+    A = Mat2.scale(2, 3)
+    B = Mat2.rotate(0.4)
+    _rec(results, "det_multiplicative", abs(A.compose(B).det() - A.det() * B.det()) < 1e-9)
+
+    # 3. DFT energy roughly preserved (Parseval soft check on pure sine)
+    from form.dell_matrix.fourier import dft, make_sine
+    s = make_sine(32, 2.0)
+    X = dft(s)
+    time_energy = sum(x * x for x in s)
+    freq_energy = sum(abs(c) ** 2 for c in X) / len(X)
+    # Parseval: sum |x|² = (1/N) sum |X|²  → ratio ~ 1
+    ratio = freq_energy / max(1e-12, time_energy)
+    _rec(results, "parseval_soft", abs(ratio - 1.0) < 0.05)
+
+    # 4. Logistic stays in (0,1) under valid r
+    from form.dell_matrix.logistic_map import logistic_step
+    x = 0.3
+    for r in (1.5, 2.5, 3.2, 3.9):
+        x = logistic_step(x, r)
+    _rec(results, "logistic_invariant_unit_interval", 0 < x < 1)
+
+
+def run_audit() -> bool:
+    print("=== DELLMATRIX INCORPORATION AUDIT ===")
+    results: List[Tuple[str, bool]] = []
+    audit_linear_algebra(results)
+    audit_eigen_stability(results)
+    audit_logistic(results)
+    audit_fourier(results)
+    # (The high_value_api surface section was retired with
+    # high_value_api.py itself in P3: its wire_program_methods was
+    # never called on a production Program.)
+    audit_universal_properties(results)
+
+    passed = sum(1 for _, ok in results if ok)
+    total = len(results)
+    print(f"\n=== AUDIT RESULT: {passed}/{total} ===")
+    if passed != total:
+        fails = [n for n, ok in results if not ok]
+        print("Failed:", fails)
+    return passed == total
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(0 if run_audit() else 1)

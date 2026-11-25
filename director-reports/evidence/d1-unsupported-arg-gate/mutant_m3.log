@@ -1,0 +1,28 @@
+FAIL all 33 untyped Core II Dells refuse typed args with UNSUPPORTED_ARGS + exact receipt + zero mutation :: bad=[(59, False, 'UNSUPPORTED_ARGS: zzrole=zzvalue', [{'dell': 59, 'ok': False, 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: zzrole=zzvalue'}], True), (60, False, 'UNSUPPORTED_ARGS: zzrole=zzvalue', [{'dell': 60, 'ok': False, 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: zzrole=zzvalue'}], True), (61, False, 'UNSUPPORTED_ARGS: zzrole=zzvalue', [{'dell': 61, 'ok': False, 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: zzrole=zzvalue'}], True)]
+FAIL 82[Group] typed name refused; NO group created (neither 'greens' nor the default 'group') :: ok=False err=UNSUPPORTED_ARGS: name=greens groups=[]
+FAIL 82[Group] single-atom receipt is exact :: ars=[{'dell': 82, 'ok': False, 'error': 'UNSUPPORTED_ARGS: name=greens', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: name=greens'}]
+FAIL 82[Group] bogus role refuses UNSUPPORTED_ARGS (not UNKNOWN_ROLE — no signature exists) :: err=UNSUPPORTED_ARGS: bogus=x
+FAIL refusal names roles SORTED deterministically :: err=UNSUPPORTED_ARGS: arole=2, zrole=1
+FAIL typed+label on untyped Dell refuses (the label no longer silently wins); no group created :: ok=False err=UNSUPPORTED_ARGS: name=greens
+FAIL 97[Define] typed args refused, sorted roles, no default 'def' definition lands :: ok=False err=UNSUPPORTED_ARGS: meaning=120, name=tempo defs={}
+FAIL 78[Cause] typed args refused as UNSUPPORTED_ARGS — the misleading 'malformed_relation' never surfaces :: ok=False err=UNSUPPORTED_ARGS: cause=rain, effect=flood
+FAIL FlowTo: refused atom fails honestly and the chain continues (Set still executes) :: ok=False ars=[{'dell': 82, 'ok': False, 'error': 'UNSUPPORTED_ARGS: name=x', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: name=x'}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] store={'k': 'v'}
+FAIL J1: Join with unsupported args on a clean frame — body ran, Join refused, closure NOT faked, chain and frame errors name the refusal (not join_fail) :: jr=[{'dell': 61, 'ok': False, 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'owned_by': 'sequence'}] err=UNSUPPORTED_ARGS: zzrole=zzvalue frame={'kind': 'sequence', 'condition': '', 'status': 'fail', 'iterations': 0, 'results': [{'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 61, 'ok': False, 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'owned_by': 'sequence'}], 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'depth': 0}
+FAIL J2: body refusal + Join refusal — original (body) refusal preserved as the chain error; Join receipt carries its own UNSUPPORTED_ARGS; no group created :: body=[{'dell': 82, 'ok': False, 'error': 'UNSUPPORTED_ARGS: name=greens', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: name=greens'}] jr=[{'dell': 61, 'ok': False, 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'owned_by': 'sequence'}] err=UNSUPPORTED_ARGS: name=greens frame={'kind': 'sequence', 'condition': '', 'status': 'fail', 'iterations': 0, 'results': [{'dell': 82, 'ok': False, 'error': 'UNSUPPORTED_ARGS: name=greens', 'skipped': False, 'reason': 'UNSUPPORTED_ARGS: name=greens'}, {'dell': 61, 'ok': False, 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'owned_by': 'sequence'}], 'error': 'UNSUPPORTED_ARGS: zzrole=zzvalue', 'depth': 0}
+FAIL canary: refusal diagnostics name the role and NEVER the raw value (plain atom) :: err=UNSUPPORTED_ARGS: name=CANARYZZ_9f3e_UNIQ blob_has_canary=True gate_lines=['TOAM: Dell 82[Group] has no registered typed signature; typed arguments refused before execution (roles: name=CANARYZZ_9f3e_UNIQ)']
+FAIL canary: head refusal + skipped-body receipts leak no raw value either :: err=UNSUPPORTED_ARGS: note=CANARYZZ_9f3e_UNIQ blob_has_canary=True
+FAIL REPL (real user path): typed Group refuses in the user's own interface (the REPL surfaces the refusal message — roles named, value never echoed); the group is never created (Scope then refuses 'greens'); the legacy path works end-to-end :: rc=0 out_tail=known scope 'greens' (supported: plane)
+you>   Mandell: 82[Group] :: greens
+  English: Group (Treat multiple targets as one collection) → greens
+  Chain atoms=1 label=greens
+  -- 82[Group] ns=CORE_II
+  Group greens n=1
+you>   Mandell: 53[Scope] :: greens
+  English: Scope (Establish execution/context boundary) → greens
+  Chain atoms=1 label=greens
+  -- 53[Scope] ns=CORE_II
+  Scope -> greens
+you> 
+
+
+D1_UNSUPPORTED_ARG_GATE: 29/43

@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/form/sm35_pair_atomic_test.py", line 317, in <module>
+    run_all()
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/form/sm35_pair_atomic_test.py", line 263, in run_all
+    check("H1-B: ordinary program-first crash exposes HYBRID pair "
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/form/sm35_pair_atomic_test.py", line 64, in check
+    raise AssertionError(name)
+AssertionError: H1-B: ordinary program-first crash exposes HYBRID pair (per-file atomicity only — bounded statement)
+[PASS] H1-A: setup in child process
+[PASS] H1-A: crash observed between saves (rc=42)
+[PASS] H1-A: fresh-process view produced
+[PASS] H1-A: ordinary nursery-first crash exposes HYBRID pair (per-file atomicity only — bounded statement)
+[PASS] H1-A: old pair members still present
+[PASS] H1-A: fresh load rewrote no files (no journal exists)
+[PASS] H1-B: setup in child process
+[PASS] H1-B: crash observed between saves (rc=42)
+[PASS] H1-B: fresh-process view produced
+[FAIL] H1-B: ordinary program-first crash exposes HYBRID pair (per-file atomicity only — bounded statement) — verdict=NEW_PAIR

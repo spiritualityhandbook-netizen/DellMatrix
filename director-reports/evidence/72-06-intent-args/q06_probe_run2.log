@@ -1,0 +1,23 @@
+PASS  A1.grow_cycles_used  args={'cycles': 3} seed='13[Loop] :: 3'
+PASS  A2.stamp_mark_used  args={'mark': 'victory'} seed='34[Stamp] :: victory'
+PASS  A3.cycle_count_used  args={'count': 3} seed='06[Cycle] :: 3'
+PASS  A4.form_used  args={'form': 'sphere'} seed='15[Map] :: sphere'
+PASS  A5.cycle_clamped_at_producer  translate clamps 9 -> 5 in args itself (Dell 6 cap); no silent loss, a stated transform
+PASS  B6.mirrored_move  args[source]='alpha' travels in mandel and executed seed; router reads the mandel, not args
+PASS  B7.mirrored_copy  args[source]='alpha' travels in mandel and executed seed; router reads the mandel, not args
+PASS  B11.mirrored_get  args[key]='mykey' travels in mandel and executed seed; router reads the mandel, not args
+PASS  B12.mirrored_select  args[predicate]='red' travels in mandel and executed seed; router reads the mandel, not args
+PASS  B13.mirrored_match  args[pattern]='red' travels in mandel and executed seed; router reads the mandel, not args
+PASS  B14.mirrored_nurture  args[label]='bright star' travels in mandel and executed seed; router reads the mandel, not args
+PASS  BG8.gated_delete  operand intact in args+mandel; route refuses LOUDLY by design (operand-confirmation gate) — not a silent loss
+PASS  BG9.gated_replace  operand intact in args+mandel; route refuses LOUDLY by design (operand-confirmation gate) — not a silent loss
+PASS  BG10.gated_patch  operand intact in args+mandel; route refuses LOUDLY by design (operand-confirmation gate) — not a silent loss
+PASS  C15.repl_only_walk  args={'steps': 3}; route_intent routed=False (explicit refusal); the REPL direct handler consumes args (static: form/repl.py)
+PASS  C16.repl_only_turn  args={'direction': 'left'}; route_intent routed=False (explicit refusal); the REPL direct handler consumes args (static: form/repl.py)
+PASS  D17.dead_arg_zoom  args[ref]='tokyo' produced, absent from mandel '15[Map] :: zoom', no consumer in form/ or gui/ (census grep); REPL serves the operand from raw line text
+PASS  D18.dead_arg_weather  args[condition]='rain' produced, absent from mandel '25[Pulse] :: weather', no consumer in form/ or gui/ (census grep); REPL serves the operand from raw line text
+PASS  E19.cycle_word_count_defaults  operand 'three' present in English, default 1 executed with ok=True — the digit class is certified (SM-11); the word-form class was never covered
+PASS  E20.grow_word_count_defaults  same silent default on the grow path
+PASS  CTL.digit_form_honored  isolates the gap to number WORDS, not the routing
+
+21/21 checks passed

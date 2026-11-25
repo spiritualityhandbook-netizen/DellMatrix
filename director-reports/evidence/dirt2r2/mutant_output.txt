@@ -1,0 +1,36 @@
+=== MUTANT (full): pre-fix 067ca1e growth branch restored verbatim in view_rooms.py; forces.py fix intact ===
+[FAIL] R2-1 omitted node B never receives A's stage — B got stage='branch' source='growth_force'; A stage='branch'
+[FAIL] R2-2 legacy prefix-only match stays ambiguous — B got stage='branch' source='growth_force'
+[FAIL] R2-3 both-visible: A resolves to A's own stage — A got None/'ambiguous', own='branch'
+[FAIL] R2-4 both-visible: B resolves to B's own stage (seed) — B got None/'ambiguous'
+[PASS] R2-5 plant() twice on one identity keeps one record — plants=1
+=== dirt2r2 probe: 1/5 ===
+PROBE_EXIT=1
+[PASS] growth: fixture plant actually grew past seed
+[PASS] growth: planted node stage is the plant's stage (score 0)
+[PASS] growth: score cannot move a planted node's stage
+[PASS] growth: unplanted node claims no stage
+[PASS] growth: no plants supplied -> no stage claim
+[PASS] growth: non-canonical plant stage is not passed through
+[PASS] growth: other rooms untouched (water has no stage field)
+[PASS] ambiguous: fixture plant grew and stored truncated key
+[FAIL] r2: planted node under a formerly-collided key resolves by exact identity — None/ambiguous vs grown branch
+[FAIL] r2: unplanted sibling cannot steal the plant's stage — None/ambiguous
+[PASS] ambiguous: plants disagreeing on one key -> no stage claim
+[PASS] ambiguous: agreeing duplicate plants still resolve
+[PASS] ambiguous: identical-label duplicate nodes are one identity
+[PASS] r2: plant() retains exact identity alongside truncated key
+[FAIL] r2: omitted node B never receives A's stage — branch/growth_force vs A branch
+[FAIL] r2: legacy prefix-only match stays ambiguous (node B) — branch/growth_force
+[FAIL] r2: legacy prefix-only match stays ambiguous (node A) — branch/growth_force
+[FAIL] r2: agreeing legacy stages still do not prove identity — branch/growth_force
+[FAIL] r2: both-visible node A resolves to A's own plant — None/ambiguous vs own branch
+[FAIL] r2: both-visible node B resolves to B's own plant — None/ambiguous
+[PASS] r2: exact-identity plants disagreeing -> ambiguous
+[PASS] r2: plant() twice on one identity keeps one record
+[PASS] r2: ForceField.tick does not duplicate a long-label plant
+[FAIL] r2 production: view_status omitted sibling claims no stage — branch/growth_force
+[PASS] production: view_status planted node carries plant stage
+[PASS] production: view_status unplanted node claims no stage
+=== view-rooms growth referent: 17/26 ===
+SUITE_EXIT=1

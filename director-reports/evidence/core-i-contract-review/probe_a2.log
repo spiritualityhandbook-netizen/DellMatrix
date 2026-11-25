@@ -1,0 +1,11 @@
+== A2.1: Dell 27 differential, gen-id normalized ==
+  bare==typed(bogus): True
+  bare==typed(stamp): True
+== A2.2: persisted-file search after typed 27 run ==
+  files with needles: {}
+== A2.3: Dell 44 label-driven capability ==
+  ok=False last_core_i={"dell": 44, "ok": false, "error": "bridge_unavailable", "capability": "labelcap", "permission": "offline_origin"}
+== A2.4: Dell 21 positive path (two sources) ==
+  bare ok=True typed ok=True equal=True
+  bare units=['alpha_one:Skin.CUBE', 'beta_two:Skin.CUBE', 'merge_alpha_one_beta_two:Skin.CUBE', 'welcome:Skin.WORDS']
+PROBE A2 DONE

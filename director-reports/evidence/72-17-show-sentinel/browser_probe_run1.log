@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/mr28_clone/director-reports/evidence/72-17-show-sentinel/q17_browser_probe.py", line 47, in <module>
+    _spec.loader.exec_module(_ba)
+  File "<frozen importlib._bootstrap_external>", line 991, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1128, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1186, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: '/home/hatch/workspace/goals/dellmatrix-capability-circuits/hidden_files/gui/browser_acceptance.py'

@@ -1,0 +1,3 @@
+FAIL chain: typed Scope then Select — receipts honest, selection scope-bound :: ok=True ars=[{'dell': 53, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 51, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] selected=['welcome', 'garden_gate', 'river_stone']
+FAIL chain: refused typed Scope carries an honest ok=False receipt naming scope_unknown :: ars=[{'dell': 53, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 51, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] scope=plane
+D1_TYPED_52_53: 19/28

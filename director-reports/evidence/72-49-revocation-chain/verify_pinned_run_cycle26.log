@@ -1,0 +1,54 @@
+PINNED RUN Cycle 26
+host=htch-runtime kernel=Linux 7.0.0-39-generic x86_64 git=git version 2.43.0 python=Python 3.12.3 date_utc=2026-11-05T12:42:58Z date_local=2026-11-05T12:42:58+0000
+supplement_sha_arg=a624dbdaa0eeecf4e1e80851ba9f7cb2ecfb30c4
+verify_72_49: fresh clone into /tmp/tmp.jsm3GCOOEd/repo
+environment: host=htch-runtime | Linux 7.0.0-39-generic x86_64 | git 2.43.0 | Python 3.12.3 | 2026-11-05T12:42:58Z
+
+=== 1. MANIFEST.sha256 integrity (PR #297 supplement head, pinned) ===
+supplement head (checked out): a624dbdaa0eeecf4e1e80851ba9f7cb2ecfb30c4
+supplement head (expected):    a624dbdaa0eeecf4e1e80851ba9f7cb2ecfb30c4
+HEAD equality asserted before manifest verification
+mr49_ground.md: OK
+regress/main_leg1.log: OK
+probe_pristine.log: OK
+mutant_m2.diff: OK
+regress/main_chain.log: OK
+mutant_m1.diff: OK
+verify_72_49.sh: OK
+EVIDENCE.md: OK
+mutant_m3.log: OK
+mutant_m3_recon.log: OK
+regress/main_leg3.log: OK
+mutant_m1.log: OK
+mutant_m1_recon.log: OK
+regress/main_leg2.log: OK
+suite_run1_tail.log: OK
+mutant_m3.diff: OK
+mr49_probe.py: OK
+fresh_clone.log: OK
+mutant_m2.log: OK
+mutant_m2_recon.log: OK
+fresh_clone_main_ed4ac00.log: OK
+
+=== 2. Targeted suite at executed code head df88f72ce5711bb7e64f9a506e33c8a0eaf4470f ===
+[PASS] B-old-still-denied:derived_optin
+[PASS] B-old-still-denied:optin_direct
+SM32: 60/60 GREEN
+
+=== 3. Bundled probe against the code head (cross-process denial) ===
+[PASS] B-old-still-denied:derived_optin: allowed=False want=False
+[PASS] B-old-still-denied:optin_direct: allowed=False want=False
+PROBE VERDICT: CONTRACT HOLDS
+
+=== 4. Targeted suite at merged head ed4ac00fba08b81a7194dfd9d76618d07c74ec21 ===
+[PASS] B-old-still-denied:derived_optin
+[PASS] B-old-still-denied:optin_direct
+SM32: 60/60 GREEN
+
+=== 5. acceptance_policy.py byte identity (base / code / merged) ===
+base   0c062a152807392cbfc987eb3c998e99b5662069  f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c
+code   df88f72ce5711bb7e64f9a506e33c8a0eaf4470f  f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c
+merged ed4ac00fba08b81a7194dfd9d76618d07c74ec21  f1f529db69958a1e8e09b34504bf1a59e7e2649bdc8ba32b5c4b6b47e35c3a4c
+
+VERIFY_72_49: ALL STEPS PASS (manifest OK; suite 60/60 at df88f72 and ed4ac00; probe exit 0; policy byte-identical)
+EXIT_CODE=0

@@ -1,0 +1,26 @@
+FAIL dell8 valid single: registered contract preserved :: ok=False err=UNSUPPORTED_ARGS: name, skin
+FAIL dell8 valid chain: registered contract preserved :: ok=False err=UNSUPPORTED_ARGS: name, skin
+FAIL dell8 invalid value: INVALID_VALUE (not UNSUPPORTED_ARGS) :: err=UNSUPPORTED_ARGS: name, skin
+FAIL dell8 unknown role: UNKNOWN_ROLE (not UNSUPPORTED_ARGS) :: err=UNSUPPORTED_ARGS: bogus, name
+FAIL dell8 conflict: ARGUMENT_CONFLICT preserved :: err=UNSUPPORTED_ARGS: name
+FAIL repl: Dell 8 typed Create still works in the same session :: w +0 evolved
+  rings: Seed → Token → Body → Lens → Evolve
+you>   Mandell: 08[Create](name="Repl Wish", skin="SPHERE")
+  English: Create (Instantiate)
+  TOAM: Dell 08[Create] has no registered typed signature; typed arguments refused before execution (roles: name, skin)
+you>   Mandell: 03[Logic] > 55[Set](key="tempo", value="120")
+  English: Logic (Rules / constraints) then Set (Assign an explicit value/state)
+  Chain atoms=2 label=
+  -- 03[Logic] ns=CORE_I
+  Logic constraints (live):
+    · Floor locked (Alpha · Delta · Omega · Omni)
+    · Growth never auto-writes live matrix (Nursery only)
+    · RingedGrowth is sole public growth entrypoint
+    · Origin offline — no network required for acceptance
+  TOAM: typed args lowered to lab='tempo=120'
+  -- 55[Set] ns=CORE_II
+  Set tempo=120
+you> 
+
+
+CORE_I_ARG_GATE: 86/92

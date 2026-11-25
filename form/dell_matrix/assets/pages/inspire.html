@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Inspire</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1>Inspire Pack</h1>
+        <p class="lede">Offline pedagogy from studied patterns — attention, multi-scale vision, slopes, prefs, glyphs, scripts. No network models.</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" data-cmd="inspire" class="primary">Status</button>
+        <button type="button" data-cmd="multilook">Multi-look</button>
+        <button type="button" data-cmd="attend growth seed">Attend</button>
+        <button type="button" data-cmd="slopes">Slopes</button>
+        <button type="button" data-cmd="prefs">Prefs</button>
+        <button type="button" data-cmd="glyph">Glyph</button>
+        <button type="button" data-cmd="script look; status; pulse">Script demo</button>
+        <button type="button" data-cmd="pulse">Pulse</button>
+        <button type="button" data-cmd="page">Idea page</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:12px" id="pills"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Pack snapshot</h3>
+        <div class="stat" id="snap">—</div>
+      </div>
+      <div class="card">
+        <h3>What each tool ends on</h3>
+        <div class="stat" id="ends">
+          <b>attend</b> → ranked idea list<br>
+          <b>multilook</b> → near/mid/far + memory<br>
+          <b>slopes</b> → Δscore after pulses<br>
+          <b>prefs</b> → confirm/reject weights<br>
+          <b>glyph</b> → procedural card<br>
+          <b>script</b> → batch cmd results<br>
+          <b>page</b> → full idea end-page with doors
+        </div>
+      </div>
+      <div class="card" style="grid-column:1/-1">
+        <h3>Last command output</h3>
+        <pre id="out" class="mono-out">—</pre>
+      </div>
+    </div>
+
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages" data-navhub="inspire">
+      <a href="/"><button type="button" class="sm">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm">Lattice</button></a>
+      <a href="/nursery"><button type="button" class="sm">Nursery</button></a>
+      <a href="/program"><button type="button" class="sm">Program</button></a>
+      <a href="/personas"><button type="button" class="sm">Personas</button></a>
+      <a href="/forces"><button type="button" class="sm">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm">Geometry</button></a>
+      <a href="/matrices"><button type="button" class="sm">Matrices</button></a>
+      <a href="/workshops"><button type="button" class="sm">Workshops</button></a>
+      <a href="/console"><button type="button" class="sm">Console</button></a>
+      <a href="/inspire"><button type="button" class="sm primary">Inspire</button></a>
+    </nav>
+  </div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell = DM.mountShell({ page: 'inspire' });
+  const $ = id => document.getElementById(id);
+
+  async function paint(){
+    try{
+      const s = await DM.getState();
+      const insp = s.inspire || {};
+      const pref = (insp.prefs) || {};
+      shell.setMeta(`inspire · prefs tokens=${pref.tokens??0} · samples=${insp.score_samples??0}`);
+      shell.setFoot(s);
+      try{ var _sx=$('sync-text'); if(_sx&&DM.formatSyncLine) _sx.textContent=DM.formatSyncLine(s); }catch(_e){}
+      $('pills').innerHTML = [
+        `<span class="pill live">offline pack</span>`,
+        `<span class="pill">confirms ${pref.confirms??0}</span>`,
+        `<span class="pill">rejects ${pref.rejects??0}</span>`,
+        `<span class="pill">vision mem ${insp.vision_memory??0}</span>`,
+        `<span class="pill">ideas ${s.ideas??0}</span>`,
+      ].join('');
+      $('snap').innerHTML =
+        `tokens <b>${pref.tokens??0}</b><br>`+
+        `score samples <b>${insp.score_samples??0}</b><br>`+
+        `sprite <b>${(insp.sprite&&insp.sprite.action)||'idle'}</b><br>`+
+        `layers <b>${(insp.multivision_layers||[]).join(', ')||'—'}</b>`;
+    }catch(e){
+      shell.setMeta('offline');
+    }
+  }
+
+  document.querySelectorAll('[data-cmd]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const r = await DM.sendCmd(btn.getAttribute('data-cmd'));
+      $('out').textContent = (r.msg || r.error || JSON.stringify(r)).slice(0,4000);
+      paint();
+    });
+  });
+
+  paint();
+  setInterval(paint, 4000);
+})();
+</script>
+</body>
+</html>

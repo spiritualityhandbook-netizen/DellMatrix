@@ -1,0 +1,12 @@
+== D1: flow_executor with arg-shaped text ==
+  REFUSED: '05[Tone] :: joy > 03[Logic]' -> ValueError: Dell 5 not composable: no verified correspondence for ('', Dell 5) — refusing to guess: '05[Tone] :: joy'
+  REFUSED: '05[Tone](bogus="x") :: joy > 03[Logic]' -> ValueError: expected flow at 8: '(bogus="x") :: joy >'
+== D2: English layer cannot express seed typed args ==
+  'create an idea called garden'     mandel='08[Create](name="garden") > 15[Map] :: garden' atom_args=[{'name': 'garden'}, {}] intent_args={'id': 'garden', 'label': 'garden', 'words': 'garden'}
+  'turn left'                        mandel='04[Transform] :: turn_left' atom_args=[{}] intent_args={'direction': 'left'}
+  'be joyful'                        mandel='09[Show] :: unknown' atom_args=[{}] intent_args={'query': 'be joyful'}
+  'save the session'                 mandel='10[Keep]' atom_args=[{}] intent_args={}
+  'grow the garden'                  mandel='13[Loop] > 04[Transform] :: grow' atom_args=[{}, {}] intent_args={'cycles': 1}
+  'make a sphere called orb'         mandel='08[Create](name="sphere called orb") > 15[Map] :: sphere_called_orb' atom_args=[{'name': 'sphere called orb'}, {}] intent_args={'id': 'sphere_called_orb', 'label': 'sphere called orb', 'words': 'sphere called orb'}
+  'stamp this moment'                mandel='34[Stamp] :: this moment' atom_args=[{}] intent_args={'mark': 'this moment'}
+PROBE D DONE

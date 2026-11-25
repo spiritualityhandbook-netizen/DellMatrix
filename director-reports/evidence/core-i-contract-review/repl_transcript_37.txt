@@ -1,0 +1,53 @@
+$ python3 -m form.repl --owner CoreIRepl
+--- stdin ---
+37[Nurture](label="typedidea")
+40[TokenCount]
+37[Nurture] :: realidea
+40[TokenCount]
+--- output (rc=0) ---
+
+  DellMatrix — Mandell Origin
+  Offline · Type tutorial  or  help
+  Try: create an idea called test
+  Depth: explain create · la cresce 2
+  Live: live  · look  · zoom <id>  · mode first-run|beginner|builder|depth
+
++- DellMatrix · owner=CoreIRepl -+
+| Floor: Alpha · Delta · Omega · Omni (LOCKED)
+| (·_·)  CoreIRepl is at (0, 0), facing N, stand, idle
+| AI AI @ [2.0, 1.0] face N mode=manual · idle
+| ideas=1  nursery=0  gen=1
+| lattice form=cube cells=0  size=12
+| mode=first-run snap=False lens=— persona=—
+| view=growth workshop=— body=stick
+| forces=[growth,water,breath] weather=clear
+| pillars=GROWING avg=0.563  33 matrices · agents=2 · audit=2 · core=5 · entity=2 · growth=4 · language=2 · lens=1 · matrix=6 · perception=2 · safety=1 · visual=4 · workbench=2
+| click=inspect follow_cam=True
+| keys=0 payload=0  (permanent keys)
+| rings: Seed → Token → Body → Lens → Evolve  (Voynich-inspired)
+|   O  
+|  /|\ 
+|  / \ 
+| Floor: Alpha · Delta · Omega · Omni (LOCKED)
+| zoom=overview  units=1
+| view: table plane
+|  · words:Welcome@0.0,0.0[connected] goals=2 (0.0,0.0)
++----------------------------------------------------+
+
+you>   Mandell: 37[Nurture](label="typedidea")
+  English: Nurture (Nursery lifecycle)
+you>   Mandell: 40[TokenCount]
+  English: TokenCount (Cost measure)
+  TokenCount (approx session weight):
+    ideas=1 history=0 cells=0 pending=0
+    approx_units=8
+you>   Mandell: 37[Nurture] :: realidea
+  English: Nurture (Nursery lifecycle) → realidea
+  Added idea: realidea_9129 (realidea)
+you>   Mandell: 40[TokenCount]
+  English: TokenCount (Cost measure)
+  TokenCount (approx session weight):
+    ideas=1 history=0 cells=0 pending=1
+    approx_units=14
+you> 
+

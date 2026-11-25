@@ -1,0 +1,61 @@
+00[Nova] > 01[Initiate] > 11[Architect] > 39[Schema] > 50[Manifest] :: SEGMENT_CORE_II
+
+51[Select] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_51_SELECT
+52[Filter] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_52_FILTER
+53[Scope] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_53_SCOPE
+54[Query] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_54_QUERY
+55[Set] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_55_SET
+56[Get] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_56_GET
+57[Compare] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_57_COMPARE
+58[Match] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_58_MATCH
+59[Route] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_59_ROUTE
+60[Branch] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_60_BRANCH
+61[Join] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_61_JOIN
+62[Parallel] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_62_PARALLEL
+63[Sequence] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_63_SEQUENCE
+64[Until] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_64_UNTIL
+65[While] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_65_WHILE
+66[ForEach] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_66_FOREACH
+67[Any] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_67_ANY
+68[All] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_68_ALL
+69[None] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_69_NONE
+70[Count] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_70_COUNT
+71[Measure] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_71_MEASURE
+72[Limit] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_72_LIMIT
+73[Threshold] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_73_THRESHOLD
+74[Weight] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_74_WEIGHT
+75[Normalize] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_75_NORMALIZE
+76[Resolve] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_76_RESOLVE
+77[Infer] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_77_INFER
+78[Cause] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_78_CAUSE
+79[Depend] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_79_DEPEND
+80[Context] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_80_CONTEXT
+81[Reference] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_81_REFERENCE
+82[Group] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_82_GROUP
+83[Ungroup] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_83_UNGROUP
+84[Copy] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_84_COPY
+85[Move] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_85_MOVE
+86[Delete] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_86_DELETE
+87[Replace] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_87_REPLACE
+88[Patch] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_88_PATCH
+89[Diff] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_89_DIFF
+90[Trace] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_90_TRACE
+91[Assert] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_91_ASSERT
+92[Guard] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_92_GUARD
+93[Try] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_93_TRY
+94[Catch] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_94_CATCH
+95[Commit] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_95_COMMIT
+96[Revert] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_96_REVERT
+97[Define] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_97_DEFINE
+98[Alias] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_98_ALIAS
+99[Compose] > 11[Architect] > 39[Schema] > 12[Test] > 04[Transform] > 10[Keep] > 09[Show] > 50[Manifest] :: DELL_99_COMPOSE
+
+35[Discover] > 76[Resolve] > 11[Architect] > 39[Schema] > 78[Cause] > 79[Depend] > 90[Trace] > 12[Test] > 91[Assert] > 49[Profile] > 04[Transform] > 89[Diff] > 12[Test] > 10[Keep] > 09[Show] > 50[Manifest] :: EVERY_CORE_II_DELL_TIE_END_CIRCUIT
+
+12[Test] > 04[Transform] > 12[Test] > 10[Keep] > 50[Manifest] :: NO_DELL_ACCEPTED_BY_BRANCH_PRESENCE_ALONE
+46[Rank] > 39[Schema] > 12[Test] :: CLASS_FULL_OPERATOR
+46[Rank] > 39[Schema] > 12[Test] :: CLASS_THIN_WRAPPER
+46[Rank] > 39[Schema] > 12[Test] :: CLASS_ALIAS
+46[Rank] > 39[Schema] > 12[Test] :: CLASS_CONCEPTUAL_PLACEHOLDER
+03[Logic] > 04[Transform] > 12[Test] > 50[Manifest] :: THIN_WRAPPER_MUST_MATURE
+03[Logic] > 04[Transform] > 12[Test] > 50[Manifest] :: PLACEHOLDER_MUST_EXECUTE_OR_STAY_LABELED_PROJECTED_NOT_FACT

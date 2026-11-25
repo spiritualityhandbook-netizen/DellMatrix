@@ -1,0 +1,66 @@
+FRESH-CLONE RECEIPT 2026-11-05 cycle19
+clone: https://github.com/spiritualityhandbook-netizen/DellMatrix
+head: ed4ac00fba08b81a7194dfd9d76618d07c74ec21
+cmd: python3 -m form.sm32_revocation_chain_test
+[PASS] A-pre:grant_root
+[PASS] A-pre:grant_child
+[PASS] A-pre:grant_grandchild
+[PASS] A-pre:plain
+[PASS] A-pre:plain2
+[PASS] A-pre:derived_appr
+[PASS] A-pre:derived_optin
+[PASS] A-pre:optin_direct
+[PASS] A-retry1:grant_root
+[PASS] A-retry1:grant_child
+[PASS] A-retry1:grant_grandchild
+[PASS] A-retry1:plain
+[PASS] A-retry1:plain2
+[PASS] A-retry1:derived_appr
+[PASS] A-retry1:derived_optin
+[PASS] A-retry1:optin_direct
+[PASS] A-retry2:grant_root
+[PASS] A-retry2:grant_child
+[PASS] A-retry2:grant_grandchild
+[PASS] A-retry2:plain
+[PASS] A-retry2:plain2
+[PASS] A-retry2:derived_appr
+[PASS] A-retry2:derived_optin
+[PASS] A-retry2:optin_direct
+[PASS] restart mints a new session
+[PASS] B-retry1:grant_root
+[PASS] B-retry1:grant_child
+[PASS] B-retry1:grant_grandchild
+[PASS] B-retry1:plain
+[PASS] B-retry1:plain2
+[PASS] B-retry1:derived_appr
+[PASS] B-retry1:derived_optin
+[PASS] B-retry1:optin_direct
+[PASS] B-retry2:grant_root
+[PASS] B-retry2:grant_child
+[PASS] B-retry2:grant_grandchild
+[PASS] B-retry2:plain
+[PASS] B-retry2:plain2
+[PASS] B-retry2:derived_appr
+[PASS] B-retry2:derived_optin
+[PASS] B-retry2:optin_direct
+[PASS] child process ran
+[PASS] C-child:grant_root
+[PASS] C-child:grant_child
+[PASS] C-child:grant_grandchild
+[PASS] C-child:plain
+[PASS] C-child:plain2
+[PASS] C-child:derived_appr
+[PASS] C-child:derived_optin
+[PASS] C-child:optin_direct
+[PASS] B-new-grant allows
+[PASS] B-new-approval allows
+[PASS] B-old-still-denied:grant_root
+[PASS] B-old-still-denied:grant_child
+[PASS] B-old-still-denied:grant_grandchild
+[PASS] B-old-still-denied:plain
+[PASS] B-old-still-denied:plain2
+[PASS] B-old-still-denied:derived_appr
+[PASS] B-old-still-denied:derived_optin
+[PASS] B-old-still-denied:optin_direct
+SM32: 60/60 GREEN
+suite rc=0

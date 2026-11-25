@@ -1,0 +1,6 @@
+PR #255 exact-head CI at verified head 66050cf83fbef3a9b7aa0763beb08d0be734e53a
+package run 41696455101: completed/success (build 3.10 + 3.11 pass)
+smoke run 41696455244: completed/success
+build (3.10)	pass	46s	https://github.com/spiritualityhandbook-netizen/DellMatrix/actions/runs/41696455101/job/126128174065	
+build (3.11)	pass	36s	https://github.com/spiritualityhandbook-netizen/DellMatrix/actions/runs/41696455101/job/126128173477	
+smoke	pass	15m5s	https://github.com/spiritualityhandbook-netizen/DellMatrix/actions/runs/41696455244/job/126128191591	

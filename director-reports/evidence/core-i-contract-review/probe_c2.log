@@ -1,0 +1,12 @@
+  readback units=['welcome:Skin.WORDS']
+  readback nursery_pending=0 last_stamp=None
+  [PASS] Tone: label drove, bogus ignored (tone=joy, no refusal)
+  [PASS] Tone: typed expression=calm did not drive (no tone=calm)
+  [PASS] Stamp: execution used default mark ('Stamp: stamp @'), typedmark appears only in the seed echo
+  [PASS] Nurture: NO 'Added idea' line for the typed label
+  [PASS] Nurture: typed idea absent from persisted nursery (pending=0 at readback)
+  [FAIL] Create: valid typed args executed (Repl Wish unit, SPHERE)
+  [PASS] Create: invalid skin refused visibly (INVALID_VALUE msg)
+  [PASS] Core II asymmetry: 82[Group] typed args refused VISIBLY ('typed arguments refused before execution (roles: bogus)')
+  [FAIL] Stamp readback: last_stamp mark is the default 'stamp'
+PROBE C2 DONE

@@ -1,0 +1,12 @@
+    U.normal: GREEN
+    U.serialize_fail: GREEN
+    U.temp_write_fail: GREEN
+    U.crash_before_replace: GREEN
+    U.crash_after_replace: GREEN
+    U.sigkill_mid_write: FAILED ['canonical_is_g1_bytes', 'loads_g1', 'partial_temp_exists']
+    U.sigkill_mid_write: RED
+    U.corrupt_canonical: GREEN
+    U.repeated: GREEN
+    U.program_crash_before_replace: GREEN
+  U cross-process matrix: RED
+U-PROBE iter 1: FAIL ['U.sigkill_mid_write']

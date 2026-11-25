@@ -1,0 +1,38 @@
+FAIL all 33 untyped Core II Dells refuse typed args with UNSUPPORTED_ARGS + exact receipt + zero mutation :: bad=[(59, True, '', [{'dell': 59, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}], False), (60, True, '', [{'dell': 60, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}], True), (61, True, '', [{'dell': 61, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}], True)]
+FAIL 82[Group] typed name refused; NO group created (neither 'greens' nor the default 'group') :: ok=True err= groups=['group']
+FAIL 82[Group] single-atom receipt is exact :: ars=[{'dell': 82, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}]
+FAIL 82[Group] bogus role refuses UNSUPPORTED_ARGS (not UNKNOWN_ROLE — no signature exists) :: err=
+FAIL refusal names roles SORTED deterministically :: err=
+FAIL typed+label on untyped Dell refuses (the label no longer silently wins); no group created :: ok=True err=
+FAIL 97[Define] typed args refused, sorted roles, no default 'def' definition lands :: ok=True err= defs={'def': ''}
+FAIL 78[Cause] typed args refused as UNSUPPORTED_ARGS — the misleading 'malformed_relation' never surfaces :: ok=False err=malformed_relation
+FAIL FlowTo: refused atom fails honestly and the chain continues (Set still executes) :: ok=True ars=[{'dell': 82, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] store={'k': 'v'}
+FAIL FlowThru: downstream of a gate refusal is flow-blocked with its established skip receipt :: ok=True ars=[{'dell': 82, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] store={'k': 'v', 'k2': 'v2'}
+FAIL head 60: refused head -> body never executes (skip receipt, zero iterations, failed frame, zero business mutation) :: ok=True err= head=[{'dell': 60, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] body=[{'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] frame=ok//0
+FAIL head 62: refused head -> body never executes (skip receipt, zero iterations, failed frame, zero business mutation) :: ok=True err= head=[{'dell': 62, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] body=[{'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] frame=ok//0
+FAIL head 63: refused head -> body never executes (skip receipt, zero iterations, failed frame, zero business mutation) :: ok=True err= head=[{'dell': 63, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] body=[{'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] frame=ok//0
+FAIL head 64: refused head -> body never executes (skip receipt, zero iterations, failed frame, zero business mutation) :: ok=False err=bound_reached head=[{'dell': 64, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] body=[{'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] frame=bounded/bound_reached/8
+FAIL head 65: refused head -> body never executes (skip receipt, zero iterations, failed frame, zero business mutation) :: ok=False err=bound_reached head=[{'dell': 65, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] body=[{'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] frame=bounded/bound_reached/8
+FAIL head 66: refused head -> body never executes (skip receipt, zero iterations, failed frame, zero business mutation) :: ok=True err= head=[{'dell': 66, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] body=[{'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': '', 'member': 'welcome'}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': '', 'member': 'garden_gate'}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': '', 'member': 'garden_fern'}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': '', 'member': 'river_stone'}] frame=ok//4
+FAIL head 60 with Else: taken arm, Else marker and untaken arm ALL receipt head-refusal skips; nothing executes :: skipped=[59, 55] store={'a': '1'} ars=[{'dell': 60, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 59, 'ok': False, 'skipped': True, 'error': '', 'reason': 'else marker — branch arm separator; not executed as Route'}, {'dell': 55, 'ok': False, 'skipped': True, 'error': '', 'reason': 'branch arm not taken; not executed'}, {'dell': 61, 'ok': True, 'error': '', 'owned_by': 'branch'}]
+FAIL nested: refused outer Sequence — inner Branch, its body and the inner Join all skip; trailing atom after the outer Join still executes :: ok=True err= body=[] store={'k': 'v', 'after': '1'}
+FAIL J1: Join with unsupported args on a clean frame — body ran, Join refused, closure NOT faked, chain and frame errors name the refusal (not join_fail) :: jr=[{'dell': 61, 'ok': True, 'error': '', 'owned_by': 'sequence'}] err= frame={'kind': 'sequence', 'condition': '', 'status': 'ok', 'iterations': 0, 'results': [{'dell': 55, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 61, 'ok': True, 'error': '', 'owned_by': 'sequence'}], 'error': '', 'depth': 0}
+FAIL J2: body refusal + Join refusal — original (body) refusal preserved as the chain error; Join receipt carries its own UNSUPPORTED_ARGS; no group created :: body=[{'dell': 82, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] jr=[{'dell': 61, 'ok': True, 'error': '', 'owned_by': 'sequence'}] err= frame={'kind': 'sequence', 'condition': '', 'status': 'ok', 'iterations': 0, 'results': [{'dell': 82, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 61, 'ok': True, 'error': '', 'owned_by': 'sequence'}], 'error': '', 'depth': 0}
+FAIL canary: refusal diagnostics name the role and NEVER the raw value (plain atom) :: err= blob_has_canary=False gate_lines=[]
+FAIL canary: head refusal + skipped-body receipts leak no raw value either :: err= blob_has_canary=False
+FAIL REPL (real user path): typed Group refuses UNSUPPORTED_ARGS in the user's own interface; the default 'group' is never created by the typed call; the legacy path then works end-to-end :: rc=0 out_tail=cope 'greens' (supported: plane, group)
+you>   Mandell: 82[Group] :: greens
+  English: Group (Treat multiple targets as one collection) → greens
+  Chain atoms=1 label=greens
+  -- 82[Group] ns=CORE_II
+  Group greens n=1
+you>   Mandell: 53[Scope] :: greens
+  English: Scope (Establish execution/context boundary) → greens
+  Chain atoms=1 label=greens
+  -- 53[Scope] ns=CORE_II
+  Scope -> greens
+you> 
+
+
+D1_UNSUPPORTED_ARG_GATE: 20/43
+SUITE_EXIT=1

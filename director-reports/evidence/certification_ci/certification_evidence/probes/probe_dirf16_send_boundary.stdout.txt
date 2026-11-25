@@ -1,0 +1,8 @@
+[PASS] sanity: witnessed identity captured -- pid=2417 starttime=4391
+[PASS] send-EPERM classes unavailable -- outcome='unavailable'
+[PASS] send-EPERM: live victim not signalled
+[PASS] send-ENOSYS classes unavailable -- outcome='unavailable'
+[PASS] send-ENOSYS: live victim not signalled
+[PASS] send-ESRCH classes refused -- outcome='refused'
+[PASS] send-ESRCH: live victim not signalled
+=== probe_dirf16_send_boundary: 7/7 ===

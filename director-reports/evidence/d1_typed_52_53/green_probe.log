@@ -1,0 +1,10 @@
+P1 typed Filter: ok=True selected=['garden_gate', 'garden_fern'] expected_if_typed=['garden_gate', 'garden_fern']
+P2 legacy Filter: ok=True selected=['garden_gate', 'garden_fern']
+P3 bogus role Filter: ok=False err=UNKNOWN_ROLE: bogus
+P4 setup: groups=['greens'] scope=plane
+P5 typed Scope existing group: ok=True scope=greens
+P6 typed Scope missing group: ok=False err=scope_unknown:nope scope=greens
+P7 legacy Scope: ok=True scope=greens
+P8 legacy Scope missing: ok=False err=scope_unknown:nope
+---
+DEFECTS DEMONSTRATED: 0/4 typed probes (legacy controls all correct)

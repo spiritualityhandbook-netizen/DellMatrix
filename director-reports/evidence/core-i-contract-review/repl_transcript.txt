@@ -1,0 +1,64 @@
+$ python3 -m form.repl --owner CoreIRepl
+--- stdin ---
+05[Tone](bogus="x") :: joy
+05[Tone](expression="calm") :: joy
+34[Stamp](mark="typedmark")
+37[Nurture](label="typedidea")
+08[Create](name="Repl Wish", skin="SPHERE")
+08[Create](name="Repl Bad", skin="TRIANGLE")
+82[Group](bogus="x")
+--- output (rc=0) ---
+
+  DellMatrix — Mandell Origin
+  Offline · Type tutorial  or  help
+  Try: create an idea called test
+  Depth: explain create · la cresce 2
+  Live: live  · look  · zoom <id>  · mode first-run|beginner|builder|depth
+
++- DellMatrix · owner=CoreIRepl -+
+| Floor: Alpha · Delta · Omega · Omni (LOCKED)
+| (·_·)  CoreIRepl is at (0, 0), facing N, stand, idle
+| AI AI @ [2.0, 1.0] face N mode=manual · idle
+| ideas=1  nursery=0  gen=1
+| lattice form=cube cells=0  size=12
+| mode=first-run snap=False lens=— persona=—
+| view=growth workshop=— body=stick
+| forces=[growth,water,breath] weather=clear
+| pillars=GROWING avg=0.563  33 matrices · agents=2 · audit=2 · core=5 · entity=2 · growth=4 · language=2 · lens=1 · matrix=6 · perception=2 · safety=1 · visual=4 · workbench=2
+| click=inspect follow_cam=True
+| keys=0 payload=0  (permanent keys)
+| rings: Seed → Token → Body → Lens → Evolve  (Voynich-inspired)
+|   O  
+|  /|\ 
+|  / \ 
+| Floor: Alpha · Delta · Omega · Omni (LOCKED)
+| zoom=overview  units=1
+| view: table plane
+|  · words:Welcome@0.0,0.0[connected] goals=2 (0.0,0.0)
++----------------------------------------------------+
+
+you>   Mandell: 05[Tone](bogus="x") :: joy
+  English: Tone (Vibe / style) → joy
+  (^_^)  tone=joy
+you>   Mandell: 05[Tone](expression="calm") :: joy
+  English: Tone (Vibe / style) → joy
+  (^_^)  tone=joy
+you>   Mandell: 34[Stamp](mark="typedmark")
+  English: Stamp (Time/order mark)
+  Stamp: stamp @ 2026-11-03T21:05:44Z
+you>   Mandell: 37[Nurture](label="typedidea")
+  English: Nurture (Nursery lifecycle)
+you>   Mandell: 08[Create](name="Repl Wish", skin="SPHERE")
+  English: Create (Instantiate)
+  TOAM: typed name='Repl Wish' wired to Create
+  TOAM: typed skin='SPHERE' wired to Create
+  Created idea: "Repl Wish"
+you>   Mandell: 08[Create](name="Repl Bad", skin="TRIANGLE")
+  English: Create (Instantiate)
+  TOAM validation failed for 08[Create]: INVALID_VALUE: skin=TRIANGLE not in ['CUBE', 'SPHERE', 'SEED', 'FLOWER', 'BUILDING', 'WORDS', 'CIRCLE', 'CORE']
+you>   Mandell: 82[Group](bogus="x")
+  English: Group (Treat multiple targets as one collection)
+  Chain atoms=1 label=
+  TOAM: Dell 82[Group] has no registered typed signature; typed arguments refused before execution (roles: bogus)
+you> 
+

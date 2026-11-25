@@ -1,0 +1,849 @@
+#!/usr/bin/env python3
+"""Ringed Growth — sole public growth path. Body pulse first. Goals bias affinity.
+
+CONCEPT SEPARATION (GDP-001 Phase 3, 3.1.2): this module's ``_affinity`` is
+PAIR SCORING for growth — a deterministic composite that ranks idea pairs for
+ring proposals. ``form.dell_matrix.resonance.pulse`` is a DIFFERENT concept:
+pulse/DIFFUSION over the resonance graph (score accumulation across the
+enhance-scope graph over time). Keep both; do not merge pulse into affinity
+or affinity into pulse.
+
+PHASE-3 R3.6 (2026-10-04): Phase-2 graph integration is NO LONGER
+deferred. RingedGrowth.run accepts an optional attached SemanticGraph and
+computes form.dell_matrix.graph_harmony.graph_coherence over each proposal
+pair (read-only, existing graph queries only, canonical Idea IDs); the
+value is persisted on the Nursery proposal and reported. Harmony
+(form.dell_matrix.harmony.harmony_score) is computed over each proposal
+pair, persisted on the proposal, and consumed by
+Program.ranked_proposals as a tie-breaker. The graph is never mutated by
+growth: it remains historical relationship truth, consumed read-only.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Tuple
+import math
+import re
+
+from form.dell_matrix.nursery import Nursery
+from form.dell_matrix.plane import Plane
+from form.dell_matrix import faded_policy  # P3 R3.5.2: faded-state exclusion
+from form.dell_matrix.harmony import harmony_score  # P3 R3.6: canonical harmony authority
+from form.dell_matrix.graph_harmony import (  # P3 R3.6: graph consumer (read-only)
+    unit_idea_view,
+    graph_coherence,
+)
+
+RINGS = ("Seed", "Token", "Body", "Lens", "Evolve")
+from form.dell_matrix.text_metrics import TOKEN_RE as _TOKEN, tokens_of as _tokens, jaccard as _jaccard, content_tokens as _content_tokens
+# Canonical tokenization/Jaccard substrate: text_metrics (P3/TD-6).
+
+SOLSTICE_AFFINITY = 0.28
+EQUINOX_AFFINITY = 0.16
+STANSTILL_AFFINITY = 0.10
+FOG_MIN_LABEL_LEN = 3
+FOG_MAX_LABEL_LEN = 72
+FOG_BANNED_FRAGMENTS = ("asdf", "test123", "xxx", "???", "null", "undefined")
+
+
+def _body_pulse_safe() -> Dict[str, Any]:
+    """Sense organs before proposing rings. Never crash growth on body failure."""
+    try:
+        from form.dell_matrix.matrix_body import body_pulse
+        return body_pulse()
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": f"{type(e).__name__}: {e}",
+            "missing": [],
+            "decisions": [],
+            "law": "body pulse unavailable — growth continues cautious",
+        }
+
+
+def _vital_block(body: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """If vital organs missing, block Solstice (new rings) until restore path is clear."""
+    missing = list(body.get("missing") or [])
+    vital_names = {
+        "floor", "nursery", "lattice", "plane", "forces",
+        "ringed_growth", "english_brain", "gate", "nature",
+    }
+    vital_missing = [m for m in missing if m in vital_names]
+    # ringed_growth is this module — if listed missing only due to probe path, ignore self
+    vital_missing = [m for m in vital_missing if m != "ringed_growth"]
+    return (len(vital_missing) > 0, vital_missing)
+
+
+def _unit_blob(plane: Plane, uid: str) -> str:
+    u = plane.units.get(uid)
+    if not u:
+        return ""
+    if hasattr(u, "full_text"):
+        return u.full_text()
+    goals = " ".join(getattr(u, "goals", []) or [])
+    detail = getattr(u, "detail", "") or ""
+    return f"{u.label} {detail} {u.words} {goals}"
+
+
+def _tokens_uid(plane: Plane, uid: str) -> Set[str]:
+    # PP1/D6: pair comparisons see CONTENT tokens only — connector
+    # words ("and", "the", ...) never count toward affinity.
+    return _content_tokens(_unit_blob(plane, uid))
+
+
+def _wall_key(plane: Plane, uid: str) -> Optional[str]:
+    """GS-4: a unit's wall key from the canonical Plane box authority.
+
+    None when unboxed, else the unit's sandbox_id. Membership is read
+    from the SAME Unit fields Plane.box/unbox maintain and
+    Plane.enhance_scope consults — no second store, no new authority.
+
+    A malformed boxed unit (see _malformed_boxed) also yields None
+    here — callers must consult _malformed_boxed FIRST and refuse
+    such units; None from this function alone never proves a unit is
+    genuinely unboxed.
+    """
+    u = plane.units.get(uid)
+    if u is None or not getattr(u, "sandboxed", False):
+        return None
+    return getattr(u, "sandbox_id", None)
+
+
+def _malformed_boxed(plane: Plane, uid: str) -> bool:
+    """GS-4 correction (Director review mail 1a1d0990c34b0d99): True
+    when a unit CLAIMS sandbox isolation but its claim cannot be
+    verified against the canonical Plane box authority:
+
+    - sandbox_id is not a non-empty string (missing / None / empty) —
+      the same malformed-endpoint definition form/mandell/
+      unit_containment.py applies under F1 (Director review
+      2026-11-04): such endpoints are refused outright there;
+    - sandbox_id names no Sandbox record in plane.sandboxes;
+    - the named Sandbox record's member_ids does not contain the
+      unit (membership inconsistency — the unit's claim and the
+      box's record disagree).
+
+    Plane.box()/unbox() maintain both sides together, so none of
+    these states arise through the box API; they arise through
+    verbatim restore (form/persist_rest.py restores sandboxed /
+    sandbox_id unvalidated and rebuilds Sandbox records from the
+    members lists), hand-edited or partially-written saves, or
+    direct field/record writes. Growth fails CLOSED on all of them:
+    the unit is refused from pair enumeration (receipted), never
+    collapsed to unboxed — collapsing would admit it as a wall-mate
+    of genuinely unboxed units (None == None), the fail-open the
+    Director's review identified.
+    """
+    u = plane.units.get(uid)
+    if u is None or not getattr(u, "sandboxed", False):
+        return False
+    sid = getattr(u, "sandbox_id", None)
+    if not (isinstance(sid, str) and sid != ""):
+        return True
+    sb = plane.sandboxes.get(sid)
+    if sb is None:
+        return True
+    return uid not in (sb.member_ids or [])
+
+
+def _tension(a: Set[str], b: Set[str]) -> float:
+    """Exclusive-token bridge tension between two token sets (raw, unnormalized).
+
+    tension = min(|a-b|, |b-a|) / (1 + |a ∪ b|)  — high when the pair shares
+    little but each side contributes complementary exclusive tokens.
+    """
+    if not a and not b:
+        return 0.0
+    only_a, only_b = a - b, b - a
+    bridge = min(len(only_a), len(only_b))
+    return bridge / (1.0 + len(a | b))
+
+
+def serendipity(a: Set[str], b: Set[str]) -> float:
+    """Serendipity (exposed tension term of _harmonic) — mathematical admission contract.
+
+    (1) Name: serendipity — normalized exclusive-token bridge tension.
+    (2) Inputs: a, b — two token sets (Set[str]); each token a lowercase
+        alphanumeric/underscore word token of length >= 3.
+    (3) Output: float in [0, 1/3). 0.0 when both sets empty or no complementary
+        exclusive tokens; bounded above by 1/3 (raw tension t < 0.5 since
+        min(|a-b|,|b-a|) <= |a∪b|/2, so t/(1+t) < (0.5)/(1.5) = 1/3).
+    (4) Formula: let t = min(|a-b|, |b-a|) / (1 + |a ∪ b|) (raw tension);
+        serendipity(a, b) = t / (1 + t).
+    (5) Invariants: symmetric — serendipity(a, b) == serendipity(b, a);
+        monotone non-decreasing in raw tension t; serendipity(a, a) == 0.0
+        (identical sets have no exclusive bridge); empty inputs -> 0.0.
+    (6) Failure behavior: empty sets -> 0.0 (fail-closed, no exception).
+        Never raises on well-typed inputs.
+    (7) Determinism: pure function of the two input sets; same sets ->
+        same output in every process (no randomness, no wall clock).
+    (8) Canonical owner: form/dell_matrix/ringed_growth.py::serendipity
+        (GDP-001 Phase 3, 3.1.3). Callers (P3R reconciliation, code-verified
+        2026-10-04): NO production call site uses the name ``serendipity``
+        yet. The tension *concept* reaches _affinity through the raw term:
+        _tension -> _harmonic (weight 0.40 into _affinity) -> RingedGrowth.run
+        -> Program.grow_ideas. _harmonic calls _tension directly (raw,
+        unnormalized); serendipity() is the publicly exposed NORMALIZED
+        form t/(1+t) of that same term — the exposed tension subterm, kept
+        for explicit consumers and proofs (the R3.1 proof invokes it
+        directly). An earlier docstring line claiming "_harmonic" as the
+        real caller was imprecise and is withdrawn.
+    """
+    t = _tension(a, b)
+    return t / (1.0 + t)
+
+
+def _harmonic(a: Set[str], b: Set[str]) -> float:
+    """Jaccard-tension combiner (NOT musical harmony). Documented, name kept
+    for caller stability (GDP-001 Phase 3, 3.1.3: name unchanged by rule).
+
+    Returns ~1.0 for identical sets, ~0.0 for disjoint sets with no
+    complementary exclusive bridge. Internally delegates the tension subterm
+    to serendipity/_tension; formula unchanged since introduction.
+
+    Blend detail (R3.2.2 honest note): Jaccard token overlap (jac) with a
+    "tension" term measuring complementary exclusive tokens:
+    bridge = min(|a-b|, |b-a|) normalized by union size. Returns
+    (2*jac*(jac+tension)) / (2*jac + tension + eps), 0.0 when both inputs
+    are empty or neither overlap nor tension exists. Name is historical;
+    it is a token-set similarity, not a harmonic. Implementation note
+    (P3R): _harmonic calls _tension (raw, unnormalized) DIRECTLY;
+    serendipity() is the exposed normalized twin t/(1+t) of that same
+    term, not an intermediate on this path.
+    """
+    if not a and not b:
+        return 0.0
+    jac = _jaccard(a, b)
+    tension = _tension(a, b)
+    if jac <= 0 and tension <= 0:
+        return 0.0
+    return (2 * jac * (jac + tension)) / (2 * jac + tension + 1e-9)
+
+
+def _dist(plane: Plane, a: str, b: str) -> float:
+    ua, ub = plane.units.get(a), plane.units.get(b)
+    if not ua or not ub:
+        return 99.0
+    return math.hypot(ua.x - ub.x, ua.y - ub.y)
+
+
+def _goal_boost(plane: Plane, a: str, b: str) -> float:
+    ua, ub = plane.units.get(a), plane.units.get(b)
+    if not ua or not ub:
+        return 0.0
+    ga = _content_tokens(" ".join(getattr(ua, "goals", []) or []))
+    gb = _content_tokens(" ".join(getattr(ub, "goals", []) or []))
+    if not ga and not gb:
+        return 0.0
+    if not ga or not gb:
+        return 0.05
+    return 0.12 * _jaccard(ga, gb)
+
+
+def _body_goal_boost(body: Dict[str, Any], label_a: str, label_b: str) -> float:
+    """Boost affinity when idea text touches missing organ names (heal path)."""
+    missing = [m.lower() for m in (body.get("missing") or [])]
+    if not missing:
+        return 0.0
+    blob = f"{label_a} {label_b}".lower()
+    hits = sum(1 for m in missing if m in blob or m.replace("_", " ") in blob)
+    return min(0.15, 0.05 * hits)
+
+
+def _affinity(plane: Plane, a: str, b: str, body: Optional[Dict[str, Any]] = None,
+             program: Any = None, include_superseded: bool = False) -> Dict[str, float]:
+    """Pair affinity for growth — mathematical admission contract (GDP-001 Phase 3, 3.1.1).
+
+    (1) Name: _affinity — deterministic composite pair score driving ring
+        proposals (Solstice / Equinox / Standstill gates).
+    (2) Inputs: plane (Plane) — live matrix plane; a, b (str) — idea unit IDs
+        present in plane.units; body (Optional[Dict]) — body-pulse snapshot
+        (from _body_pulse_safe); when None the body_boost term is 0.0.
+    (3) Output: dict with keys affinity, jaccard, harmonic, distance, shared,
+        goal_boost, body_boost. Types: all float. TRUE BOUND (P3R,
+        reconciled 2026-10-04; the old "affinity in [0,1]" shorthand is
+        withdrawn because it contradicted the body boost): affinity in
+        [0, 1.15]. affinity >= 0.0 always (all terms non-negative).
+        0.40+0.22+0.13+0.13 = 0.88 <= 1.0 and goal_boost <= 0.12, therefore
+        affinity <= 1.0 whenever body_boost == 0.0. With body_boost active
+        (<= 0.15), affinity <= 1.15 in the theoretical corner case of
+        identical co-located in-scope ideas naming missing organs
+        (0.88 + 0.12 + 0.15; approached within ~1e-9 of the harmonic
+        epsilon). jaccard, harmonic in [0,1]; distance >= 0.0 (99.0
+        sentinel when a unit is missing); shared >= 0.0; goal_boost,
+        body_boost >= 0.0.
+    (4) Formula: affinity = 0.40*harmonic + 0.22*jaccard + 0.13*spatial
+        + 0.13*in_scope + goal_boost + body_boost, where
+        harmonic = _harmonic(token_sets) (Jaccard-tension combiner),
+        jaccard = |ta ∩ tb| / |ta ∪ tb|,
+        spatial = 1 / (1 + euclidean_distance(a, b)),
+        in_scope = 1.0 if b in enhance_scope(a) else 0.2,
+        goal_boost = 0.12 * jaccard(goal token sets) when both ideas have
+        goals (0.05 when exactly one has goals, else 0.0),
+        body_boost = min(0.15, 0.05 * missing-organ hits in labels) when a
+        body snapshot with missing organs is supplied, else 0.0.
+    (5) Invariants: all terms non-negative, so affinity >= 0.0 always.
+        0.40+0.22+0.13+0.13 = 0.88 <= 1.0 and goal_boost <= 0.12, therefore
+        affinity <= 1.0 whenever body_boost == 0.0. With body_boost active
+        (<= 0.15), affinity <= 1.15 in the theoretical corner case of
+        identical co-located in-scope ideas naming missing organs.
+        harmonic <= 1.0, jaccard <= 1.0, spatial <= 1.0 (equality at
+        distance 0). PERMUTATION GUARANTEE (P3R, verified empirically
+        2026-10-04: 0 mismatches over thousands of random ordered pairs):
+        the full output dict is BITWISE identical under argument
+        permutation — _affinity(plane, a, b) == _affinity(plane, b, a)
+        field-for-field. The in_scope term formally reads enhance_scope(a),
+        but scope membership is mutual in all reachable plane states, so no
+        asymmetry is observable. (Sandbox-exotic states could in principle
+        break mutuality; none are reachable through the public place/box
+        paths, and any such state would surface in the permutation check.)
+    (6) Failure behavior: missing units -> returns the full dict WITHOUT
+        raising (fail-closed, no exception), with distance 99.0 and the
+        token/goal/body terms 0.0. NOTE (falsifies the Phase-3 matrix's
+        "affinity 0.0" shorthand): the spatial floor (1/(1+99) = 0.01 x 0.13)
+        and the in_scope floor (0.2 x 0.13) still contribute, so affinity is
+        ~0.0273, not 0.0. Fail-closed IN EFFECT: 0.0273 < STANSTILL_AFFINITY
+        (0.10), so the "None" gate fires and no ring proposal results.
+        FADED units (R3.5.2): if either unit is faded, returns the full dict
+        with all values 0.0 (no exception); the 0.0 affinity gates to "None".
+        Verified by form/mandell/p3_r31_affinity_proof.py.
+    (7) Determinism: pure function of (plane state, a, b, body). Same inputs
+        -> identical dict in every process (no RNG, no wall clock, no hash()
+        of str). NOTE: token order plays no role (set-based); dict key order
+        is fixed by construction.
+    (8) Canonical owner: form/dell_matrix/ringed_growth.py::_affinity (live
+        authority). Real caller: RingedGrowth.run() <- Program.grow_ideas
+        <- REPL growth commands.
+    """
+    # P3 Canonical Lifecycle: faded-state exclusion via owner-aware boundary.
+    # Resolves (program, unit_id) through inspect_revision — NOT via dynamic
+    # Unit attributes. If program is provided, inactive/unreadable units are
+    # excluded (fail-closed). If program is None, the check is skipped
+    # (documented limitation; callers with program context must pass it).
+    # A faded unit contributes nothing to pair scoring: affinity is 0.0
+    # and RingedGrowth.run's gate maps 0.0 to "None" (pair skipped).
+    # Fail-closed: same dict shape, zeroed, no exception.
+    if program is not None:
+        from form.dell_matrix import canonical_lifecycle
+        # WO-5.3: Ordinary excludes SUPERSEDED. Explicit historical use
+        # (include_superseded=True) uses historical context.
+        if include_superseded:
+            ok_a = canonical_lifecycle.is_participating(program, a, context="historical")
+            ok_b = canonical_lifecycle.is_participating(program, b, context="historical")
+        else:
+            ok_a = canonical_lifecycle.is_active(program, a)
+            ok_b = canonical_lifecycle.is_active(program, b)
+        if not ok_a or not ok_b:
+            return {
+                "affinity": 0.0,
+                "jaccard": 0.0,
+                "harmonic": 0.0,
+            "distance": 0.0,
+            "shared": 0.0,
+            "goal_boost": 0.0,
+            "body_boost": 0.0,
+        }
+    ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
+    jac = _jaccard(ta, tb)
+    harm = _harmonic(ta, tb)
+    dist = _dist(plane, a, b)
+    spatial = 1.0 / (1.0 + dist)
+    scope = set(plane.enhance_scope(a))
+    in_scope = 1.0 if b in scope else 0.2
+    gboost = _goal_boost(plane, a, b)
+    ua, ub = plane.units.get(a), plane.units.get(b)
+    bboost = 0.0
+    if body is not None and ua and ub:
+        bboost = _body_goal_boost(body, ua.label, ub.label)
+    aff = harm * 0.40 + jac * 0.22 + spatial * 0.13 + in_scope * 0.13 + gboost + bboost
+    return {
+        "affinity": aff,
+        "jaccard": jac,
+        "harmonic": harm,
+        "distance": dist,
+        "shared": float(len(ta & tb)),
+        "goal_boost": gboost,
+        "body_boost": bboost,
+    }
+
+
+def _aetheris_clear(label: str, words: str) -> bool:
+    lab = (label or "").strip()
+    if len(lab) < FOG_MIN_LABEL_LEN or len(lab) > FOG_MAX_LABEL_LEN:
+        return False
+    low = lab.lower()
+    if any(b in low for b in FOG_BANNED_FRAGMENTS):
+        return False
+    if lab.count("?") > 2 or lab.count("!") > 3:
+        return False
+    if not _tokens(lab, words):
+        return False
+    return True
+
+
+def _ring_phase(affinity: float) -> str:
+    if affinity >= SOLSTICE_AFFINITY:
+        return "Solstice"
+    if affinity >= EQUINOX_AFFINITY:
+        return "Equinox"
+    if affinity >= STANSTILL_AFFINITY:
+        return "Standstill"
+    return "None"
+
+
+def _combine_label(a: str, b: str) -> str:
+    aa, bb = a.strip()[:22], b.strip()[:22]
+    if aa.lower() == bb.lower():
+        return f"{aa} (deepened)"
+    return f"{aa} × {bb}"
+
+
+def _evolve_label(label: str, gained: Set[str]) -> str:
+    tip = " / ".join(sorted(gained)[:2]) if gained else "expanded"
+    return f"{label} → {tip}"[:70]
+
+
+def _parent_goals(plane: Plane, ids: List[str]) -> List[str]:
+    out: List[str] = []
+    seen = set()
+    for i in ids:
+        u = plane.units.get(i)
+        if not u:
+            continue
+        for g in getattr(u, "goals", []) or []:
+            g = g.strip()
+            if g and g.lower() not in seen:
+                seen.add(g.lower())
+                out.append(g)
+    return out[:8]
+
+
+def _signal_stats(vals: List[float]) -> Dict[str, float]:
+    """Mean/min/max over per-proposal signal values (harmony, graph
+    coherence). Empty -> defined zeros; never raises."""
+    if not vals:
+        return {"n": 0, "mean": 0.0, "min": 0.0, "max": 0.0}
+    return {
+        "n": len(vals),
+        "mean": sum(vals) / len(vals),
+        "min": min(vals),
+        "max": max(vals),
+    }
+
+
+@dataclass
+class RingedGrowth:
+    nursery: Nursery
+    max_new: int = 10
+    max_evolved: int = 8
+    # GDP-001 Phase 3, 3.1.4: deterministic growth-ID seed. Nursery proposal
+    # IDs are _slug(label, seed) — a stable digest of (seed, label), so the
+    # same seed + same label sequence -> the same IDs in every process.
+    # Default 0 preserves a deterministic (not random) ID stream; callers
+    # that need distinct ID namespaces pass their own seed.
+    seed: int = 0
+
+    def run(self, plane: Plane, cycles: int = 1,
+            graph: Optional[Any] = None,
+            program: Any = None,
+            include_superseded: bool = False,
+            session: Any = None) -> Dict[str, Any]:
+        """Run growth cycles over the plane's live units.
+
+        graph: optional attached Phase-2 SemanticGraph (P3 R3.6). When
+        provided, each proposal pair's graph_coherence (read-only, via
+        existing graph queries, canonical Idea IDs) is computed and
+        persisted on the proposal; None (default) keeps historical
+        behavior with the defined neutral 0.0. The graph is never
+        mutated here. Backward compatible: existing callers pass no
+        graph.
+
+        session (SD-3, master plan P6): an optional docked inference
+        session. Token affinity remains the pair PRE-FILTER (it
+        chooses and orders the pairs, as here), but when a docked
+        session is supplied, Solstice pair crosses are authored by
+        the docked mind through its SYNTHESIZE verb instead of
+        token recombination. A failed verb call falls back to the
+        token composition FOR THAT PAIR. Token-composed proposals
+        are labeled origin="growth:token" (body-pulse restores:
+        "growth:body") so the review gate can always tell which
+        mechanism authored a proposal; docked proposals carry the
+        dock's own "dock:..." origin. Single-parent Equinox /
+        Standstill drift stays token machinery in both modes —
+        it is not a pair synthesis.
+
+        GS-4 (sandbox containment, Director scope ruling 2026-11-12):
+        candidate pair enumeration is filtered by canonical Plane box
+        membership — two units are admissible as a pair iff their wall
+        keys are equal (both unboxed, or boxed into the SAME sandbox).
+        Cross-wall pairs are never scored, so neither manifestation of
+        the wall-blind enumeration defect can occur: no cross-wall
+        Solstice pair proposals, and no boxed-primary drift importing
+        an outside peer's tokens (the drift peer is the same enumerated
+        pair's second member). The exclusion count is receipted per
+        cycle as pairs_excluded_cross_sandbox (and totaled at top
+        level); silence about exclusions is a contract violation.
+        Unboxed output is unchanged byte-for-byte; affinity weights,
+        scope_ids semantics, and default-unset semantics are untouched.
+        The only lawful crossing door remains unbox-then-grow.
+
+        GS-4 correction (Director review mail 1a1d0990c34b0d99): a
+        unit whose boxed claim cannot be verified against the Plane
+        box authority (sandboxed=True with a missing/empty sandbox_id,
+        an unknown sandbox_id, or a Sandbox record that does not list
+        it as a member — see _malformed_boxed) is REFUSED from pair
+        enumeration outright, receipted per cycle in
+        malformed_box_units_refused (pairs touching it counted in
+        pairs_excluded_malformed_box). It is never collapsed to
+        unboxed: _wall_key returns None for it exactly as for a
+        genuinely unboxed unit, and None == None equality would
+        otherwise admit it as their wall-mate — a fail-open boundary
+        under malformed/restored state. This mirrors the canonical
+        containment verdict (unit_containment F1 refuses malformed
+        sandboxed endpoints outright).
+        """
+        docked = session is not None \
+            and bool(getattr(session, "is_docked", False))
+        docked_new = 0
+        token_fallback = 0
+        docked_pairs: List[Dict[str, Any]] = []
+        report: List[Dict[str, Any]] = []
+        total_new = 0
+        total_evo = 0
+        total_dup = 0
+        total_excluded_cross_sandbox = 0
+        total_excluded_malformed_box = 0
+        refused_malformed_box: List[str] = []
+        fog_cut = 0
+        gate_counts = {"Solstice": 0, "Equinox": 0, "Standstill": 0, "None": 0}
+        body_snapshots: List[Dict[str, Any]] = []
+        # P3 R3.6: per-proposal harmony + graph-coherence signals.
+        harmony_vals: List[float] = []
+        gcoh_vals: List[float] = []
+
+        for cycle in range(max(1, cycles)):
+            # G-DUP.4 (Director 6936222292): receipt mark at cycle
+            # start. The step appended for this cycle itemizes the
+            # suppression receipts appended SINCE this mark (receipt
+            # deltas), so every skip is linked to the cycle that
+            # produced it and a later run never attributes receipts
+            # an earlier run (or a direct add) left on this instance.
+            cycle_receipt_mark = len(self.nursery.suppression_receipts)
+            # --- BODY PULSE FIRST — sense organs before proposing rings ---
+            body = _body_pulse_safe()
+            blocked, vital_missing = _vital_block(body)
+            body_snapshots.append({
+                "cycle": cycle + 1,
+                "present": body.get("present"),
+                "missing": body.get("missing"),
+                "top_decision": (body.get("decisions") or [{}])[0],
+                "solstice_blocked": blocked,
+                "vital_missing": vital_missing,
+            })
+
+            # If vital organs missing, propose nursery restore ideas instead of free Solstice
+            if blocked and vital_missing:
+                for organ in vital_missing[:3]:
+                    label = f"Restore {organ}"
+                    words = (
+                        f"[Ring:Body] Vital organ '{organ}' missing. "
+                        f"Body decision: densify_or_restore. "
+                        f"Goal: {body.get('goal', 'coherence')}. "
+                        f"Law: problem = missing organ."
+                    )
+                    if _aetheris_clear(label, words):
+                        self.nursery.add(
+                            label=label,
+                            words=words,
+                            kind="evolved",
+                            parents=[],
+                            affinity=0.5,
+                            reason=f"body_pulse vital_missing={organ}",
+                            seed=self.seed,
+                            origin="growth:body",
+                            # P3 R3.6: non-pair proposal — harmony/graph
+                            # neutral 0.0 (no scored pair exists).
+                        )
+                        total_evo += 1
+
+            ids = list(plane.units.keys())
+            if len(ids) < 1:
+                report.append({
+                    "cycle": cycle + 1,
+                    "ok": False,
+                    "reason": "no live ideas",
+                    "suppressions": [dict(r) for r in
+                                     self.nursery.suppression_receipts[cycle_receipt_mark:]],
+                    "pairs_excluded_cross_sandbox": 0,
+                    "pairs_excluded_malformed_box": 0,
+                    "malformed_box_units_refused": [],
+                    "body": body_snapshots[-1],
+                })
+                continue
+
+            # GS-4: wall-mate admissibility (C-1) — a pair enumerates
+            # iff both units share one wall key. Cross-wall pairs are
+            # excluded BEFORE scoring: never gated, never drifted from.
+            # GS-4 correction (mail 1a1d0990c34b0d99): units whose
+            # boxed claim fails verification (_malformed_boxed) are
+            # refused BEFORE the equality test — their _wall_key is
+            # None, indistinguishable from genuinely unboxed, and the
+            # equality test alone would admit them (fail-open).
+            wall_keys = {uid: _wall_key(plane, uid) for uid in ids}
+            malformed = {uid for uid in ids if _malformed_boxed(plane, uid)}
+            refused_cycle = sorted(malformed)
+            for uid in refused_cycle:
+                if uid not in refused_malformed_box:
+                    refused_malformed_box.append(uid)
+            pairs: List[Tuple[str, str, Dict[str, float]]] = []
+            excluded_cross_sandbox = 0
+            excluded_malformed_box = 0
+            for i, a in enumerate(ids):
+                for b in ids[i + 1 :]:
+                    if a in malformed or b in malformed:
+                        excluded_malformed_box += 1
+                        continue
+                    if wall_keys[a] != wall_keys[b]:
+                        excluded_cross_sandbox += 1
+                        continue
+                    aff = _affinity(plane, a, b, body=body, program=program,
+                                    include_superseded=include_superseded)
+                    pairs.append((a, b, aff))
+            total_excluded_cross_sandbox += excluded_cross_sandbox
+            total_excluded_malformed_box += excluded_malformed_box
+            pairs.sort(key=lambda t: -t[2]["affinity"])
+
+            new_this = 0
+            evo_this = 0
+            docked_this = 0
+            dup_this = 0
+
+            for a, b, aff in pairs:
+                gate = _ring_phase(aff["affinity"])
+                gate_counts[gate] = gate_counts.get(gate, 0) + 1
+                if gate == "None":
+                    continue
+
+                # Revised law: Solstice (new rings) paused while vital organs missing
+                if gate == "Solstice" and blocked:
+                    continue
+
+                ua, ub = plane.units[a], plane.units[b]
+                ta, tb = _tokens_uid(plane, a), _tokens_uid(plane, b)
+                shared = ta & tb
+                unique = (ta | tb) - shared
+                parent_goals = _parent_goals(plane, [a, b])
+                goal_line = (
+                    f"Goals toward: {'; '.join(parent_goals)}. "
+                    if parent_goals
+                    else "Goals: (parents had none — prefer adding goals on live ideas). "
+                )
+                # P3 R3.6: harmony over the proposal pair set (canonical
+                # harmony_score via the unit->idea adapter). Pairs reaching
+                # here passed the canonical _affinity gate above (faded ->
+                # "None" -> skipped), so when program is provided the units
+                # are verified active; pass verified_state to prevent
+                # harmony_score's fail-closed filter from excluding them.
+                # Without program (no canonical context), views report
+                # unknown -> fail-closed (honest).
+                _vstate = "active" if program is not None else None
+                pair_harmony = harmony_score(
+                    [unit_idea_view(ua, verified_state=_vstate),
+                     unit_idea_view(ub, verified_state=_vstate)])
+                # P3 R3.6: graph signal over the pair's canonical Idea IDs
+                # (read-only; 0.0 neutral when no graph attached or no
+                # edges). The graph is historical truth: faded/deleted
+                # ideas' edges remain queryable history, so the signal is
+                # NOT faded-filtered here.
+                pair_gcoh = (graph_coherence(graph, (a, b))
+                             if graph is not None else 0.0)
+                harmony_vals.append(pair_harmony)
+                gcoh_vals.append(pair_gcoh)
+
+                if gate == "Solstice" and new_this < self.max_new:
+                    # SD-3: with a docked session, the docked mind
+                    # authors the cross through SYNTHESIZE (affinity
+                    # was only the pre-filter that picked this pair).
+                    # A failed verb call falls back to the token
+                    # composition below for this pair.
+                    if docked:
+                        receipt = session.synthesize([a, b])
+                        if receipt.get("ok"):
+                            new_this += 1
+                            total_new += 1
+                            docked_new += 1
+                            docked_this += 1
+                            docked_pairs.append({
+                                "a": a, "b": b,
+                                "affinity": aff["affinity"],
+                                "pid": receipt.get("pid")})
+                            continue
+                        token_fallback += 1
+                    label = _combine_label(ua.label, ub.label)
+                    words = (
+                        f"[Ring:Evolve] Solstice resonance. "
+                        f"Parents: {ua.label} + {ub.label}. "
+                        f"{goal_line}"
+                        f"Shared: {', '.join(sorted(shared)[:5]) or '—'}. "
+                        f"Bridge: {', '.join(sorted(unique)[:6]) or '—'}. "
+                        f"Lineage: {a}|{b}."
+                    )
+                    if not _aetheris_clear(label, words):
+                        fog_cut += 1
+                        continue
+                    # GROW-DUP: a suppressed duplicate add stores
+                    # nothing (proposal count unchanged) — it must not
+                    # consume the max_new quota or inflate totals; it
+                    # is receipted as a skip instead.
+                    _before = len(self.nursery.proposals)
+                    self.nursery.add(
+                        label=label,
+                        words=words,
+                        kind="new",
+                        parents=[a, b],
+                        affinity=aff["affinity"],
+                        reason=f"Solstice harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f} hs={pair_harmony:.2f} gcoh={pair_gcoh:.2f}",
+                        seed=self.seed,
+                        harmony=pair_harmony,
+                        graph_coherence=pair_gcoh,
+                        origin="growth:token",
+                    )
+                    if len(self.nursery.proposals) == _before:
+                        dup_this += 1
+                        total_dup += 1
+                        continue
+                    new_this += 1
+                    total_new += 1
+
+                elif gate in ("Equinox", "Standstill") and evo_this < self.max_evolved:
+                    primary = a
+                    u = plane.units[primary]
+                    peer = plane.units[b]
+                    gained = _tokens_uid(plane, b) - _tokens_uid(plane, a)
+                    label = _evolve_label(u.label, gained or shared)
+                    words = (
+                        f"[Ring:Evolve] {gate} evolution. "
+                        f"From: {u.label}. Touch: {peer.label}. "
+                        f"{goal_line}"
+                        f"New threads: {', '.join(sorted(gained)[:6]) or 'deepening'}. "
+                        f"Lineage: {primary}."
+                    )
+                    if not _aetheris_clear(label, words):
+                        fog_cut += 1
+                        continue
+                    # GROW-DUP: same skip accounting as the Solstice
+                    # path — a suppressed duplicate consumes no
+                    # max_evolved quota and inflates no total.
+                    _before = len(self.nursery.proposals)
+                    self.nursery.add(
+                        label=label,
+                        words=words,
+                        kind="evolved",
+                        parents=[primary],
+                        affinity=aff["affinity"],
+                        reason=f"{gate} harm={aff['harmonic']:.2f} goals={aff.get('goal_boost', 0):.2f} hs={pair_harmony:.2f} gcoh={pair_gcoh:.2f}",
+                        seed=self.seed,
+                        harmony=pair_harmony,
+                        graph_coherence=pair_gcoh,
+                        origin="growth:token",
+                    )
+                    if len(self.nursery.proposals) == _before:
+                        dup_this += 1
+                        total_dup += 1
+                        continue
+                    evo_this += 1
+                    total_evo += 1
+
+            report.append(
+                {
+                    "cycle": cycle + 1,
+                    "ok": True,
+                    "live_ideas": len(ids),
+                    "pairs_scanned": len(pairs),
+                    # GS-4 / C-7: the wall's action is always receipted.
+                    "pairs_excluded_cross_sandbox": excluded_cross_sandbox,
+                    # GS-4 correction (mail 1a1d0990c34b0d99): pairs
+                    # refused because a member's boxed claim failed
+                    # verification, and the refused units by id.
+                    "pairs_excluded_malformed_box": excluded_malformed_box,
+                    "malformed_box_units_refused": refused_cycle,
+                    "proposed_new": new_this,
+                    "duplicates_suppressed": dup_this,
+                    # G-DUP.4: itemized suppressions for THIS cycle —
+                    # each receipt names the survivor and the reason;
+                    # the step's "cycle" field supplies the cycle the
+                    # original authorization (6931279746) required.
+                    # Receipt deltas only: receipts from before this
+                    # run are never attributed to its cycles.
+                    "suppressions": [dict(r) for r in
+                                     self.nursery.suppression_receipts[cycle_receipt_mark:]],
+                    "proposed_evolved": evo_this,
+                    "docked_new": docked_this,
+                    "rings": list(RINGS),
+                    "body": body_snapshots[-1],
+                    "solstice_blocked": blocked,
+                }
+            )
+
+        return {
+            "ok": True,
+            "engine": "RingedGrowth",
+            "rings": list(RINGS),
+            "cycles": cycles,
+            "proposed_new": total_new,
+            "proposed_evolved": total_evo,
+            # GROW-DUP: suppressed duplicate token-growth adds across
+            # all cycles of this run; additions + skips reconcile with
+            # the nursery's suppression receipts for the same run.
+            "duplicates_suppressed": total_dup,
+            # SD-3: which mechanism authored the pair crosses.
+            "growth_mode": "docked" if docked else "token",
+            "docked_new": docked_new,
+            "token_fallback": token_fallback,
+            "docked_pairs": docked_pairs,
+            # GS-4 / C-7: total cross-sandbox pairs excluded across
+            # all cycles of this run (per-cycle counts ride steps).
+            "pairs_excluded_cross_sandbox": total_excluded_cross_sandbox,
+            # GS-4 correction (mail 1a1d0990c34b0d99): pairs refused
+            # across all cycles because a member's boxed claim failed
+            # verification, and the refused unit ids (run-union, in
+            # first-refusal order). Empty on every well-formed field.
+            "pairs_excluded_malformed_box": total_excluded_malformed_box,
+            "malformed_box_units_refused": list(refused_malformed_box),
+            "fog_cut": fog_cut,
+            "gates": gate_counts,
+            "nursery": self.nursery.summary(),
+            "steps": report,
+            "body_pulses": body_snapshots,
+            # P3 R3.6: per-proposal signal evidence (persisted on each
+            # proposal; consumed by Program.ranked_proposals).
+            "harmony": _signal_stats(harmony_vals),
+            "graph_coherence": _signal_stats(gcoh_vals),
+            "graph_signal": "attached" if graph is not None else "none",
+            "law": (
+                "body pulse first · vital gaps block Solstice · "
+                "proposals quarantined · goal-biased · live matrix untouched"
+            ),
+        }
+
+
+def smoke() -> bool:
+    print("=== RINGED GROWTH SMOKE ===")
+    r = []
+    def rec(n, ok, d=""):
+        print(f"[{len(r)+1}] {n}: {'PASS' if ok else 'FAIL'}" + (f" | {d}" if d else ""))
+        r.append(bool(ok))
+    # body pulse path alone
+    body = _body_pulse_safe()
+    rec("body_pulse_callable", isinstance(body, dict))
+    blocked, vital = _vital_block({"missing": ["floor", "fourier"]})
+    rec("vital_block_floor", blocked and "floor" in vital)
+    rec("fourier_not_vital_block", "fourier" not in vital)
+    print(f"=== RESULT: {sum(r)}/{len(r)} PASS ===")
+    return all(r)
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(0 if smoke() else 1)

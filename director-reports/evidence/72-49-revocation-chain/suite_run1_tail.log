@@ -1,0 +1,15 @@
+[PASS] C-child:plain2
+[PASS] C-child:derived_appr
+[PASS] C-child:derived_optin
+[PASS] C-child:optin_direct
+[PASS] B-new-grant allows
+[PASS] B-new-approval allows
+[PASS] B-old-still-denied:grant_root
+[PASS] B-old-still-denied:grant_child
+[PASS] B-old-still-denied:grant_grandchild
+[PASS] B-old-still-denied:plain
+[PASS] B-old-still-denied:plain2
+[PASS] B-old-still-denied:derived_appr
+[PASS] B-old-still-denied:derived_optin
+[PASS] B-old-still-denied:optin_direct
+SM32: 60/60 GREEN

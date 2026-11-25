@@ -1,0 +1,5 @@
+[PASS] sanity: plant A grew past seed -- A stage='branch'
+[PASS] DIR-T2-R2 counterexample: omitted node B never receives A's stage -- B stage=None source='unplanted'
+[PASS] positive control: node A resolves to A's own stage -- A stage='branch' source='growth_force'
+[PASS] legacy prefix-only plant: B stays ambiguous, never attributed -- B stage=None source='ambiguous'
+=== probe_t2_omitted_node: 4/4 ===

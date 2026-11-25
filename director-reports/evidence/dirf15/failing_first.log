@@ -1,0 +1,5 @@
+FAIL DIR-F15 W1 null-valued removal on the immediate baseline is a membership change: changed lists the removed None key :: {'before': {'nullable': None}, 'after': {}, 'changed': [], 'label': '', 'baseline': 'immediate'}
+FAIL DIR-F15 W2 null-valued addition on the immediate baseline is a membership change :: {'before': {}, 'after': {'nullable': None}, 'changed': [], 'label': '', 'baseline': 'immediate'}
+FAIL DIR-F15 W3 null-valued removal against the transaction checkpoint is a membership change :: {'before': {'nullable': None}, 'after': {}, 'changed': [], 'label': '', 'baseline': 'transaction'}
+FAIL DIR-F15 W4 null-valued addition against the transaction checkpoint is a membership change :: {'before': {}, 'after': {'nullable': None}, 'changed': [], 'label': '', 'baseline': 'transaction'}
+STEP9_DIFF: 20/24

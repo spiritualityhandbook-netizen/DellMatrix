@@ -1,0 +1,19 @@
+Certification runner summary
+============================
+
+PASS  suite  suite_dirf12                 exit=0      0.9s  DIR-F12 Exchange journal receipt
+PASS  suite  suite_dirf13                 exit=0      0.6s  DIR-F13 Loop count grammar
+PASS  suite  suite_dirf14                 exit=0      0.2s  DIR-F14 Catch consumed split
+PASS  suite  suite_dirf15                 exit=0      0.2s  DIR-F15 Diff absent-vs-None (step 9 suite)
+PASS  suite  suite_dirf16                 exit=0     23.5s  DIR-F16 pidfd send-boundary classes (DAF-09 suite)
+PASS  suite  suite_t2                     exit=0      0.5s  T2 + DIR-T2-R2 growth-lens plant identity
+PASS  suite  suite_step10                 exit=0      0.3s  Step 10 Resolve/Ungroup/Compose consistency
+PASS  suite  suite_step11                 exit=0      0.2s  Step 11 public contracts
+PASS  probe  probe_t2_omitted_node        exit=0      0.1s  DIR-T2-R2 omitted-node counterexample
+PASS  probe  probe_dirf16_send_boundary   exit=0      0.1s  DIR-F16 send-boundary errno classes
+PASS  probe  probe_dirf15_absent_vs_none  exit=0      0.3s  DIR-F15 absent-vs-None comparator
+PASS  probe  probe_dirf13_malformed_count exit=0      0.3s  DIR-F13 malformed count refusal
+
+OVERALL: PASS (12/12 items exit 0)
+Raw streams: suites/ and probes/ beside this file. Verify bytes against MANIFEST.sha256.
+This summary reports execution only. Certification is the Director's act.

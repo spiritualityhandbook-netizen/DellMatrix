@@ -1,0 +1,6 @@
+server bound to 8765; token acquired (43 chars)
+POST /api/execute valid-token + Origin http://127.0.0.1 (no port) -> HTTP 403
+store before: {}
+store after:  {}
+refused 403: True; zero mutation: True
+PROBE RESULT: PASS — implicit-port Origin refused, no mutation

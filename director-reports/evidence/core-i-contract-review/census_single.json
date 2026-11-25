@@ -1,0 +1,512 @@
+[
+ {
+  "dell": 0,
+  "name": "Nova",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 1,
+  "name": "Initiate",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 2,
+  "name": "Persona",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 3,
+  "name": "Logic",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 4,
+  "name": "Transform",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 5,
+  "name": "Tone",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 6,
+  "name": "Cycle",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 7,
+  "name": "Link",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 8,
+  "name": "Create",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": false,
+  "typed_error": "MISSING_REQUIRED: name",
+  "verdict": "VALIDATED (see battery)"
+ },
+ {
+  "dell": 9,
+  "name": "Show",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 10,
+  "name": "Keep",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 11,
+  "name": "Architect",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 12,
+  "name": "Test",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 13,
+  "name": "Loop",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 14,
+  "name": "Bind",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 15,
+  "name": "Map",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 16,
+  "name": "Decay",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": false,
+  "typed_ok": false,
+  "typed_error": "enhance OFF",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 17,
+  "name": "Shadow",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 18,
+  "name": "Mirror",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 19,
+  "name": "Drive",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 20,
+  "name": "Alpha",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 21,
+  "name": "Merge",
+  "surface": "live_identity",
+  "args_parsed": true,
+  "bare_ok": false,
+  "typed_ok": false,
+  "typed_error": "missing_source",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 22,
+  "name": "Split",
+  "surface": "live_identity",
+  "args_parsed": true,
+  "bare_ok": false,
+  "typed_ok": false,
+  "typed_error": "missing_source",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 23,
+  "name": "Lock",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 24,
+  "name": "Unlock",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 25,
+  "name": "Pulse",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 26,
+  "name": "Temp",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 27,
+  "name": "Checkpoint",
+  "surface": "intercept",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "!! DIFFERS"
+ },
+ {
+  "dell": 28,
+  "name": "Rollback",
+  "surface": "intercept",
+  "args_parsed": true,
+  "bare_ok": false,
+  "typed_ok": false,
+  "typed_error": "rollback_target_invalid",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 29,
+  "name": "Compress",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 30,
+  "name": "Expand",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 31,
+  "name": "Simulate",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 32,
+  "name": "Pause",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 33,
+  "name": "Resume",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 34,
+  "name": "Stamp",
+  "surface": "intercept",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 35,
+  "name": "Discover",
+  "surface": "intercept",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 36,
+  "name": "Inject",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 37,
+  "name": "Nurture",
+  "surface": "intercept",
+  "args_parsed": true,
+  "bare_ok": false,
+  "typed_ok": false,
+  "typed_error": "add idea requires a label",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 38,
+  "name": "Distill",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 39,
+  "name": "Schema",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 40,
+  "name": "TokenCount",
+  "surface": "intercept",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 41,
+  "name": "Sanitize",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 42,
+  "name": "Retry",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 43,
+  "name": "Fallback",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 44,
+  "name": "Bridge",
+  "surface": "intercept",
+  "args_parsed": true,
+  "bare_ok": false,
+  "typed_ok": false,
+  "typed_error": "bridge_unavailable",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 45,
+  "name": "Translate",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": false,
+  "typed_ok": false,
+  "typed_error": "nothing_to_translate",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 46,
+  "name": "Rank",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 47,
+  "name": "Embed",
+  "surface": "intercept",
+  "args_parsed": true,
+  "bare_ok": false,
+  "typed_ok": false,
+  "typed_error": "embed_unavailable",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 48,
+  "name": "Macro",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 49,
+  "name": "Profile",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ },
+ {
+  "dell": 50,
+  "name": "Manifest",
+  "surface": "leaf",
+  "args_parsed": true,
+  "bare_ok": true,
+  "typed_ok": true,
+  "typed_error": "",
+  "verdict": "IGNORED"
+ }
+]

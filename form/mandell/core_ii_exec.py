@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""Core II runtime 51-99. Formalized executable state."""
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
+
+TRACES_CAP = 512
+SNAPSHOTS_CAP = 64
+
+@dataclass
+class CoreIIState:
+    scope: str = "plane"
+    selected: List[str] = field(default_factory=list)
+    store: Dict[str, Any] = field(default_factory=dict)
+    groups: Dict[str, List[str]] = field(default_factory=dict)
+    defs: Dict[str, str] = field(default_factory=dict)
+    aliases: Dict[str, str] = field(default_factory=dict)
+    compositions: Dict[str, str] = field(default_factory=dict)
+    staged: List[Dict[str, Any]] = field(default_factory=list)
+    snapshots: List[Dict[str, Any]] = field(default_factory=list)
+    last_error: str = ""
+    last_diff: Dict[str, Any] = field(default_factory=dict)
+    # Step 9 (B14): the shared Diff baseline — a _ckpt dict
+    # captured by spectrum_ops._note_mutation immediately
+    # before the most recent store mutation (any writer).
+    # Session-only: never serialized (not in CORE_II_DURABLE),
+    # so a save/load-restored state has baseline None and
+    # Diff reports baseline_missing until the next mutation.
+    diff_baseline: Any = None
+    traces: List[str] = field(default_factory=list)
+    weights: Dict[str, float] = field(default_factory=dict)
+    context: str = ""
+    try_depth: int = 0
+    branch: Dict[str, Any] = field(default_factory=dict)
+    parallel: List[str] = field(default_factory=list)
+    route: str = "primary"
+    limit: str = ""
+    refs: Dict[str, str] = field(default_factory=dict)
+    causes: List[tuple] = field(default_factory=list)
+    deps: List[tuple] = field(default_factory=list)
+    last_assert: str = ""
+    last_guard: str = "ALLOW"
+    frames: List[Dict[str, Any]] = field(default_factory=list)
+    last_frame: Dict[str, Any] = field(default_factory=dict)
+    last_control: Dict[str, Any] = field(default_factory=dict)
+    flow_taken: List[str] = field(default_factory=list)
+    flow_blocked: List[str] = field(default_factory=list)
+    control_steps: int = 0
+    last_result: Dict[str, Any] = field(default_factory=dict)
+    tx: List[Dict[str, Any]] = field(default_factory=list)
+    # AF-5: session-only dropped counters (never durable — the
+    # collections reset on load, so a durable counter would
+    # false-witness session loss across a reload).
+    traces_dropped_total: int = 0
+    snapshots_dropped_total: int = 0
+    tx_dropped_total: int = 0
+    def snap(self) -> Dict[str, Any]:
+        return {"scope": self.scope, "selected": list(self.selected), "store": dict(self.store),
+                "groups": {k: list(v) for k, v in self.groups.items()}, "defs": dict(self.defs),
+                "aliases": dict(self.aliases), "compositions": dict(self.compositions),
+                "staged": len(self.staged), "try_depth": self.try_depth, "context": self.context,
+                "route": self.route, "branch": dict(self.branch), "last_assert": self.last_assert,
+                "last_guard": self.last_guard, "last_frame": dict(self.last_frame),
+                "control_steps": self.control_steps}
+
+def _trim_oldest(items: list, cap: int) -> int:
+    """Drop the oldest entries beyond cap; return the count."""
+    excess = len(items) - cap
+    if excess > 0:
+        del items[:excess]
+        return excess
+    return 0
+
+def append_snapshot(st: CoreIIState) -> None:
+    """AF-5: the ONE snapshot append path (shot() and the
+    chain_exec DeltaFlow checkpoint both route here). Bottom-
+    trim preserves Revert's top-of-stack contract."""
+    st.snapshots.append(st.snap())
+    st.snapshots_dropped_total += _trim_oldest(st.snapshots, SNAPSHOTS_CAP)
+
+def attach(program: Any) -> CoreIIState:
+    st = getattr(program, "core_ii", None)
+    if not isinstance(st, CoreIIState):
+        st = CoreIIState()
+        try: program.core_ii = st
+        except Exception: pass
+    return st
+
+def _ids(program: Any) -> List[str]:
+    try: return list(program.cube.session.plane.units.keys())
+    except Exception: return list(getattr(program, "_units", {}).keys())
+
+def _pred(label: str, uid: str) -> bool:
+    lab = (label or "").lower(); u = str(uid).lower()
+    return True if not lab else lab in u or u.startswith(lab.replace(" ", "_"))
+
+# D1 reconciliation R1 (Director ruling, 2026-10-29): scope is a
+# real selection boundary, not a label. Supported scope names are
+# defined explicitly: "plane" (the whole plane — the default) or
+# the name of an existing group in st.groups (that group's
+# membership, intersected with the plane in plane order). Any
+# other scope value is unknown and must refuse, never silently
+# widen to the whole plane.
+def scope_supported(st: Any) -> List[str]:
+    return ["plane"] + sorted(st.groups.keys())
+
+def scope_universe(st: Any, program: Any):
+    """(ids, err): the canonical membership for st.scope."""
+    ids = _ids(program)
+    if st.scope == "plane":
+        return ids, ""
+    members = st.groups.get(st.scope)
+    if members is None:
+        return None, f"scope_unknown:{st.scope}"
+    member_set = set(members)
+    return [i for i in ids if i in member_set], ""
+
+def execute_core_ii(program: Any, n: int, term: str, label: str, messages: List[str], roles: Any = None) -> Dict[str, Any]:
+    # DAF-01: roles = validated typed arguments carried losslessly
+    # from chain_exec (None on every legacy/direct path).
+    st = attach(program); lab = label or ""; ok = True; err = ""
+    def mark():
+        # Step 3b (DAF-02 chain follow-up): under a Sanitize chain's
+        # redaction flag, the trace line and the history label carry
+        # the sanitized lab; the handler still executes with the
+        # real lab (payload semantics preserved).
+        _lab_shown = lab
+        if lab and getattr(program, "_chain_sanitize_redact", False):
+            from .redaction import sanitize_text
+            _lab_shown = sanitize_text(lab)
+        st.traces.append(f"{n:02d}[{term}]::{_lab_shown}")
+        st.traces_dropped_total += _trim_oldest(st.traces, TRACES_CAP)
+        if hasattr(program, "note_seed"):
+            try: program.note_seed(n, term, _lab_shown or term)
+            except Exception: pass
+    def shot():
+        append_snapshot(st)
+        # Step 3c (DAF-02, Director Mode D): snapshots are NOT
+        # sanitized, even under a Sanitize chain. A snapshot is a
+        # rollback checkpoint — Revert restores live state from
+        # it — so it is executable state, not display evidence.
+        # Step 3b sanitized the appended copy in place and the
+        # Director's probe showed Revert then restoring
+        # "password=[REDACTED]" instead of the original value.
+        # The snapshot stays exactly as a non-Sanitize control
+        # leaves it; redaction applies only to detached outward
+        # copies at their own boundaries.
+    try:
+        from .query_ops import QUERY_DELLS, apply_query
+        if n in QUERY_DELLS:
+            ok, err = apply_query(n, st, program, lab, term, messages, _ids, _pred, shot, roles=roles)
+        elif n == 53:
+            name = lab or "plane"
+            if name == "plane" or name in st.groups:
+                st.scope = name
+                messages.append(f"Scope -> {st.scope}")
+            else:
+                ok = False
+                err = f"scope_unknown:{name}"
+                messages.append(
+                    f"Scope refused: unknown scope {name!r} "
+                    f"(supported: {', '.join(scope_supported(st))})")
+        elif n == 60:
+            from .control_runtime import ControlFrame, eval_condition_detail
+            detail = eval_condition_detail(st, program, lab or "true")
+            if detail.get("error"):
+                # DD-42: an unparseable Branch condition takes
+                # NO arm — the atom refuses with the error.
+                ok = False
+                err = detail["error"]
+                messages.append(f"Branch refused ({err}) cond={lab or 'true'}")
+                st.last_result = {"value": None, "matched": False,
+                                  "source": "branch", "predicate": "unparseable",
+                                  "error": err, "trace": "60"}
+                taken = None
+            else:
+                taken = bool(detail.get("matched"))
+            if taken is not None:
+                st.branch = {"cond": lab or "true", "taken": taken, "path": "true" if taken else "false"}
+                frame = ControlFrame(id=f"br{len(st.frames)}", kind="branch", condition=lab or "true", status="taken" if taken else "skipped")
+                st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+                messages.append(f"Branch cond={lab or 'true'} taken={taken} unchosen_not_run")
+        elif n == 61:
+            from .control_runtime import ControlFrame
+            policy = (lab or "all").lower()
+            incoming = list((st.last_frame or {}).get("results") or [])
+            # Step 7 (B7/DAF-08): Join evaluates EXECUTED results.
+            # A skipped occurrence (lawful conditional skip, flow
+            # skip, zero-iteration body) is an omission, not a
+            # failure — it never counts as a Join failure; the
+            # chain layer publishes the completed block's actual
+            # results to last_frame before the closing Join runs.
+            # A previous Join's own receipt (owned_by) is a verdict,
+            # not a child execution — excluding it avoids counting
+            # one failure twice, since the failed children that
+            # produced that verdict are themselves in the results.
+            executed = [r for r in incoming
+                        if not r.get("skipped") and "owned_by" not in r]
+            fails = [r for r in executed if not r.get("ok", True)]
+            if policy in ("any",):
+                join_ok = (not executed) or any(r.get("ok", True) for r in executed)
+            else:
+                join_ok = not fails
+            frame = ControlFrame(id=f"jn{len(st.frames)}", kind="join", condition=policy, status="ok" if join_ok else "fail", policy=policy, results=incoming)
+            if not join_ok:
+                ok = False
+                err = "join_fail"
+                frame.error = err
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Join policy={policy} ok={join_ok} incoming={len(incoming)} fails={len(fails)}")
+        elif n == 62:
+            from .control_runtime import ControlFrame
+            st.parallel = [p.strip() for p in lab.split(",") if p.strip()] or ["a", "b"]
+            frame = ControlFrame(id=f"pr{len(st.frames)}", kind="parallel", status="pending")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Parallel n={len(st.parallel)} offline_deterministic")
+        elif n == 63:
+            from .control_runtime import ControlFrame
+            frame = ControlFrame(id=f"sq{len(st.frames)}", kind="sequence", status="pending")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Sequence {lab or 'ordered'}")
+        elif n == 64:
+            from .control_runtime import ControlFrame, eval_condition, bound_display
+            # Step 7 (B8): the chain controller owns Until condition
+            # semantics — an EMPTY condition evaluates true
+            # (zero-iteration boundary) in eval_condition, so the
+            # core arm must not substitute "false" for it. Both
+            # surfaces now agree on bare Until.
+            pred = eval_condition(st, program, lab)
+            frame = ControlFrame(id=f"un{len(st.frames)}", kind="until", condition=lab, status="ready" if not pred else "zero")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"Until cond={lab or 'true'} already={pred} bound={bound_display(st)}")
+        elif n == 65:
+            from .control_runtime import ControlFrame, eval_condition, bound_display
+            pred = eval_condition(st, program, lab or "true")
+            frame = ControlFrame(id=f"wh{len(st.frames)}", kind="while", condition=lab or "true", status="ready" if pred else "zero")
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"While cond={lab or 'true'} already={pred} bound={bound_display(st)}")
+        elif n == 66:
+            from .control_runtime import ControlFrame
+            # Step 7 (B9): empty selection means zero iterations —
+            # the plane-id fallback is DELETED, so the core arm
+            # agrees with the chain layer ("empty selection valid").
+            ids = list(st.selected or [])
+            frame = ControlFrame(id=f"fe{len(st.frames)}", kind="foreach", status="pending", body=list(range(len(ids))))
+            st.last_frame = frame.as_dict(); st.frames.append(st.last_frame)
+            messages.append(f"ForEach n={len(ids)} op={lab or 'identity'} empty_ok={len(ids)==0}")
+        elif 80 <= n <= 99:
+            from .spectrum_ops import apply_spectrum
+            ok, err = apply_spectrum(n, st, program, lab, term, messages, _ids, shot, roles=roles)
+        else:
+            ok=False; err=f"unmapped:{n}"; messages.append(f"Core II Dell {n} unmapped")
+    except Exception as exc:
+        ok=False; err=str(exc); st.last_error=err; messages.append(f"Core II fail {n}: {err}")
+    if not ok:
+        st.last_error = err or st.last_error
+        # Step 8 (B15): the canonical outcome hook — every
+        # executed Core II failure (query, scope, Join,
+        # spectrum, composition, exception) marks the
+        # innermost active transaction frame failed, first
+        # root cause preserved. st.last_error stays a global
+        # diagnostic only; it owns nothing (B16).
+        from .spectrum_ops import note_atom_failure
+        note_atom_failure(st, err)
+    mark()
+    return {"ok": ok, "error": err, "dell": n, "core_ii": st.snap(), "result": dict(st.last_result or {})}

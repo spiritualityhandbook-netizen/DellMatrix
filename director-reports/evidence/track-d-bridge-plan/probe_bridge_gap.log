@@ -1,0 +1,18 @@
+PASS fresh program has Plane units (welcome seed) | units=['welcome']
+PASS fresh program: ZERO canonical Ideas
+PASS fresh program: graph has no roots/edges
+PASS direct-place units carry slug ids | house,rooms
+PASS confirm accepted via human-approval route | {'ok': True, 'id': 'bathroom_3098', 'label': 'Bathroom', 'kind': 'new'}
+PASS confirmed unit id == proposal id | pid=bathroom_3098 in units=True
+PASS nodes_payload keys carry no binding/containment | keys=['detail', 'goals', 'id', 'label', 'sandboxed', 'score', 'skin', 'words', 'x', 'y', 'z']
+PASS nest(unit ids) refused by endpoint gate | relationship source house is not an existing idea
+PASS S1 mechanics: UUID-shell Ideas nest
+PASS S1 mechanics: promote restores top-level
+PASS S2 mechanics: slug-id Idea nests by unit id
+PASS program save writes program+nursery state
+PASS reload via Program.load: unit ids stable | ['bathroom_3098', 'house', 'rooms', 'welcome']
+PASS fresh construct does NOT restore plane units (welcome only) | ['welcome']
+PASS canonical Ideas exist only from explicit save_idea | ideas=3
+PASS unit removal leaves canonical side untouched
+TOTAL 16/16 PASS
+cleanup removed 11 owner-scoped state entries; remaining: []

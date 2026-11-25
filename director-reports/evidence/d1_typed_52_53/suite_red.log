@@ -1,0 +1,21 @@
+FAIL sig52: Filter registered, one optional string role 'predicate' :: sig52=None
+FAIL sig53: Scope registered, one optional string role 'name' :: sig53=None
+FAIL typed set is exactly the 17 (15 prior + 52 + 53) :: typed=[8, 51, 54, 55, 56, 57, 58, 67, 68, 69, 84, 85, 86, 87, 88]
+FAIL typed Filter narrows the selection by its predicate :: ok=True selected=['welcome', 'garden_gate', 'garden_fern', 'river_stone']
+FAIL typed Filter result cell is honest (source/count/matched/predicate from the typed value) :: cell={'value': ['welcome', 'garden_gate', 'garden_fern', 'river_stone'], 'matched': True, 'count': 4, 'source': 'filter', 'predicate': '*', 'confidence': 1.0, 'trace': '52', 'error': ''}
+FAIL typed Filter matching nothing empties honestly (ok=True, matched=False, count=0) :: ok=True selected=['welcome', 'garden_gate', 'garden_fern', 'river_stone'] cell={'value': ['welcome', 'garden_gate', 'garden_fern', 'river_stone'], 'matched': True, 'count': 4, 'source': 'filter', 'predicate': '*', 'confidence': 1.0, 'trace': '52', 'error': ''}
+FAIL typed Filter bogus role refused UNKNOWN_ROLE, zero mutation :: ok=True err= | Mandell: 52[Filter](bogus="x") English: Filter (Reduce a set by conditions) Chain atoms=1 label= -- 52[Filter] ns=COR
+FAIL typed Filter conflicting legacy label refused ARGUMENT_CONFLICT before mutation :: ok=True err= | Mandell: 52[Filter](predicate="garden") :: stone English: Filter (Reduce a set by conditions) → stone Chain atoms=1 l
+FAIL typed Filter with equal legacy label proceeds :: ok=True selected=[]
+FAIL typed Filter delimiter value (space) rides whole: underscore-prefix match, no split :: ok=True selected=['welcome', 'garden_gate', 'garden_fern', 'river_stone']
+FAIL typed Filter delimiter value (= and :) rides whole: honest empty, no split, no error :: ok=True selected=['welcome', 'garden_gate', 'garden_fern', 'river_stone']
+FAIL chain: typed Filter mid-chain narrows; receipts for all three atoms honest; Query sees the narrowed set :: ok=True ars=[{'dell': 51, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 52, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 54, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] cell={'value': ['welcome', 'garden_gate', 'garden_fern', 'river_stone'], 'matched': True, 'count': 4, 'source': 'query', 'predicate': '*', 'confidence': 1.0, 'trace': '54', 'error': ''}
+FAIL typed Filter result is identical to the legacy-label twin (same ok, selection, result cell) :: typed=(True, ['welcome', 'garden_gate', 'river_stone'], {'value': ['welcome', 'garden_gate', 'river_stone'], 'matched': True, 'count': 3, 'source': 'filter', 'predicate': '*', 'confidence': 1.0, 'trace': '52', 'error': ''}) legacy=(True, ['garden_gate'], {'value': ['garden_gate'], 'matched': True, 'count': 1, 'source': 'filter', 'predicate': 'garden', 'confidence': 1.0, 'trace': '52', 'error': ''})
+FAIL typed Scope switches to an existing group :: ok=True scope=plane
+FAIL after typed Scope, Select's universe is the group (scope is a real boundary) :: ok=True selected=['welcome', 'garden_gate', 'river_stone']
+FAIL typed Scope to a missing group refuses fail-closed scope_unknown, scope unchanged :: ok=True err= scope=plane
+FAIL typed Scope bogus role refused UNKNOWN_ROLE, scope unchanged :: ok=True err= | Mandell: 53[Scope](bogus="x") English: Scope (Establish execution/context boundary) Chain atoms=1 label= -- 53[Scope]
+FAIL typed Scope conflicting legacy label refused ARGUMENT_CONFLICT, scope unchanged :: ok=True err= | Mandell: 53[Scope](name="greens") :: plane English: Scope (Establish execution/context boundary) → plane Chain atoms=
+FAIL chain: typed Scope then Select — receipts honest, selection scope-bound :: ok=True ars=[{'dell': 53, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 51, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] selected=['welcome', 'garden_gate', 'river_stone']
+FAIL chain: refused typed Scope carries an honest ok=False receipt naming scope_unknown :: ars=[{'dell': 53, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}, {'dell': 51, 'ok': True, 'error': '', 'skipped': False, 'reason': ''}] scope=plane
+D1_TYPED_52_53: 8/28

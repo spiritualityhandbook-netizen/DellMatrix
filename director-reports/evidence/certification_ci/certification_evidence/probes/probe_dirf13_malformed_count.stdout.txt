@@ -1,0 +1,9 @@
+[PASS] grammar: superscript refused
+[PASS] grammar: Arabic-Indic digit refused
+[PASS] grammar: oversized refused
+[PASS] grammar: empty refused
+[PASS] grammar: '3' parses
+[PASS] grammar: '0007' parses
+[PASS] public path: Loop superscript refuses invalid_loop_count -- result={'ok': False, 'error': 'invalid_loop_count'}
+[PASS] public path: program stays usable (lawful Loop runs) -- result={'ok': True, 'error': None}
+=== probe_dirf13_malformed_count: 8/8 ===

@@ -1,0 +1,137 @@
+"""Dell Matrix snap host — required set post-preform open."""
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+from form.mandell.floor import floor_status, assert_floor_intact, FLOOR
+from form.mandell.registry import DELLS
+from form.mandell.manifest import Manifest, manifest_from_dell
+from .snap import SnapCandidate, SnapResult, resonate
+
+FOUNDATION_PORTS = (
+    "language", "registry", "growth", "cube", "main",
+    "persona", "tool", "doc", "pipeline", "other",
+)
+
+REQUIRED_FOR_OPEN: Tuple[str, ...] = (
+    "Mandell",
+    "TrueRegistry",
+    "PlaneSurface",
+    "MainField",
+    "BlankCube",
+    "GraphView",
+    "EnhanceGate",
+    "Persist",
+    "Visual",
+    "SharedMain",
+    "AmbientGate",
+    "IdeaGrow",
+    "SandboxGate",
+    "NetworkMain",
+)
+
+
+@dataclass
+class DellMatrix:
+    snapped: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
+    log: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        assert_floor_intact()
+        for p in FOUNDATION_PORTS:
+            self.snapped.setdefault(p, [])
+        if not self.snapped["language"]:
+            m = manifest_from_dell(1, "Mandell")
+            self.snapped["language"].append({"name": "Mandell", "manifest": m.to_dict() if m else None})
+        if not self.snapped["registry"]:
+            self.snapped["registry"].append({"name": "TrueRegistry", "count": len(DELLS)})
+
+    def snap(self, candidate: SnapCandidate) -> SnapResult:
+        result = resonate(candidate)
+        if not result.ok:
+            self.log.append(f"REJECT {candidate.name}: {result.reason}")
+            return result
+        port = result.port or candidate.kind or "other"
+        if port not in self.snapped:
+            port = "other"
+        entry = {
+            "name": candidate.name,
+            "kind": candidate.kind,
+            "manifest": candidate.manifest.to_dict() if candidate.manifest else None,
+            "payload": dict(candidate.payload),
+        }
+        self.snapped[port] = [e for e in self.snapped[port] if e["name"] != candidate.name]
+        self.snapped[port].append(entry)
+        self.log.append(f"SNAP {candidate.name} → {port}")
+        return result
+
+    def snap_out(self, name: str) -> bool:
+        """Remove a previously snapped entry by name (SD-1: the
+        undock analogue for dynamically registered sessions).
+        Returns True when an entry was removed."""
+        removed = False
+        for port in FOUNDATION_PORTS:
+            kept = [e for e in self.snapped.get(port, [])
+                    if e.get("name") != name]
+            if len(kept) != len(self.snapped.get(port, [])):
+                removed = True
+            self.snapped[port] = kept
+        if removed:
+            self.log.append(f"SNAP_OUT {name}")
+        return removed
+
+    def list_port(self, port: str) -> List[Dict[str, Any]]:
+        return list(self.snapped.get(port, []))
+
+    def all_snaps(self) -> List[Dict[str, Any]]:
+        out = []
+        for port, entries in self.snapped.items():
+            for e in entries:
+                row = dict(e)
+                row["port"] = port
+                out.append(row)
+        return out
+
+    def snap_names(self) -> Set[str]:
+        return {e["name"] for e in self.all_snaps() if e.get("name")}
+
+    def has_snap(self, name: str) -> bool:
+        return name in self.snap_names()
+
+    def verify(self, required: Optional[Tuple[str, ...]] = None) -> Dict[str, Any]:
+        assert_floor_intact()
+        req = required if required is not None else REQUIRED_FOR_OPEN
+        names = self.snap_names()
+        missing = [n for n in req if n not in names]
+        # CORE_I 00-50 is the locked open spine. CORE_II 51-99 is also in DELLS.
+        core_i_count = sum(1 for n in DELLS if 0 <= int(n) <= 50)
+        ok = (
+            list(FLOOR) == ["Alpha", "Delta", "Omega", "Omni"]
+            and core_i_count == 51
+            and len(missing) == 0
+        )
+        return {
+            "ok": ok,
+            "floor": list(FLOOR),
+            "dell_count": len(DELLS),
+            "core_i_count": core_i_count,
+            "snap_count": len(names),
+            "missing": missing,
+            "present": sorted(names),
+        }
+
+    def understand(self) -> Dict[str, Any]:
+        return {
+            "self": "DellMatrix",
+            "role": "foundation snap host",
+            "level": 3,
+            "floor": floor_status(),
+            "ports": {p: len(self.snapped.get(p, [])) for p in FOUNDATION_PORTS},
+            "dell_count": len(DELLS),
+            "snap_names": sorted(self.snap_names()),
+            "log_tail": self.log[-10:],
+        }
+
+    def status(self) -> Dict[str, Any]:
+        return self.understand()

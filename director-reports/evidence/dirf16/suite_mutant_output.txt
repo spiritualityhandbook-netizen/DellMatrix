@@ -1,0 +1,8 @@
+EVIDENCE E5 — DIR-F16 suite, MUTANT (blanket except OSError -> refused restored at the send boundary only)
+command: python3 -m form.daf09_timeout_tree_test
+revision: fix commit b9789bb + mutant edit, worktree run 2026-11-02; mutant reverted by inverse edit and tree verified identical to b9789bb afterwards
+FAIL DIR-F16 send-EPERM: outcome is unavailable: outcome=refused
+FAIL DIR-F16 send-ENOSYS: outcome is unavailable: outcome=refused
+FAIL DIR-F16 consumer: send-EPERM identity in unavailable set: report={'signalled': [], 'refused': [(22678, 1177660)], 'unavailable': []}
+DAF09_TIMEOUT_TREE: 28/31
+suite exit=1

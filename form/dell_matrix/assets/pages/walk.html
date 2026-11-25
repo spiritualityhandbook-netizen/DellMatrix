@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Matrix Walk</title>
+<link rel="stylesheet" href="/css/app.css"/>
+<style>
+html,body{height:100%;overflow:hidden}
+.walk-frame{position:fixed;inset:52px 0 0 0;border:0;width:100%;height:calc(100% - 52px);background:#05070b;box-shadow:inset 0 1px 0 #243044}
+.walk-top{position:fixed;top:0;left:0;right:0;height:52px;z-index:30}
+</style>
+</head>
+<body>
+<div class="walk-top" id="chrome"></div>
+<div class="sync-strip" id="sync-strip" style="position:fixed;top:52px;left:0;right:0;z-index:25;border-radius:0" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+<iframe class="walk-frame" id="frame" src="/walk/world" title="DellMatrix first-person walk"></iframe>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  document.getElementById('chrome').innerHTML = DM.renderTopbar('walk', 'Matrix Walk · WASD');
+  async function meta(){
+    try{ var _sx=document.getElementById('sync-text'); if(_sx&&DM.formatSyncLine){ var _st=(typeof s!=='undefined'?s:(typeof STATE!=='undefined'?STATE:null)); if(_st) _sx.textContent=DM.formatSyncLine(_st); } }catch(_e){}
+    /* syncux:sync-strip-walk */
+
+    try{
+      const s=await DM.getState();
+      const el=document.getElementById('dm-meta');
+      const c=(s.fp&&s.fp.center)||[];
+      const pil=(s.pillars&&s.pillars.label)||'';
+      document.title='DellMatrix · Walk';
+      if(el) el.textContent=`walk · ideas=${s.ideas??0} · form=${s.form||'?'} · @ (${c.join(',')}) · ${pil}`;
+    }catch(e){
+      const el=document.getElementById('dm-meta');
+      if(el) el.textContent='walk · offline';
+    }
+  }
+  meta();
+  setInterval(()=>{ if(document.visibilityState==='visible') meta(); }, 3500);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') meta(); });
+})();
+</script>
+<!-- syncux:empty-walk -->
+</body>
+</html>

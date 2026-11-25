@@ -1,0 +1,226 @@
+{
+  "euclidean_shells": [
+    {
+      "dist": 1.0,
+      "s2": 2,
+      "count": 12,
+      "cumulative_incl_center": 13
+    },
+    {
+      "dist": 1.4142135623730951,
+      "s2": 4,
+      "count": 6,
+      "cumulative_incl_center": 19
+    },
+    {
+      "dist": 1.7320508075688772,
+      "s2": 6,
+      "count": 24,
+      "cumulative_incl_center": 43
+    },
+    {
+      "dist": 2.0,
+      "s2": 8,
+      "count": 12,
+      "cumulative_incl_center": 55
+    },
+    {
+      "dist": 2.23606797749979,
+      "s2": 10,
+      "count": 24,
+      "cumulative_incl_center": 79
+    },
+    {
+      "dist": 2.449489742783178,
+      "s2": 12,
+      "count": 8,
+      "cumulative_incl_center": 87
+    },
+    {
+      "dist": 2.6457513110645907,
+      "s2": 14,
+      "count": 48,
+      "cumulative_incl_center": 135
+    },
+    {
+      "dist": 2.8284271247461903,
+      "s2": 16,
+      "count": 6,
+      "cumulative_incl_center": 141
+    },
+    {
+      "dist": 3.0,
+      "s2": 18,
+      "count": 36,
+      "cumulative_incl_center": 177
+    }
+  ],
+  "graph_shells": {
+    "0": 1,
+    "1": 12,
+    "2": 42,
+    "3": 92,
+    "4": 162
+  },
+  "graph_shell_formula_check_10k2+2": {
+    "1": 12,
+    "2": 42,
+    "3": 92,
+    "4": 162
+  },
+  "slice_111_flower_layer": [
+    {
+      "dist": 1.0,
+      "count": 6,
+      "cumulative": 7
+    },
+    {
+      "dist": 1.732051,
+      "count": 6,
+      "cumulative": 13
+    },
+    {
+      "dist": 2.0,
+      "count": 6,
+      "cumulative": 19
+    },
+    {
+      "dist": 2.645751,
+      "count": 12,
+      "cumulative": 31
+    },
+    {
+      "dist": 3.0,
+      "count": 6,
+      "cumulative": 37
+    }
+  ],
+  "slice_100_square_layer": [
+    {
+      "dist": 1.0,
+      "count": 4,
+      "cumulative": 5
+    },
+    {
+      "dist": 1.414214,
+      "count": 4,
+      "cumulative": 9
+    },
+    {
+      "dist": 2.0,
+      "count": 4,
+      "cumulative": 13
+    },
+    {
+      "dist": 2.236068,
+      "count": 8,
+      "cumulative": 21
+    },
+    {
+      "dist": 2.828427,
+      "count": 4,
+      "cumulative": 25
+    },
+    {
+      "dist": 3.0,
+      "count": 4,
+      "cumulative": 29
+    }
+  ],
+  "complete_graph_R1": {
+    "N": 13,
+    "edges": 78,
+    "by_s2": {
+      "2": 36,
+      "4": 12,
+      "6": 24,
+      "8": 6
+    },
+    "distinct_distances": 4,
+    "max_dist": 2.0
+  },
+  "complete_graph_R2": {
+    "N": 55,
+    "edges": 1485,
+    "by_s2": {
+      "2": 216,
+      "4": 90,
+      "6": 264,
+      "8": 114,
+      "10": 192,
+      "12": 48,
+      "14": 240,
+      "16": 27,
+      "18": 108,
+      "20": 48,
+      "22": 48,
+      "24": 36,
+      "26": 48,
+      "32": 6
+    },
+    "distinct_distances": 14,
+    "max_dist": 4.0
+  },
+  "halving_centers_R2": [
+    {
+      "plane": "x=0 (i)",
+      "neg": 21,
+      "on": 13,
+      "pos": 21
+    },
+    {
+      "plane": "x=y (i-j)",
+      "on": 11,
+      "neg": 22,
+      "pos": 22
+    },
+    {
+      "plane": "x=-y (i+j)",
+      "neg": 22,
+      "on": 11,
+      "pos": 22
+    },
+    {
+      "plane": "(111) equator s=0",
+      "neg": 18,
+      "on": 19,
+      "pos": 18
+    },
+    {
+      "plane": "s again (dup guard)",
+      "neg": 18,
+      "on": 19,
+      "pos": 18
+    }
+  ],
+  "octant_census_R2": {
+    "+++": 3,
+    "++-": 3,
+    "++0": 2,
+    "+-+": 3,
+    "+--": 3,
+    "+-0": 2,
+    "+0+": 2,
+    "+0-": 2,
+    "+00": 1,
+    "-++": 3,
+    "-+-": 3,
+    "-+0": 2,
+    "--+": 3,
+    "---": 3,
+    "--0": 2,
+    "-0+": 2,
+    "-0-": 2,
+    "-00": 1,
+    "0++": 2,
+    "0+-": 2,
+    "0+0": 1,
+    "0-+": 2,
+    "0--": 2,
+    "0-0": 1,
+    "00+": 1,
+    "00-": 1,
+    "000": 1
+  },
+  "cluster_R2_N": 55
+}

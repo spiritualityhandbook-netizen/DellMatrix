@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DellMatrix · Matrices</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+<div id="app">
+  <div class="page">
+    <div class="sync-strip" id="sync-strip" aria-live="polite"><span class="dot"></span> <span id="sync-text">syncing…</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1>Matrices hub</h1>
+        <p class="lede">Inventory of every matrix kind — core, growth, lens, safety, visual, workbench. Keys: <kbd>R</kbd> list</p>
+      </div>
+      <div class="toolbar">
+        <button title="matrices" type="button" class="primary" data-cmd="matrices">List matrices</button>
+        <button title="audit" type="button" data-cmd="audit">Audit</button>
+        <button title="status" type="button" data-cmd="status">Status</button>
+        <button title="workshops" type="button" data-cmd="workshops">Workshops</button>
+        <button title="entities" type="button" data-cmd="entities">Entities</button>
+        <a href="/program"><button type="button" class="sm">Program</button></a>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Summary</h3>
+      <div class="stat" id="sum">—</div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Matrices output</h3>
+      <pre id="out" class="mono-out">—</pre>
+    </div>
+  
+    <nav class="row" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)" aria-label="All pages" data-navhub="matrices">
+      <a href="/"><button type="button" class="sm" title="Menu">Menu</button></a>
+      <a href="/walk"><button type="button" class="sm" title="Walk">Walk</button></a>
+      <a href="/lattice"><button type="button" class="sm" title="Lattice">Lattice</button></a>
+      <a href="/nursery"><button type="button" class="sm" title="Nursery">Nursery</button></a>
+      <a href="/program"><button type="button" class="sm" title="Program">Program</button></a>
+      <a href="/personas"><button type="button" class="sm" title="Personas">Personas</button></a>
+      <a href="/forces"><button type="button" class="sm" title="Forces">Forces</button></a>
+      <a href="/geometry"><button type="button" class="sm" title="Geometry">Geometry</button></a>
+      <a href="/matrices"><button type="button" class="sm" title="Matrices">Matrices</button></a>
+      <a href="/console"><button type="button" class="sm" title="Console">Console</button></a>
+    </nav><!-- btnpath:navhub:matrices -->
+</div>
+</div>
+<script src="/js/core.js"></script>
+<script>
+(function(){
+  const shell=DM.mountShell({page:'matrices'});
+  const $=id=>document.getElementById(id);
+  async function paint(){
+    const s=await DM.getState();
+    document.title='DellMatrix · Matrices';
+    shell.setMeta('matrices hub · '+(s.ideas??0)+' ideas');
+    shell.setFoot(s);
+    try{ var _sx=document.getElementById('sync-text'); if(_sx&&DM.formatSyncLine){ var _st=(typeof s!=='undefined'?s:(typeof STATE!=='undefined'?STATE:null)); if(_st) _sx.textContent=DM.formatSyncLine(_st); } }catch(_e){}
+    /* syncux:sync-strip-matrices */
+
+    $('sum').innerHTML='<b>Summary</b><br>'+DM.esc(s.matrices_summary||'—')+
+      '<br><span class="muted">ideas '+(s.ideas??0)+' · gen '+(s.generation??0)+'</span>';
+  }
+  async function run(cmd){
+    const r=await DM.sendCmd(cmd);
+    $('out').textContent=r&&(r.msg||r.error)||'—';
+    await paint();
+  }
+  document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>run(b.getAttribute('data-cmd')));
+  window.addEventListener('keydown',e=>{
+    if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
+    if(e.key==='r'){ e.preventDefault(); run('matrices'); }
+  });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') paint().catch(()=>{}); });
+  run('matrices');
+})();
+</script>
+<!-- btnpath:titles:matrices -->
+<!-- syncux:empty-matrices -->
+<!-- syncux:kbdhelp-matrices -->
+</body>
+</html>
