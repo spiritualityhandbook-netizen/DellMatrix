@@ -383,6 +383,35 @@ def _handle_ai_command(program, cmd: str) -> Optional[Dict[str, Any]]:
     return {"ok": False, "error": f"unknown ai command: {rest}"}
 
 
+def _browser_confirm(program, pid: str) -> Dict[str, Any]:
+    """Confirm one proposal on behalf of the local human at this UI.
+
+    Critic Finding 9 (Director disposition 7180713277 on issue #512):
+    the browser confirm branches called confirm_proposal with no
+    producer and no review context, so the acceptance policy denied
+    every browser-path confirm as anonymous — while the REPL path,
+    which issues a bound review context, confirmed fine. This server
+    is the local human's own UI (127.0.0.1, origin-checked POST /cmd);
+    its confirm dispatch is trusted dispatch code exactly like
+    form/repl.py's, so it issues the review context the same way
+    (producer/reviewer "repl_user", approval issued by this session's
+    policy via make_review_context). The policy still refuses
+    anonymous, context-free, and forged-context confirms everywhere
+    else; nothing here bypasses it, and confirmation remains the
+    human's act. Programs without the review-context surface keep
+    the legacy bare call.
+    """
+    if not hasattr(program, "confirm_proposal"):
+        return {"ok": False, "reason": "no confirm"}
+    if hasattr(program, "make_review_context"):
+        return program.confirm_proposal(
+            pid,
+            _producer="repl_user",
+            _review_context=program.make_review_context(pid, "repl_user"),
+        )
+    return program.confirm_proposal(pid)
+
+
 def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]]:
     """Handle mode/lens/workshop/page/snap/click/recenter without full intent parse."""
     if lower in ("look", "see", "vision", "look around"):
@@ -892,7 +921,7 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         fail_n = 0
         labels = []
         for prop in list(props)[:40]:
-            res = program.confirm_proposal(prop["id"]) if hasattr(program, "confirm_proposal") else {}
+            res = _browser_confirm(program, prop["id"])
             if res.get("ok"):
                 ok_n += 1
                 labels.append(res.get("label") or prop.get("label") or prop.get("id"))
@@ -905,7 +934,7 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         }
     if lower.startswith("confirm "):
         pid = raw.split(maxsplit=1)[1].strip()
-        res = program.confirm_proposal(pid) if hasattr(program, "confirm_proposal") else {"ok": False, "reason": "no confirm"}
+        res = _browser_confirm(program, pid)
         if res.get("ok"):
             return {"ok": True, "msg": f'Confirmed · "{res.get("label")}" is live on the lattice', "confirm": res}
         return {"ok": False, "error": f"Could not confirm: {res.get('reason')}", "confirm": res}
