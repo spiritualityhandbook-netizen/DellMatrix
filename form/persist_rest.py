@@ -566,9 +566,14 @@ def _validate_program_data(data: Any, owner: str) -> str:
     if not isinstance(plane, dict) or not isinstance(plane.get("units", {}), dict):
         raise ProgramLoadError("program data missing or invalid: 'plane' (with 'units') must be an object")
     file_owner = data.get("owner")
-    if file_owner is not None and (not isinstance(file_owner, str) or not file_owner):
-        raise ProgramLoadError("program data invalid: 'owner' must be a non-empty string")
-    return file_owner or owner
+    # Critic F7 (Director 7185483691): a PRESENT owner field must
+    # be a string; the empty string is a lawful owner (the
+    # program door accepts it and serialize writes it), so only a
+    # non-string value is invalid — None (absent) alone falls
+    # back to the requested owner.
+    if file_owner is not None and not isinstance(file_owner, str):
+        raise ProgramLoadError("program data invalid: 'owner' must be a string")
+    return file_owner if file_owner is not None else owner
 
 
 def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = True) -> Program:

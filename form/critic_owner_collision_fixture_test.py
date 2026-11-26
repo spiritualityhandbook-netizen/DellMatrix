@@ -64,6 +64,29 @@ Authority / evidence trail:
     (the six refusal/crossing checks failing, controls green)
     before the repair turned them green.
 
+  * Director CORRECTION_REQUIRED 7185483691 on PR #531
+    (2026-11-26): release withheld at 2ae49747 on a new
+    exact-source discrepancy — form/mandell/core_i_recovery.py
+    _eager_converge_live emits OWNER_SECTION_KEY only
+    `if getattr(nursery, "owner", None):`, a truthiness check
+    that excludes the lawful empty-string owner, so a rollback
+    silently UNBINDS the "" owner's nursery. Uni first-hand
+    verification widened the seam to the whole failure class
+    (owner truthiness contradicting the isinstance-str contract
+    on the "" owner's save/load/rollback path): the rollback
+    never even reached the converge line, because
+    persist_rest._validate_program_data rejects a present ""
+    owner ("'owner' must be a non-empty string") when staging
+    the generation's program member — the same rejection hits a
+    plain persist_rest.load("") of the file save() just wrote —
+    and persist.stored_program_owner returns None for a
+    ""-recorded program file, erasing the sibling proof the
+    L-series adoption guard relies on. The R-series checks below
+    pin the repaired class: None (absent) is distinguished from
+    "" (a lawful recorded identity) at all three sites; the
+    rollback completes, the identity record and the owner-scoped
+    records survive it, and the colliding named load refuses.
+
 Mechanism (verified against this tree):
 
   * form/persist.py:50-51 — _safe_owner maps every character that
@@ -385,6 +408,100 @@ def main():
                 if f in op_snapshot:
                     with open(f, "wb") as fh:
                         fh.write(op_snapshot[f])
+                elif os.path.isfile(f):
+                    os.unlink(f)
+            except OSError as e:
+                _CLEANUP_ERRORS.append(f"{f}: {e}")
+
+    cleanup()
+
+    # --- R: rollback preserves the "" owner's identity -------
+    # Director 7185483691: _eager_converge_live's truthiness
+    # check dropped the __owner__ record for the lawful
+    # empty-string owner; first-hand verification found the
+    # same truthiness class blocking the path earlier
+    # (persist_rest program validation refuses a present ""
+    # owner; persist.stored_program_owner erases it). The real
+    # rollback exercised here is the canonical
+    # core_i_recovery.rollback primitive Program.confirm_rollback
+    # routes to, with the mediation token minted directly as
+    # the repo's own rollback suites do (p0r1_persist_test).
+    # The operator-named state files carry no RUN uuid, so this
+    # section snapshots them and restores them exactly (the
+    # E-series arrangement).
+    from form.mandell.core_i_recovery import checkpoint as _ckpt
+    from form.mandell.core_i_recovery import rollback as _rollback
+    from form import persist_rest as _persist_rest
+    from form.persist import stored_program_owner as _stored_prog_owner
+    r_snapshot = {}
+    for f in glob.glob(os.path.join(_STATE_DIR, "*operator*")):
+        if os.path.isfile(f):
+            with open(f, "rb") as fh:
+                r_snapshot[f] = fh.read()
+    try:
+        r_path = owner_nursery_path("")
+        rp = open_program("")
+        r_prop = rp.nursery.add("rollback identity idea",
+                                "first words", detail="rb detail")
+        rp.nursery.conflict_dispositions["rb-conflict-1"] = {
+            "disposition": "prefer", "preferred_ids": [r_prop.id],
+            "note": "rb-owner-scoped-record"}
+        rp.nursery.save()
+        g1 = _ckpt(rp, stamp="f7rb1")
+        rp.nursery.add("post checkpoint idea", "second words")
+        _ckpt(rp, stamp="f7rb2")
+        check("R1.rollback_premise_identity_bound",
+              stored_nursery_owner(r_path) == ""
+              and stored_nursery_owner(r_path) is not None
+              and _stored_prog_owner(_path("")) == "",
+              f"nursery_owner={stored_nursery_owner(r_path)!r} "
+              f"program_owner={_stored_prog_owner(_path(''))!r}")
+        restored = None
+        rb_error = ""
+        try:
+            restored = _rollback(
+                "", g1,
+                _mediation={"operation": "checkpoint.rollback",
+                            "owner": "", "generation_id": g1})
+        except Exception as exc:
+            rb_error = f"{type(exc).__name__}: {exc}"
+        check("R2.rollback_completes_for_empty_owner",
+              restored is not None, rb_error)
+        check("R3.identity_survives_rollback",
+              stored_nursery_owner(r_path) == ""
+              and stored_nursery_owner(r_path) is not None,
+              f"stored={stored_nursery_owner(r_path)!r}")
+        r_labels = (sorted(x.label for x in
+                           restored.nursery.proposals.values())
+                    if restored is not None else [])
+        check("R4.rollback_state_and_records_survive",
+              restored is not None
+              and r_labels == ["rollback identity idea"]
+              and "rb-conflict-1" in restored.nursery.conflict_dispositions,
+              f"labels={r_labels}")
+        try:
+            Nursery.load(r_path, owner="operator")
+            r5_refused = False
+        except Exception:
+            r5_refused = True
+        check("R5.colliding_named_load_refuses", r5_refused,
+              "owner='operator' vs the ''-bound file")
+        try:
+            rn = Nursery.load(r_path, owner="")
+            rp2 = _persist_rest.load("", activate=False)
+            r6 = (rn.owner == ""
+                  and "rb-conflict-1" in rn.conflict_dispositions
+                  and rp2 is not None and rp2.owner == "")
+        except Exception:
+            r6 = False
+        check("R6.empty_owner_reload_agrees", r6,
+              "Nursery.load + persist_rest.load both resolve ''")
+    finally:
+        for f in glob.glob(os.path.join(_STATE_DIR, "*operator*")):
+            try:
+                if f in r_snapshot:
+                    with open(f, "wb") as fh:
+                        fh.write(r_snapshot[f])
                 elif os.path.isfile(f):
                     os.unlink(f)
             except OSError as e:

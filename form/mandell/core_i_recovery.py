@@ -1078,7 +1078,11 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     # Critic F7: the owner-identity record rides the same
     # reconstruction when the staged nursery knows its owner — a
     # rollback must not silently UNBIND the live nursery file.
-    if getattr(nursery, "owner", None):
+    # Director 7185483691: the test is None (no known owner), not
+    # truthiness — the empty string is a lawful owner whose
+    # identity record must ride too (cf. Nursery.save, which
+    # stamps whenever the effective owner is not None).
+    if getattr(nursery, "owner", None) is not None:
         nursery_payload[OWNER_SECTION_KEY] = {"owner": nursery.owner}
     # R2: Ideas payload. The ideas_snapshot_path_for_rollback is passed
     # explicitly to avoid guessing. It points to the sealed generation's
