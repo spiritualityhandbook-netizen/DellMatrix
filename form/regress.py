@@ -235,6 +235,13 @@ LIST = [
     "form.nursery_confirm_race_test",
     "form.nursery_reason_bound_test",
     "form.nursery_label_bound_test",
+    # FI-012 row 9 (Director bounded build approval 7203152996 on
+    # PR #508, from failing-first evidence 7198763617): non-string
+    # and empty labels refuse typed (NurseryLabelError) before
+    # mutation with bytes/state preserved; duplicate intake is
+    # still stored as its own proposal (DCC-VII) but receipted
+    # in-memory in duplicate_receipts, never serialized.
+    "form.fi012_row9_label_test",
     "form.nursery_words_bound_test",
     "form.nursery_c5r1_holding_test",
     "form.nursery_c5r1_readpath_test",

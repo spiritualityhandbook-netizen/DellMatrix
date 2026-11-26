@@ -136,7 +136,14 @@ class NurseryLabelError(ValueError):
     label is refused explicitly and nothing is stored, replacing the
     historical silent truncation at 80 chars, which destroyed admitted
     content (the inference dock admits labels up to 200 chars) with no
-    error."""
+    error.
+
+    FI-012 row 9 (Director approval 7203152996): the same typed
+    refusal covers a NON-STRING label and an EMPTY label — the
+    historical isinstance-guards let a non-string fall through to
+    _slug (an untyped AttributeError) and admitted an empty label
+    silently. Validation is label-only: other fields keep their
+    supported types."""
 
 
 # Q-S2.1: the Nursery's admitted bound for Proposal.label — the same
@@ -551,6 +558,17 @@ class Proposal:
     seed_source_origin: str = ""
     seed_rule_version: str = ""
     seed_operation_id: str = ""
+    # FI-012 row 9 (Critic finding on PR #544, verified first-hand
+    # 2026-11-26): the EXACT intake seed passed to Nursery.add(),
+    # retained on the record so duplicate-intake detection can
+    # compare the actual (label, seed, words) triple. The proposal
+    # ID cannot serve as that proof: _slug's digest suffix is
+    # reduced mod 10000, so distinct seeds collide (seeds 62 and
+    # 113 both slug "dup idea" to dup_idea_7008) and slug equality
+    # falsely receipts distinct intakes as duplicates. Additive:
+    # legacy records load with None (seed unrecorded) and never
+    # match — detection fails closed rather than guessing.
+    intake_seed: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -702,6 +720,18 @@ class Nursery:
     # so it is never serialized into the owner file.
     suppression_receipts: List[Dict[str, Any]] = field(
         default_factory=list, repr=False, compare=False)
+    # FI-012 row 9 (Director approval 7203152996): receipts for
+    # DUPLICATE intake — an add whose (label, seed, words) exactly
+    # matches a proposal already stored in this nursery. The
+    # duplicate is still STORED as its own proposal (DCC-VII:
+    # duplicates allowed, unique IDs, independently confirmable);
+    # the receipt makes the event visible instead of silent.
+    # In-memory only, same lifecycle as suppression_receipts: a
+    # receipt is evidence about THIS instance's add stream, never
+    # stored proposal state, so it is never serialized into the
+    # owner file and never survives a reload.
+    duplicate_receipts: List[Dict[str, Any]] = field(
+        default_factory=list, repr=False, compare=False)
     # C5R.3: human organization EDIT receipts (operation_id ->
     # receipt record, the storable form from
     # build_organization_receipt — no file digest inside). Serialized
@@ -806,6 +836,12 @@ class Nursery:
         labels raise NurseryLabelError BEFORE any mutation or save (the
         historical label[:80] silently destroyed admitted content).
 
+        FI-012 row 9: a non-string or empty label raises the same
+        NurseryLabelError BEFORE any mutation or save, and an add
+        whose (label, seed, words) exactly matches an already-stored
+        proposal is receipted in duplicate_receipts (in-memory only)
+        while still being stored as its own proposal (DCC-VII).
+
         SYS-C29: words are stored in full up to MAX_WORDS_CHARS; longer
         words raise NurseryWordsError BEFORE any mutation or save (the
         historical words[:240] silently destroyed admitted content).
@@ -847,7 +883,21 @@ class Nursery:
                     f"belongs to owner {_disk_owner!r}, not "
                     f"{self.owner!r}. Refusing to append another "
                     f"owner's proposal; no bytes written.")
-        if isinstance(label, str) and len(label) > MAX_LABEL_CHARS:
+        # FI-012 row 9 (Director approval 7203152996): the label is
+        # validated for TYPE and EMPTINESS, not only length — a
+        # non-string label historically fell through this block's
+        # isinstance-guard and crashed untyped inside _slug, and an
+        # empty label was admitted silently. Label-only scope: the
+        # sibling fields below keep their existing guards and their
+        # supported non-string usages (e.g. words as a token list).
+        if not isinstance(label, str):
+            raise NurseryLabelError(
+                f"label must be a string, got "
+                f"{type(label).__name__}; refused, nothing stored")
+        if not label:
+            raise NurseryLabelError(
+                "label must not be empty; refused, nothing stored")
+        if len(label) > MAX_LABEL_CHARS:
             raise NurseryLabelError(
                 f"label length {len(label)} exceeds the admitted bound "
                 f"of {MAX_LABEL_CHARS} chars; refused, nothing stored")
@@ -928,10 +978,45 @@ class Nursery:
                         "label": label,
                     })
                     return existing
-        pid = _slug(label, seed)
+        # FI-012 row 9: duplicate-intake detection, computed BEFORE
+        # the new proposal exists. A duplicate is an already-stored
+        # proposal with the EXACT same (label, seed, words) intake.
+        # The comparison uses the retained intake_seed, never the
+        # proposal ID: _slug's suffix is a digest reduced mod
+        # 10000, so distinct seeds can share a slug and slug
+        # equality would falsely receipt distinct intakes (Critic
+        # finding on PR #544, verified: seeds 62 vs 113). Legacy
+        # records (intake_seed None) never match. The duplicate is
+        # still stored below (DCC-VII); its receipt is appended
+        # only after its save stands.
+        base_pid = _slug(label, seed)
+        duplicate_of = None
+        for existing in self.proposals.values():
+            if (
+                existing.label == label
+                and existing.words == words
+                and existing.intake_seed is not None
+                and existing.intake_seed == int(seed)
+            ):
+                duplicate_of = existing
+                break
+        pid = base_pid
         # avoid exact id collision
+        # The first candidate keeps the historical count suffix,
+        # but the key MUST be unused —
+        # after a lawful rejection + clear_rejected removal the
+        # count can point at a still-live later suffix, and writing
+        # that key would silently replace a live proposal and
+        # invalidate its independent confirmation (Director delta
+        # review on PR #544, 7203509168; reproduced first-hand:
+        # three duplicates _/ _1 / _2, middle rejected + cleared,
+        # next add re-took _2 and the count never grew). Advance
+        # until the key is free; prior IDs and contents never move.
         if pid in self.proposals:
-            pid = pid + "_" + str(len(self.proposals))
+            suffix = len(self.proposals)
+            while f"{pid}_{suffix}" in self.proposals:
+                suffix += 1
+            pid = f"{pid}_{suffix}"
         # C5R.3 (AC-3.2): the creation seed is derived HERE, at
         # construction of a genuinely NEW proposal — the GROW-DUP
         # suppression path above returns its survivor BEFORE this
@@ -961,6 +1046,7 @@ class Nursery:
             seed_source_origin=origin if isinstance(origin, str) else "",
             seed_rule_version=SEED_RULE_VERSION,
             seed_operation_id=f"seed:{pid}",
+            intake_seed=int(seed),
         )
         self.proposals[pid] = p
         try:
@@ -968,6 +1054,17 @@ class Nursery:
         except Exception:
             self.proposals.pop(pid, None)
             raise
+        # FI-012 row 9: receipt the duplicate intake now that the
+        # duplicate's own save stands (a failed save popped the
+        # proposal above, and no receipt is recorded for it).
+        if duplicate_of is not None:
+            self.duplicate_receipts.append({
+                "original_id": duplicate_of.id,
+                "duplicate_id": pid,
+                "reason": "duplicate_intake",
+                "label": label,
+                "seed": seed,
+            })
         # The creation receipt's RETURNED form (Resolution 3): the
         # canonical post-save digest is attached only now that the
         # save has succeeded, and only to this in-memory copy — the
