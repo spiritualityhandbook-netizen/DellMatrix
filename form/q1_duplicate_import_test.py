@@ -27,6 +27,13 @@ Contract proven here (PROOF_SPEC §1–§3, §6):
   which is unreadable state and never an empty section;
   Director correction 7203516785), the save refuses typed
   (StaleWriterSaveError) before any byte changes.
+- CAPACITY (Critic P1, review 4713412892): preservation is
+  verified against the serializer's bounded retention — if the
+  outgoing section cannot retain EVERY live-bound record (a
+  full section of non-live records plus carried live records
+  past the cap, adverse timestamp tie), the stale save refuses
+  typed pre-byte instead of dropping the live records at
+  serialization.
 - INDEPENDENT OWNER: the witness is owner-scoped — the same
   packet imported by a second owner lands fresh there, and that
   owner's saves never touch the first owner's state.
@@ -385,6 +392,62 @@ def main() -> bool:
     _rec("Q10: same malformed shape with NO live proposal is out "
          "of scope — stale save proceeds",
          err2 is None, repr(err2))
+    _cleanup(owner)
+
+    # ---- Q11: Critic P1 (review 4713412892, verified real) —
+    # preservation must survive BOUNDED SERIALIZATION. The stale
+    # instance carries a full receipts section (200) bound to
+    # cleared rejected proposals; a second instance's live import
+    # carries 2 receipts. With the live entries' timestamps
+    # pinned oldest (the deterministic form of the review's
+    # equal-timestamp tie), serializer retention would drop the
+    # just-preserved live receipts at the save — so the stale
+    # save refuses typed pre-byte and the import's durable
+    # receipts survive intact.
+    owner = "Q1Cap"
+    _cleanup(owner)
+
+    def _big_packet(label, n):
+        pkt = _packet(label=label)
+        pkt["receipts"] = [
+            {"origin": f"cap:{label}-{j}", "guess": f"g{j}",
+             "test_method": "m", "result": "r", "mirror": "mi",
+             "outcome": "o"} for j in range(n)]
+        return pkt
+
+    stale = Program(owner=owner)
+    for i in range(4):
+        impf = exchange.import_packet(
+            stale, _big_packet(f"cap-fill-{i}", 50))
+        stale.nursery.reject(impf["pid"])
+        stale.nursery.clear_rejected()
+    importer = Program(owner=owner)
+    imp = exchange.import_packet(importer, _packet(label="cap-live"))
+    pid = imp["pid"]
+    path = _program_path(owner)
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    for e in data["exchange_receipts"]["entries"].values():
+        if e.get("pid") == pid:
+            e["ts"] = "2000-01-01T00:00:00Z"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    before = _file_bytes(path)
+    err = None
+    try:
+        stale.save()
+    except Exception as e:  # noqa: BLE001 - verdict recorded below
+        err = e
+    _rec("Q11: full-section stale save that would drop live "
+         "receipts at serialization refuses TYPED pre-byte",
+         StaleWriterSaveError is not None
+         and isinstance(err, StaleWriterSaveError), repr(err))
+    _rec("Q11: refused save changed no durable bytes",
+         _file_bytes(path) == before)
+    st = exchange._durable_import_state(owner, pid)
+    _rec("Q11: live import's durable receipts survive intact (2)",
+         st["proposal_present"] and st["seed_present"]
+         and st["receipts_count"] == 2, str(st))
     _cleanup(owner)
 
     passed = sum(1 for _, ok, _ in RESULTS if ok)

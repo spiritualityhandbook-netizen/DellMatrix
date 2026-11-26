@@ -161,6 +161,10 @@ def _preserve_unseen_exchange_records(program: Program,
       be taken for an empty section; Director correction
       7203516785), the save raises StaleWriterSaveError before
       any byte changes. Lawful absent/empty sections proceed.
+      Preservation is also verified against the serializer's
+      bounded retention (Critic P1, review 4713412892): if the
+      outgoing section would drop a live-bound record at
+      serialization, the save refuses the same way.
 
     Scoping, mirroring the R2 binding-loss contract beside it:
     a CURRENT instance (its version stamp matches the canonical
@@ -190,13 +194,17 @@ def _preserve_unseen_exchange_records(program: Program,
     live = _exchange._live_proposal_ids(nursery_raw)
     if not live:
         return
-    for section, attr, malformed_attr, validator in (
+    from form.dell_matrix.session_section import retention_order
+    pending = []
+    for section, attr, malformed_attr, validator, max_keep in (
             ("exchange_seeds", "exchange_seeds",
              "exchange_seeds_malformed",
-             _exchange._validate_seed_entry),
+             _exchange._validate_seed_entry,
+             _exchange._MAX_SEED_ENTRIES),
             ("exchange_receipts", "exchange_receipts",
              "exchange_receipts_malformed",
-             _exchange._validate_receipt_entry)):
+             _exchange._validate_receipt_entry,
+             _exchange._MAX_RECEIPT_ENTRIES)):
         # Director correction 7203516785: a PRESENT but malformed
         # section (or malformed entries container) is unreadable
         # durable state, NOT zero records — _section_entries
@@ -214,31 +222,57 @@ def _preserve_unseen_exchange_records(program: Program,
                 f"is present but unreadable ({shell_error}); "
                 "refusing before any byte changes")
         durable = _exchange._section_entries(program_raw, section)
-        if not durable:
-            continue
         entries = getattr(program, attr, None)
         entries = dict(entries) if isinstance(entries, dict) \
             else {}
         malformed = getattr(program, malformed_attr, None)
         malformed = dict(malformed) \
             if isinstance(malformed, dict) else {}
-        seen = set(entries) | set(malformed)
         changed = False
-        for key, entry in durable.items():
-            if key in seen or not isinstance(entry, dict):
-                continue
-            if entry.get("pid") not in live:
-                continue
-            ok, _why = validator(entry, owner)
-            if ok and entry.get("entry_id") == key:
-                entries[key] = dict(entry)
-            else:
-                malformed[key] = entry
-            changed = True
+        if durable:
+            seen = set(entries) | set(malformed)
+            for key, entry in durable.items():
+                if key in seen or not isinstance(entry, dict):
+                    continue
+                if entry.get("pid") not in live:
+                    continue
+                ok, _why = validator(entry, owner)
+                if ok and entry.get("entry_id") == key:
+                    entries[key] = dict(entry)
+                else:
+                    malformed[key] = entry
+                changed = True
+        # Critic P1 (review 4713412892, verified real): carrying
+        # unseen records forward can push the section past its
+        # bounded cap, and the serializer's timestamp retention
+        # does not protect live proposals' records — on a
+        # one-second-resolution tie the saver's older entries win
+        # and the just-preserved live records are dropped by the
+        # very save that preserved them (reproduced: a live
+        # import's durable receipts went 2 -> 0, proposal and
+        # seed intact). Preservation is therefore verified
+        # against the serializer's own retention: if the
+        # outgoing section cannot retain EVERY live-bound
+        # record, the save refuses typed, pre-byte.
+        dict_entries = {k: e for k, e in entries.items()
+                        if isinstance(e, dict)}
+        retained = retention_order(dict_entries, "ts", max_keep)
+        lost = sorted(k for k, e in dict_entries.items()
+                      if e.get("pid") in live and k not in retained)
+        if lost:
+            raise StaleWriterSaveError(
+                f"save for owner {owner!r} cannot preserve "
+                f"live exchange record(s) {lost} in {section}: "
+                f"the bounded section ({max_keep}) would drop "
+                "them at serialization; refusing before any "
+                "byte changes (reload so the records are "
+                "carried, then save)")
         if changed:
-            setattr(program, attr, entries)
-            setattr(program, malformed_attr,
-                    malformed if malformed else None)
+            pending.append((attr, entries))
+            pending.append((malformed_attr,
+                            malformed if malformed else None))
+    for attr, value in pending:
+        setattr(program, attr, value)
 
 
 def _write_program_file(program: Program, target: str,
