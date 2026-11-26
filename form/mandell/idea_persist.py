@@ -93,5 +93,52 @@ def list_idea_ids(owner: Optional[str] = None) -> List[str]:
     return ids
 
 
+def scan_idea_files(owner: Optional[str] = None) -> List[Dict[str, Optional[str]]]:
+    """Full accounting of every idea file persisted for ``owner``.
+
+    Returns one entry per ``idea_*.json`` file, in filename order:
+
+        {"file": <basename>, "id": <str|None>, "error": <str|None>}
+
+    A file is healthy iff ``error`` is None: it reads, decodes as
+    UTF-8, parses to a JSON object carrying a string ``id``, and sits
+    at that id's canonical filename. Every other file — unreadable,
+    undecodable, unparseable, structurally invalid, or misplaced —
+    is accounted with the reason in ``error``. Nothing is silently
+    omitted: this is the inventory the checkpoint seal is judged
+    against (Critic F4; Director ruling 7181902882). ``list_idea_ids``
+    above keeps its legacy semantics for its existing callers.
+    """
+    d = _idea_dir(owner)
+    entries: List[Dict[str, Optional[str]]] = []
+    for fn in sorted(os.listdir(d)):
+        if not (fn.startswith("idea_") and fn.endswith(".json")):
+            continue
+        path = os.path.join(d, fn)
+        entry: Dict[str, Optional[str]] = {"file": fn, "id": None, "error": None}
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            entry["error"] = f"unreadable idea file: {exc}"[:160]
+            entries.append(entry)
+            continue
+        if not isinstance(data, dict) or not isinstance(data.get("id"), str):
+            entry["error"] = (
+                "structurally invalid idea file: not a JSON object "
+                "carrying a string id"
+            )
+            entries.append(entry)
+            continue
+        entry["id"] = data["id"]
+        if os.path.basename(_idea_path(data["id"], owner)) != fn:
+            entry["error"] = (
+                "structurally invalid idea file: filename is not the "
+                "canonical filename for its id"
+            )
+        entries.append(entry)
+    return entries
+
+
 def idea_exists(idea_id: str, owner: Optional[str] = None) -> bool:
     return os.path.isfile(_idea_path(idea_id, owner))
