@@ -225,6 +225,27 @@ class Program:
     body_style: str = "stick"  # ascii body: stick|block|shadow|robot
     bimo: BIMOBody = field(default_factory=BIMOBody)
     persona_matrix: PersonaMatrix = field(default_factory=PersonaMatrix)
+    # Row #155 PERSONAMATRIX: user-created persona records (the
+    # experimentation layer). The ACTIVE layer is this program's own
+    # personas.UserPersonaLayer (persona_layer below), (re)activated
+    # from these records at construction/load; these records are what
+    # persist (persist section "custom_personas"). Owner-scoped per
+    # Director 7069171691: a program never reads or writes another
+    # program's layer, nor the module default layer. Settings only —
+    # a persona never carries authority (see personas.py layer law).
+    user_personas: List[Dict[str, Any]] = field(default_factory=list)
+    # The program's own UserPersonaLayer (form.dell_matrix.personas);
+    # created in __post_init__ when unset. Runtime state only — the
+    # durable form is user_personas above.
+    persona_layer: Any = field(default=None, repr=False, compare=False)
+    # Persist-restore diagnostic for the user persona layer: the
+    # activation report of the last persist load,
+    # {"activated": [...], "skipped": [...]}. Skipped records are
+    # dropped from user_personas at load (never silently re-saved as
+    # zombies) and are accounted for HERE, on the loaded program.
+    # None = no persist restore has run for this program.
+    persona_restore_report: Optional[Dict[str, Any]] = field(
+        default=None, repr=False, compare=False)
     # First-person matrix walk (inside centerpoints)
     center_f: int = 0  # up/down lattice axis (frequency / height)
     look_pitch: str = "level"  # down | level | up
@@ -276,6 +297,17 @@ class Program:
         # WO-5.1: Initialize session-scoped acceptance policy (default DENY).
         from form.dell_matrix.acceptance_policy import AcceptancePolicy
         self.acceptance_policy = AcceptancePolicy()
+        # Row #155: activate THIS program's own user persona layer
+        # (empty for a fresh program; persist restore re-activates
+        # from the saved records after construction). Owner-scoped —
+        # never the module default layer (Director 7069171691).
+        from form.dell_matrix.personas import (
+            UserPersonaLayer, activate_custom_personas)
+        if getattr(self, "persona_layer", None) is None:
+            self.persona_layer = UserPersonaLayer()
+        activate_custom_personas(getattr(self, "user_personas", []) or [],
+                                 layer=self.persona_layer)
+        self._bind_persona_layer()
         from form.dell_matrix.nursery import owner_nursery_path
         # Private injection hook for generation-member loads: when open_program
         # is given a staged Nursery, __post_init__ uses it instead of reading
@@ -646,7 +678,8 @@ class Program:
         if room:
             lines.append(f"View room: {room.get('emoji', '')} {room.get('name')} — {room.get('description')}")
         if self.persona_lens:
-            pe = get_persona(self.persona_lens)
+            pe = get_persona(self.persona_lens,
+                             layer=getattr(self, "persona_layer", None))
             if pe:
                 lines.append(f"Persona: {pe.get('emoji')} {pe.get('name')} · {pe.get('focus')}")
         # body art under look (sprite-animated when walking)
@@ -878,7 +911,8 @@ class Program:
             if hasattr(self, "persona_matrix"):
                 self.persona_matrix.active = None
         else:
-            key = normalize_persona_id(name)
+            key = normalize_persona_id(
+                name, layer=getattr(self, "persona_layer", None))
             self.persona_lens = key or name.lower().replace(" ", "_").strip()
             if hasattr(self, "persona_matrix"):
                 # Q-OD.2: the writer syncs in EVERY branch — an
@@ -888,13 +922,68 @@ class Program:
                 # persona_purity_test t6).
                 self.persona_matrix.active = key
             # if BIMO slot exists, dock this persona into its slot
-            pe = get_persona(key) if key else None
+            pe = get_persona(key, layer=getattr(self, "persona_layer", None)) if key else None
             if pe and hasattr(self, "bimo") and pe.get("bimo_slot"):
                 self.bimo.dock(pe["bimo_slot"], key)
         return self.persona_lens
 
     def personas_roster(self) -> List[str]:
-        return render_roster(self.persona_lens)
+        return render_roster(self.persona_lens,
+                             layer=getattr(self, "persona_layer", None))
+
+    def _bind_persona_layer(self) -> None:
+        """Point this program's BIMO body and persona matrix at the
+        program's own user persona layer. Called at construction and
+        after persist restore replaces those surfaces, so a loaded
+        program's surfaces never fall back to the default layer."""
+        layer = getattr(self, "persona_layer", None)
+        if layer is None:
+            return
+        if hasattr(self, "bimo"):
+            self.bimo.layer = layer
+        if hasattr(self, "persona_matrix"):
+            self.persona_matrix.layer = layer
+
+    def create_persona(self, name=None, category=None, role=None,
+                       focus=None, directives=None, abilities=None,
+                       limits=None, prefer_skins=None, bimo_slot=None,
+                       matrix=None, emoji="🧩",
+                       color="#888888") -> Dict[str, Any]:
+        """Row #155 PERSONAMATRIX: create a user persona on this
+        program (experimentation layer).
+
+        The persona resolves/docks immediately through the canonical
+        personas machinery and is carried in this program's persisted
+        records (call save() to make it durable). A persona is a
+        setting: creating or docking one confers NO authority and
+        cannot confirm Nursery proposals — confirmation stays behind
+        this program's AcceptancePolicy.
+        """
+        from form.dell_matrix.personas import create_custom_persona
+        res = create_custom_persona(
+            name, category, role, focus, directives, abilities, limits,
+            prefer_skins=prefer_skins, bimo_slot=bimo_slot,
+            matrix=matrix, emoji=emoji, color=color,
+            layer=getattr(self, "persona_layer", None))
+        if res.get("ok"):
+            rec = res["persona"]
+            self.user_personas = [
+                r for r in self.user_personas if r.get("id") != rec["id"]
+            ] + [dict(rec)]
+        return res
+
+    def remove_persona(self, name=None) -> Dict[str, Any]:
+        """Row #155: remove a USER persona from this program. The
+        canonical roster is read-only — removing a built-in persona
+        is refused by the personas layer."""
+        from form.dell_matrix.personas import remove_custom_persona
+        res = remove_custom_persona(
+            name, layer=getattr(self, "persona_layer", None))
+        if res.get("ok"):
+            self.user_personas = [
+                r for r in self.user_personas if r.get("id") != res["removed"]
+            ]
+        return res
 
     def persona_matrix_status(self) -> Dict[str, Any]:
         # Q-OD.2: pure read — writers own the lens->active sync
@@ -958,10 +1047,11 @@ class Program:
         }
 
     def personas_status(self) -> Dict[str, Any]:
-        active = get_persona(self.persona_lens) if self.persona_lens else None
+        _layer = getattr(self, "persona_layer", None)
+        active = get_persona(self.persona_lens, layer=_layer) if self.persona_lens else None
         return {
             "active": active,
-            "list": list_personas(),
+            "list": list_personas(layer=_layer),
             "categories": list_categories(),
             "count": len(PERSONAS),
             "bimo": self.bimo.status() if hasattr(self, "bimo") else {},
@@ -969,7 +1059,8 @@ class Program:
         }
 
     def guide(self, context: str = "") -> List[str]:
-        return persona_guidance(self.persona_lens, context or f"view={self.active_view}")
+        return persona_guidance(self.persona_lens, context or f"view={self.active_view}",
+                                layer=getattr(self, "persona_layer", None))
 
     def set_body_style(self, style: str) -> str:
         s = (style or "stick").lower().strip()

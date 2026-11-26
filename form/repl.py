@@ -2933,7 +2933,7 @@ def _execute_intent(p: Program, intent, raw_line: str = "", _normalized: bool = 
             meta = None
             try:
                 from form.dell_matrix.personas import get_persona
-                meta = get_persona(pe)
+                meta = get_persona(pe, layer=getattr(p, "persona_layer", None))
             except Exception:
                 pass
             if meta:
