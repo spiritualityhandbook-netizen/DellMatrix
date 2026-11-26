@@ -29,6 +29,19 @@ r75_forge_test production path):
   * control: a canonical non-default arrangement (one canonical
     persona docked) previews and saves unchanged — no overcorrection.
 
+Critic finding on PR #536 (review comment 4706236932, P2 — failure-
+class sibling of Finding 3, verified REAL first-hand 2026-11-26):
+DockedSession._bimo_framing() resolved the worn configuration's
+pilot and slot personas WITHOUT the owner's persona layer, so a
+configuration that dock() itself validated WITH the layer produced
+framing of just "[bimo: <name>]" — every custom persona silently
+omitted from the provider prompt. Contract added here:
+  * a docked session wearing an all-custom configuration frames the
+    prompt with the custom pilot (name, focus, limits) and the
+    custom slot persona (name, role, limits);
+  * control: a canonical configuration's framing is unchanged, and
+    an unworn session still frames nothing.
+
 Isolation: unique owners; test-owner state files removed at the end.
 The module-level default persona layer is never touched (custom
 personas are created on each Program's own layer only).
@@ -250,10 +263,128 @@ def part_canonical_control():
         _cleanup(owner)
 
 
+def _dock_cleanup(owner):
+    import glob
+    import shutil
+    base = os.path.join(REPO, "form", "state")
+    for pat in (f"program_{owner}.json", f"nursery_{owner}.json",
+                f"checkpoint_{owner}_*", f"confirm_{owner}.journal.json",
+                f"checkpoint_{owner}.journal.json",
+                f"gen_{owner}_*", f"current_{owner}.json"):
+        for f in glob.glob(os.path.join(base, pat)):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+    for d in glob.glob(os.path.join(base, f"ideas_{owner}*")):
+        if os.path.isdir(d):
+            shutil.rmtree(d)
+
+
+_DOCK_CUSTOM = [
+    ("logic", "F3D Logic Keeper", "PragLog"),
+    ("growth", "F3D Growth Keeper", "EvoLog"),
+]
+
+
+def _dock_custom_program(owner):
+    """Fresh Program whose own layer holds two custom personas, and
+    a committed configuration wearing them (growth pilots, logic
+    fills its slot). Returns (program, config_name)."""
+    from form.dell_matrix import bimo_forge
+    from form.open import open_program
+    p = open_program(owner)
+    for slot, name, category in _DOCK_CUSTOM:
+        res = p.create_persona(
+            name=name, category=category, role=f"{name} role",
+            focus=f"{name} focus", directives=[f"{name} directive"],
+            abilities=[f"{name} ability"], limits=[f"{name} limit"],
+            prefer_skins=["sphere", "core"], bimo_slot=slot,
+            matrix={"h": 0, "v": 0, "shell": 1})
+        assert res.get("ok"), f"create_persona {name}: {res}"
+    cfg = bimo_forge.make_configuration(
+        "crew", p.owner, {"logic": _pid("F3D Logic Keeper")},
+        _pid("F3D Growth Keeper"))
+    configs = getattr(p, "bimo_configurations", None)
+    if not isinstance(configs, dict):
+        configs = {}
+        p.bimo_configurations = configs
+    configs["crew"] = cfg
+    return p
+
+
+def part_docked_framing_custom():
+    from form.dell_matrix.inference_dock import dock
+    owner = _owner("f3dock")
+    try:
+        p = _dock_custom_program(owner)
+        s = dock(p, "guest:f3d", bimo="crew")
+        check("docked: session wears the custom configuration",
+              s.bimo == "crew")
+        framing = s._bimo_framing()
+        check("docked: framing names the custom pilot",
+              "F3D Growth Keeper" in framing,
+              f"framing={framing!r}")
+        check("docked: framing carries the custom pilot focus",
+              "pilot focus: F3D Growth Keeper focus" in framing,
+              f"framing={framing!r}")
+        check("docked: framing carries the custom pilot limits",
+              "pilot limits: F3D Growth Keeper limit" in framing,
+              f"framing={framing!r}")
+        check("docked: framing names the custom slot persona + role",
+              "slot logic: F3D Logic Keeper — F3D Logic Keeper role"
+              in framing, f"framing={framing!r}")
+        check("docked: framing carries the custom slot limits",
+              "limits: F3D Logic Keeper limit" in framing,
+              f"framing={framing!r}")
+        out = s.propose("propose a trial idea about tides")
+        prompt = s._provider.last_prompt or ""
+        check("docked: provider prompt carries the custom framing",
+              out.get("ok") and prompt.startswith("[bimo: crew]")
+              and "F3D Growth Keeper" in prompt
+              and "F3D Logic Keeper" in prompt,
+              f"ok={out.get('ok')} head={prompt[:80]!r}")
+        s.undock()
+    finally:
+        _dock_cleanup(owner)
+
+
+def part_docked_framing_canonical_control():
+    from form.dell_matrix import bimo_forge
+    from form.dell_matrix.inference_dock import dock
+    from form.open import open_program
+    owner = _owner("f3dockcanon")
+    try:
+        p = open_program(owner)
+        cfg = bimo_forge.make_configuration(
+            "scout", p.owner, {"logic": "manny"}, "della")
+        configs = getattr(p, "bimo_configurations", None)
+        if not isinstance(configs, dict):
+            configs = {}
+            p.bimo_configurations = configs
+        configs["scout"] = cfg
+        s = dock(p, "guest:f3dc", bimo="scout")
+        framing = s._bimo_framing()
+        check("docked-canonical: framing names canonical pilot + slot",
+              framing.startswith("[bimo: scout]")
+              and "pilot: Della (" in framing
+              and "slot logic: Manny — " in framing,
+              f"framing={framing!r}")
+        s.undock()
+        s2 = dock(p, "guest:f3dc2")
+        check("docked-canonical: unworn session frames nothing",
+              s2._bimo_framing() == "")
+        s2.undock()
+    finally:
+        _dock_cleanup(owner)
+
+
 def run_all():
     part_custom_owner()
     part_default_control()
     part_canonical_control()
+    part_docked_framing_custom()
+    part_docked_framing_canonical_control()
     passed = sum(1 for _, ok in RESULTS if ok)
     print(f"Critic Forge Layer Fixture: {passed}/{len(RESULTS)} "
           f"checks passed")

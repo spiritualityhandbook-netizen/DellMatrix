@@ -1082,8 +1082,13 @@ class DockedSession:
         if not cfg:
             return ""
         from form.dell_matrix import personas as _personas
+        # Critic finding on PR #536: resolve through the OWNER's
+        # persona layer, exactly as dock()'s wear-check does —
+        # without it a validated all-custom configuration framed as
+        # just "[bimo: <name>]", its personas silently omitted.
+        layer = getattr(self._program, "persona_layer", None)
         lines = [f"[bimo: {cfg['name']}]"]
-        pilot = _personas.get_persona(cfg.get("pilot"))
+        pilot = _personas.get_persona(cfg.get("pilot"), layer=layer)
         if pilot:
             lines.append(
                 f"pilot: {pilot['name']} ({pilot['category']})"
@@ -1095,7 +1100,7 @@ class DockedSession:
         for slot, pid in (cfg.get("slots") or {}).items():
             if not pid:
                 continue
-            p = _personas.get_persona(pid)
+            p = _personas.get_persona(pid, layer=layer)
             if not p:
                 continue
             line = f"slot {slot}: {p['name']} — {p['role']}"
