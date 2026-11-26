@@ -75,6 +75,25 @@ exactly as any caller does, and audit_isolation keeps its
 full-strength fingerprint over the ENTIRE real state
 directory.
 
+CORRECTION 2 (2026-11-25, Director ruling 7180705379):
+source review found a remaining route into the in-place
+sweep at the correction head: run_audit() trusted a
+nonempty inherited DELLMATRIX_GPE07_AUDIT_CHILD flag and
+invoked the in-place worker in the caller's tree, and the
+module CLI exposed the worker dispatcher in the real
+checkout. The flag branch is deleted — the public entry
+always isolates — and the worker dispatch is confined to
+the disposable tree by a per-invocation random ticket the
+parent writes into the copy and passes as an argument;
+the child sweeps only when the token matches the ticket
+inside its own tree. Two checks pin the closure:
+audit_isolation_inherited_env_flag (a public call with
+the flag set in-process leaves the real fingerprint
+byte-identical) and audit_bare_dispatcher_refused (a bare
+--audit-sweep invocation in the real checkout is refused
+and writes nothing). Both fail at the pre-correction head
+and pass at this one.
+
 FAILING-FIRST RECORD (at Part head 53368fb1, before the build):
 this suite failed on import — form.mandell.dell_audit did not
 exist (the whole-address execution audit had never been run as
@@ -170,7 +189,9 @@ from __future__ import annotations
 
 import hashlib
 import os
+import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -324,6 +345,54 @@ def run_all():
     fp_after = _state_fingerprint()
     check("audit_isolation", fp_before == fp_after,
           f"state files before={len(fp_before)} after={len(fp_after)}")
+
+    # CORRECTION checks (Director ruling 7180705379): the
+    # entry-point repair at 5be607e1 authorized the child
+    # through an inherited environment flag, so a public
+    # run_audit() call in a process carrying the flag ran
+    # the sweep in place, and the module CLI exposed the
+    # worker dispatcher in the real checkout. Both routes
+    # are now closed: the public entry isolates regardless
+    # of inherited environment, and the dispatcher refuses
+    # without the per-invocation ticket only the disposable
+    # tree carries.
+    flag = "DELLMATRIX_GPE07_AUDIT_CHILD"
+    fp_flag_before = _state_fingerprint()
+    saved_flag = os.environ.get(flag)
+    os.environ[flag] = "1"
+    try:
+        flagged_records = dell_audit.run_audit()
+    finally:
+        if saved_flag is None:
+            os.environ.pop(flag, None)
+        else:
+            os.environ[flag] = saved_flag
+    fp_flag_after = _state_fingerprint()
+    check("audit_isolation_inherited_env_flag",
+          len(flagged_records) == 100 and fp_flag_before == fp_flag_after,
+          f"records={len(flagged_records)} "
+          f"state files before={len(fp_flag_before)} "
+          f"after={len(fp_flag_after)}")
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    fp_disp_before = _state_fingerprint()
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "records.json")
+        env = dict(os.environ)
+        env.pop(flag, None)
+        env["PYTHONPATH"] = root
+        proc = subprocess.run(
+            [sys.executable, "-m", "form.mandell.dell_audit",
+             "--audit-sweep", "GPE07Audit", out_path],
+            cwd=root, env=env, capture_output=True, text=True)
+        disp_refused = (proc.returncode != 0
+                        and not os.path.exists(out_path))
+    fp_disp_after = _state_fingerprint()
+    check("audit_bare_dispatcher_refused",
+          disp_refused and fp_disp_before == fp_disp_after,
+          f"dispatcher refused={disp_refused} "
+          f"state files before={len(fp_disp_before)} "
+          f"after={len(fp_disp_after)}")
 
 
 def smoke() -> bool:

@@ -74,6 +74,7 @@ import importlib
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -473,7 +474,7 @@ def _run_audit_inplace(owner_prefix: str) -> List[Dict[str, Any]]:
     return records
 
 
-_CHILD_ENV = "DELLMATRIX_GPE07_AUDIT_CHILD"
+_TICKET_NAME = ".gpe07-audit-ticket"
 
 
 def _tree_root() -> str:
@@ -504,9 +505,24 @@ def run_audit(owner_prefix: str = "GPE07Audit") -> List[Dict[str, Any]]:
     it is simply never the audit's directory. The signature
     and the returned records are exactly the pre-isolation
     ones (the records round-trip through JSON, as they did
-    under the suite's former wrapper)."""
-    if os.environ.get(_CHILD_ENV):
-        return _run_audit_inplace(owner_prefix)
+    under the suite's former wrapper).
+
+    CORRECTION (Director ruling 7180705379): the first
+    entry-point repair authorized the child through an
+    inherited environment flag — but a flag any caller can
+    inherit or set is not a boundary: a public run_audit()
+    call in a process that happened to carry the flag ran
+    the sweep in place against the caller's real state, and
+    the module CLI exposed the worker dispatcher in the real
+    checkout. The flag is gone. This entry point ALWAYS
+    isolates, whatever the inherited environment says, and
+    the worker dispatch is confined to the disposable tree
+    by a per-invocation random ticket: the parent writes the
+    ticket into the copied tree and passes its token as an
+    argument; the child sweeps only when the token it was
+    handed matches the ticket inside its OWN tree. A bare
+    --audit-sweep invocation in a real checkout holds no
+    ticket and is refused."""
     root = _tree_root()
     tmp = tempfile.mkdtemp(prefix="gpe07_audit_")
     try:
@@ -525,12 +541,15 @@ def run_audit(owner_prefix: str = "GPE07Audit") -> List[Dict[str, Any]]:
         work = os.path.join(tmp, "src")
         shutil.copytree(root, work, ignore=ignore, symlinks=True)
         out_path = os.path.join(tmp, "records.json")
+        token = secrets.token_hex(16)
+        with open(os.path.join(work, _TICKET_NAME), "w",
+                  encoding="utf-8") as f:
+            f.write(token)
         env = dict(os.environ)
         env["PYTHONPATH"] = work
-        env[_CHILD_ENV] = "1"
         proc = subprocess.run(
             [sys.executable, "-m", "form.mandell.dell_audit",
-             "--audit-sweep", owner_prefix, out_path],
+             "--audit-sweep", owner_prefix, out_path, token],
             cwd=work, env=env, capture_output=True, text=True)
         if proc.returncode != 0:
             raise RuntimeError(
@@ -543,12 +562,38 @@ def run_audit(owner_prefix: str = "GPE07Audit") -> List[Dict[str, Any]]:
 
 
 def _audit_sweep_child_main(argv) -> int:
-    """Child-process entry (private disposable tree): run the
-    sweep in place — this process's state paths already resolve
-    inside the copy — and write the records as JSON."""
+    """Child-process entry (private disposable tree ONLY):
+    run the sweep in place — this process's state paths
+    already resolve inside the copy — and write the records
+    as JSON.
+
+    Confinement (Director ruling 7180705379): the dispatch
+    is lawful only inside the disposable tree run_audit()
+    prepared, proven by the per-invocation ticket that tree
+    carries: the token handed in as an argument must match
+    the ticket file inside THIS process's own tree root.
+    Any other invocation — a bare --audit-sweep in a real
+    checkout, a missing or wrong token — is refused before
+    anything is swept or written. An inherited environment
+    variable authorizes nothing."""
     i = argv.index("--audit-sweep")
-    records = _run_audit_inplace(argv[i + 1])
-    with open(argv[i + 2], "w", encoding="utf-8") as f:
+    args = argv[i + 1:]
+    token = args[2] if len(args) > 2 else ""
+    expected = ""
+    try:
+        with open(os.path.join(_tree_root(), _TICKET_NAME),
+                  encoding="utf-8") as f:
+            expected = f.read().strip()
+    except OSError:
+        expected = ""
+    if not token or not expected or token != expected:
+        print("audit-sweep refused: no valid dispatch ticket "
+              "in this tree (worker dispatch is confined to "
+              "the disposable tree prepared by run_audit())",
+              file=sys.stderr)
+        return 2
+    records = _run_audit_inplace(args[0])
+    with open(args[1], "w", encoding="utf-8") as f:
         json.dump({"records": records}, f)
     return 0
 
