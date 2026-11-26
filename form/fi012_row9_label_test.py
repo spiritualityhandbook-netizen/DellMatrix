@@ -163,6 +163,23 @@ def smoke() -> bool:
         receipts = getattr(nc, "duplicate_receipts", None) or []
         rec("c_near_duplicates_no_receipt", len(receipts) == 2,
             f"receipts={len(receipts)}")
+        # Critic finding on PR #544 (verified first-hand): _slug's
+        # digest suffix is reduced mod 10000, so seeds 62 and 113
+        # slug "dup idea" to the SAME id (dup_idea_7008). Distinct
+        # seeds are distinct intakes even when their slugs collide:
+        # no receipt for the 113 add; an exact seed-62 repeat IS a
+        # duplicate and receipts.
+        from form.dell_matrix.nursery import _slug as _slug_fn
+        assert _slug_fn("dup idea", 62) == _slug_fn("dup idea", 113)
+        nc.add(label="dup idea", seed="62", words="w1")
+        nc.add(label="dup idea", seed="113", words="w1")
+        receipts = getattr(nc, "duplicate_receipts", None) or []
+        rec("c_slug_collision_distinct_seeds_no_receipt",
+            len(receipts) == 2, f"receipts={len(receipts)}")
+        nc.add(label="dup idea", seed="62", words="w1")
+        receipts = getattr(nc, "duplicate_receipts", None) or []
+        rec("c_exact_seed_repeat_after_collision_receipts",
+            len(receipts) == 3, f"receipts={len(receipts)}")
 
         # ---- receipts never persist; proposals do ------------------
         with open(path_c, encoding="utf-8") as f:
@@ -180,6 +197,12 @@ def smoke() -> bool:
         payload = json.loads(blob)
         rec("c_file_holds_proposals_only_plus_sections",
             all(isinstance(v, dict) for v in payload.values()))
+        # the retained intake_seed survives reload, so an exact
+        # repeat of a pre-reload intake is still detected exactly.
+        reloaded.add(label="dup idea", seed="7", words="w1")
+        rec("c_exact_repeat_detected_after_reload",
+            len(getattr(reloaded, "duplicate_receipts", None) or [])
+            == 1)
     finally:
         for name in os.listdir(tmp):
             os.unlink(os.path.join(tmp, name))

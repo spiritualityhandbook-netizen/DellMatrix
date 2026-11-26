@@ -558,6 +558,17 @@ class Proposal:
     seed_source_origin: str = ""
     seed_rule_version: str = ""
     seed_operation_id: str = ""
+    # FI-012 row 9 (Critic finding on PR #544, verified first-hand
+    # 2026-11-26): the EXACT intake seed passed to Nursery.add(),
+    # retained on the record so duplicate-intake detection can
+    # compare the actual (label, seed, words) triple. The proposal
+    # ID cannot serve as that proof: _slug's digest suffix is
+    # reduced mod 10000, so distinct seeds collide (seeds 62 and
+    # 113 both slug "dup idea" to dup_idea_7008) and slug equality
+    # falsely receipts distinct intakes as duplicates. Additive:
+    # legacy records load with None (seed unrecorded) and never
+    # match — detection fails closed rather than guessing.
+    intake_seed: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -969,19 +980,23 @@ class Nursery:
                     return existing
         # FI-012 row 9: duplicate-intake detection, computed BEFORE
         # the new proposal exists. A duplicate is an already-stored
-        # proposal with the same label and words whose ID is this
-        # add's base slug or a collision-suffixed descendant of it —
-        # i.e. the same (label, seed, words) intake seen again. The
-        # duplicate is still stored below (DCC-VII); its receipt is
-        # appended only after its save stands.
+        # proposal with the EXACT same (label, seed, words) intake.
+        # The comparison uses the retained intake_seed, never the
+        # proposal ID: _slug's suffix is a digest reduced mod
+        # 10000, so distinct seeds can share a slug and slug
+        # equality would falsely receipt distinct intakes (Critic
+        # finding on PR #544, verified: seeds 62 vs 113). Legacy
+        # records (intake_seed None) never match. The duplicate is
+        # still stored below (DCC-VII); its receipt is appended
+        # only after its save stands.
         base_pid = _slug(label, seed)
         duplicate_of = None
         for existing in self.proposals.values():
             if (
                 existing.label == label
                 and existing.words == words
-                and (existing.id == base_pid
-                     or existing.id.startswith(base_pid + "_"))
+                and existing.intake_seed is not None
+                and existing.intake_seed == int(seed)
             ):
                 duplicate_of = existing
                 break
@@ -1018,6 +1033,7 @@ class Nursery:
             seed_source_origin=origin if isinstance(origin, str) else "",
             seed_rule_version=SEED_RULE_VERSION,
             seed_operation_id=f"seed:{pid}",
+            intake_seed=int(seed),
         )
         self.proposals[pid] = p
         try:
