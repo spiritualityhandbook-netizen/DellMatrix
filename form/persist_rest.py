@@ -187,6 +187,19 @@ def _preserve_unseen_exchange_records(program: Program,
         nursery_raw, program_raw = _exchange._raw_state_files(
             owner)
     except Exception as e:
+        # Whole-file unparseability follows the binding-loss
+        # posture beside this check (_persisted_bindings):
+        # unreadable bytes carry no READABLE exchange record to
+        # preserve, and a live instance's save over them is the
+        # established repair (the DCC-XVII / TD-1 corrupt-state
+        # contract). Any other read failure — the state cannot
+        # be established though no file is corrupt — refuses
+        # typed, pre-byte (fixture Q9's injected failure).
+        if isinstance(e, (OSError, UnicodeDecodeError,
+                          ValueError)) or (
+                isinstance(e, _exchange.ExchangeError)
+                and "not an object" in str(e)):
+            return
         raise StaleWriterSaveError(
             f"save for owner {owner!r} cannot verify the "
             f"durable exchange state ({type(e).__name__}: {e}); "

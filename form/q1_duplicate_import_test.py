@@ -450,6 +450,30 @@ def main() -> bool:
          and st["receipts_count"] == 2, str(st))
     _cleanup(owner)
 
+    # ---- Q12: corrupt-bytes repair posture (the DCC-XVII / TD-1
+    # contract, following _persisted_bindings' precedent beside
+    # the check): whole-file unparseable durable state carries
+    # no READABLE exchange record to preserve, and a live
+    # instance's save over it is the established repair — not a
+    # stale-writer refusal. (Q9's refusal class is a read failure
+    # with no corrupt file.)
+    owner = "Q1Repair"
+    _cleanup(owner)
+    p = Program(owner=owner)
+    exchange.import_packet(p, _packet())
+    path = _program_path(owner)
+    with open(path, "wb") as f:
+        f.write(b"\xff\xfe not json")
+    err = None
+    try:
+        p.save()
+    except Exception as e:  # noqa: BLE001 - verdict recorded below
+        err = e
+    _rec("Q12: save over whole-file-corrupt durable state "
+         "proceeds (repair posture, no stale-writer refusal)",
+         err is None, repr(err))
+    _cleanup(owner)
+
     passed = sum(1 for _, ok, _ in RESULTS if ok)
     for name, ok, detail in RESULTS:
         print(f"[{'PASS' if ok else 'FAIL'}] {name}"
