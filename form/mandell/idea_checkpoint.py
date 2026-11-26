@@ -193,6 +193,64 @@ def _manifest_valid(manifest) -> bool:
     return True
 
 
+def _sealed_checkpoint_evidence(owner: str, fn: str, idea_id: str,
+                                path: str) -> bool:
+    """Explicit disposal evidence from the checkpoint system itself.
+
+    True only when some sealed checkpoint generation for this owner
+    holds this exact idea content: that generation's accounted-files
+    manifest records ``fn`` as "included" under ``idea_id`` AND its
+    ideas member carries data equal to the file's current parsed
+    content. Deleting the live file then loses nothing — the content
+    survives sealed (the rollback shape: the target generation
+    predates the idea, but a later generation captured it, so
+    convergence to the target may dispose of the live file). Any
+    doubt — unreadable member, malformed manifest, content drift
+    since that capture — returns False: preserve.
+    """
+    import glob as _glob
+
+    try:
+        with open(path, encoding="utf-8") as f:
+            current = json.load(f)
+    except Exception:
+        return False
+    try:
+        from form.mandell import checkpoint_generation as _cg
+        ns = _cg._owner_ns(owner)
+    except Exception:
+        return False
+    pattern = os.path.join(_STATE_DIR, f"gen_{ns}_*.json")
+    for mpath in sorted(_glob.glob(pattern)):
+        try:
+            with open(mpath, encoding="utf-8") as f:
+                gen_manifest = json.load(f)
+            members = gen_manifest.get("members") or {}
+            ideas_spec = members.get("ideas") or {}
+            member_file = ideas_spec.get("file")
+            if not member_file:
+                continue
+            with open(os.path.join(_STATE_DIR, member_file),
+                      encoding="utf-8") as f:
+                snap = json.load(f)
+        except Exception:
+            continue
+        if not isinstance(snap, dict):
+            continue
+        files = snap.get("files")
+        if not isinstance(files, dict):
+            continue
+        rec = files.get(fn)
+        if (not isinstance(rec, dict)
+                or rec.get("disposition") != "included"
+                or rec.get("id") != idea_id):
+            continue
+        ideas = snap.get("ideas")
+        if isinstance(ideas, dict) and ideas.get(idea_id) == current:
+            return True
+    return False
+
+
 def restore_ideas_from_snapshot(owner: str, snapshot_path: str) -> None:
     """Restore individual idea files from a snapshot.
 
@@ -212,15 +270,25 @@ def restore_ideas_from_snapshot(owner: str, snapshot_path: str) -> None:
     - A target path whose current bytes are damaged (unreadable or
       not a validated file for that idea) is PRESERVED — never
       overwritten by the snapshot's healthy copy.
-    - An extra file is deleted ONLY when proven disposable: a
-      validated idea whose ID matches its canonical filename and is
-      absent from the snapshot (normal stale cleanup, both snapshot
-      vintages), or a file the snapshot's accounted-files manifest
-      explicitly records as "included" under the same ID its current
-      bytes validate to (its content survives inside the snapshot).
-      A manifest entry of "refused", a damaged file, or a file no
-      accounting covers is PRESERVED. Absence from a capture-time
-      manifest never by itself proves a later addition disposable.
+    - An extra file is deleted ONLY when proven disposable: under
+      a LEGACY snapshot (manifest genuinely absent), a validated
+      idea whose ID matches its canonical filename and is absent
+      from the snapshot (the lawful legacy stale cleanup); or, for
+      any snapshot, a file the snapshot's accounted-files manifest
+      explicitly records as "included" under the same ID its
+      current bytes validate to (its content survives inside the
+      snapshot); or a file some sealed checkpoint generation
+      accounted as "included" under the same ID with member content
+      equal to the file's current content (explicit disposal
+      evidence from the checkpoint system — rollback convergence
+      loses nothing, the content survives sealed). A manifest
+      entry of "refused", a damaged file, or
+      a file no accounting covers is PRESERVED. Absence from a
+      capture-time manifest never by itself proves a later addition
+      disposable: under a new-format snapshot the canonical-filename
+      / absent-ID condition alone NEVER makes a file deletable
+      (Director correction 7187587005 — it deleted healthy ideas
+      added after capture that the manifest never accounted for).
     - A present-but-malformed manifest refuses the restore outright;
       it never triggers the legacy (manifest-less) rules.
 
@@ -284,10 +352,19 @@ def restore_ideas_from_snapshot(owner: str, snapshot_path: str) -> None:
         if cur_err is not None:
             preserved.append((fn, f"unaccounted damaged file ({cur_err})"))
             continue
-        if (os.path.basename(_idea_path(cur_id, owner)) == fn
+        if (manifest is None
+                and os.path.basename(_idea_path(cur_id, owner)) == fn
                 and cur_id not in target_ids):
-            # Normal stale cleanup: a validated idea, at its canonical
-            # filename, absent from the snapshot.
+            # Legacy stale cleanup ONLY (Director correction
+            # 7187587005): this branch may fire solely when the
+            # snapshot carries NO accounted-files manifest at all —
+            # a genuinely absent manifest (the legacy vintage), where
+            # absence from the snapshot is the only accounting that
+            # exists. When a manifest IS present, absence from it
+            # never proves a file disposable: a healthy idea added
+            # after capture is indistinguishable from a stale file
+            # under this condition alone, and deleting it would
+            # destroy an idea the snapshot never accounted for.
             deletable.append(fn)
         elif (manifest is not None and fn in manifest
                 and manifest[fn].get("disposition") == "included"
@@ -295,6 +372,20 @@ def restore_ideas_from_snapshot(owner: str, snapshot_path: str) -> None:
             # Explicit accounting permits deletion: the file's full
             # content is captured inside the snapshot under this ID.
             deletable.append(fn)
+        elif (manifest is not None
+                and _sealed_checkpoint_evidence(owner, fn, cur_id, path)):
+            # Explicit disposal evidence from the checkpoint system:
+            # a sealed generation's manifest accounted this file as
+            # "included" under this ID and that generation's ideas
+            # member holds this exact content, so disposal loses
+            # nothing (rollback convergence to an earlier generation
+            # whose own manifest predates the idea).
+            deletable.append(fn)
+        elif manifest is not None and fn not in manifest:
+            preserved.append(
+                (fn, "healthy file the snapshot's manifest never "
+                     "accounted for (possibly added after capture); "
+                     "no explicit evidence permits disposal"))
         else:
             preserved.append(
                 (fn, "healthy file not proven disposable "

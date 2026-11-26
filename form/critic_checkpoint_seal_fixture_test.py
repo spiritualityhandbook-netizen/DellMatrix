@@ -42,6 +42,25 @@ ValueError on the same truncated file — pinned by control A2 below
 and the track_d H1 family). Inventory-at-checkpoint is the
 uncovered seam this fixture pins.
 
+Director correction 7187587005 (PR #532, 2026-11-26), legs (g):
+the restore preflight's canonical-filename / absent-ID condition
+added a file to the deletable set for BOTH snapshot vintages, so a
+new-format restore could DELETE a healthy idea added after capture
+that the snapshot's manifest never accounted for. The correction:
+legacy stale cleanup is restricted to a genuinely absent manifest;
+for new-format snapshots, disposal requires valid explicit evidence
+(the manifest's own accounting), otherwise the file is preserved
+and reported before any mutation. Legs (g1)/(g2) pin preservation
+of post-capture healthy additions (red before the correction);
+leg (g3) pins that explicit accounting still permits disposal, and
+the legacy control (e1) stands unchanged. Leg (g4) pins the
+rollback shape: a file a LATER sealed generation accounted with
+equal content carries explicit disposal evidence from the
+checkpoint system itself, so convergence to an earlier generation
+still disposes of the live file — the correction's first cut broke
+r63_amend_proof's r63a_repeated_prepared_replay deterministically
+(21/22) until this evidence clause was added.
+
 Contract asserted here:
   (a) An unreadable/truncated idea file is SURFACED by the
       inventory path — named in the snapshot's skipped manifest
@@ -79,6 +98,10 @@ DMG = "SealFixtureDmg"
 OVR = "SealFixtureOvr"
 LEG = "SealFixtureLeg"
 CUR = "SealFixtureCur"
+NEW = "SealFixtureNew"
+EMP = "SealFixtureEmpty"
+ACC = "SealFixtureAcct"
+GEN = "SealFixtureGen"
 
 
 def _cleanup(owner):
@@ -343,6 +366,139 @@ def run_all():
               _back.get_active_properties().get("rooms") == 1,
               "rollback to the sealed member did not revert the mutation")
 
+        # -------- (g) Director correction 7187587005 ----------------
+        # A healthy idea added AFTER a new-format snapshot was taken
+        # is absent from the snapshot's accounted-files manifest;
+        # absence never proves it disposable. The restore must
+        # preserve it byte-identical and report (refuse) before any
+        # mutation. Against the unrepaired head the canonical /
+        # absent-ID condition put it in the deletable set and the
+        # restore silently deleted it (legs g1/g2 red).
+        open_program(NEW)
+        new_ids = _make_ideas(NEW, count=2)
+        new_snap_path = snapshot_ideas(NEW)
+        new_target_bytes = {
+            i: open(_idea_path(i, NEW), "rb").read() for i in new_ids}
+        late_id = _make_ideas(NEW, count=1)[0]
+        late_path = _idea_path(late_id, NEW)
+        with open(late_path, "rb") as f:
+            late_bytes = f.read()
+        g1_refused = False
+        try:
+            restore_ideas_from_snapshot(NEW, new_snap_path)
+        except Exception:
+            g1_refused = True
+        check("g1_restore_reports_unaccounted_addition", g1_refused,
+              "restore silently converged over a post-capture addition")
+        check("g1_postcapture_addition_preserved",
+              os.path.isfile(late_path)
+              and open(late_path, "rb").read() == late_bytes,
+              "restore deleted or altered a healthy post-capture idea file")
+        check("g1_preflight_modified_nothing",
+              all(open(_idea_path(i, NEW), "rb").read() == b
+                  for i, b in new_target_bytes.items()),
+              "a refused restore modified a snapshot target file")
+        try:
+            g1_loads = load_idea(late_id, NEW).id == late_id
+        except Exception:
+            g1_loads = False
+        check("g1_addition_still_loads", g1_loads,
+              "the post-capture idea is no longer observable after restore")
+        with open(snapshot_ideas(NEW), encoding="utf-8") as f:
+            new_resnap = json.load(f)
+        check("g1_addition_in_next_inventory",
+              late_id in new_resnap["ideas"]
+              and new_resnap["files"][
+                  os.path.basename(late_path)]["disposition"] == "included",
+              "a later snapshot does not account the surviving addition")
+
+        # (g2) the purest form: a new-format snapshot captured from
+        # an EMPTY store accounts for nothing at all (manifest == {});
+        # a healthy idea added after capture must still survive.
+        open_program(EMP)
+        emp_snap_path = snapshot_ideas(EMP)
+        with open(emp_snap_path, encoding="utf-8") as f:
+            emp_snap = json.load(f)
+        check("g2_empty_snapshot_accounts_nothing",
+              emp_snap["ideas"] == {} and emp_snap["files"] == {}
+              and emp_snap["skipped"] == [],
+              f"empty-store snapshot not empty: {emp_snap}")
+        emp_id = _make_ideas(EMP, count=1)[0]
+        emp_path = _idea_path(emp_id, EMP)
+        with open(emp_path, "rb") as f:
+            emp_bytes = f.read()
+        g2_refused = False
+        try:
+            restore_ideas_from_snapshot(EMP, emp_snap_path)
+        except Exception:
+            g2_refused = True
+        check("g2_restore_reports_unaccounted_addition", g2_refused,
+              "restore silently converged over a post-capture addition")
+        check("g2_postcapture_addition_preserved",
+              os.path.isfile(emp_path)
+              and open(emp_path, "rb").read() == emp_bytes,
+              "restore deleted a healthy idea the snapshot never "
+              "accounted for")
+
+        # (g3) control: explicit accounting still permits disposal.
+        # Hand-built snapshot (same style as the legacy snapshot in
+        # (e)): its manifest records a file "included" under the
+        # very ID its bytes validate to, while the snapshot's ideas
+        # omit that ID. snapshot_ideas itself never emits this shape
+        # (included implies present in ideas); the leg pins the
+        # disposal-evidence branch so the correction cannot
+        # over-preserve accounted files.
+        open_program(ACC)
+        acc_ids = _make_ideas(ACC, count=2)
+        acc_snap_path = snapshot_ideas(ACC)
+        with open(acc_snap_path, encoding="utf-8") as f:
+            acc_snap = json.load(f)
+        acc_extra_path = _idea_path(acc_ids[1], ACC)
+        del acc_snap["ideas"][acc_ids[1]]
+        acc_built_path = os.path.join(
+            os.path.dirname(acc_snap_path), "accounted_snap_fixture.json")
+        with open(acc_built_path, "w", encoding="utf-8") as f:
+            json.dump(acc_snap, f)
+        g3_completed = True
+        try:
+            restore_ideas_from_snapshot(ACC, acc_built_path)
+        except Exception:
+            g3_completed = False
+        check("g3_accounted_extra_removed",
+              g3_completed
+              and not os.path.isfile(acc_extra_path)
+              and os.path.isfile(_idea_path(acc_ids[0], ACC)),
+              "restore failed to remove a manifest-accounted extra file")
+        try:
+            os.remove(acc_built_path)
+        except OSError:
+            pass
+
+        # (g4) control: sealed-generation accounting is explicit
+        # disposal evidence. Idea captured by generation 1; a second
+        # idea added and captured by generation 2; restoring
+        # generation 1's ideas member removes the second idea's live
+        # file (its exact content survives sealed in generation 2)
+        # and converges — the rollback shape the correction must not
+        # break (cf. r63_amend_proof r63a_repeated_prepared_replay).
+        open_program(GEN)
+        gen_first = _make_ideas(GEN, count=1)[0]
+        gen_g1 = cg.commit_checkpoint(open_program(GEN)).get("generation_id")
+        gen_late = _make_ideas(GEN, count=1)[0]
+        gen_g2 = cg.commit_checkpoint(open_program(GEN)).get("generation_id")
+        g4_completed = True
+        try:
+            restore_ideas_from_snapshot(
+                GEN, cg._member_path(GEN, "ideas", gen_g1))
+        except Exception:
+            g4_completed = False
+        check("g4_sealed_accounted_extra_removed",
+              g4_completed and bool(gen_g1) and gen_g1 != gen_g2
+              and not os.path.isfile(_idea_path(gen_late, GEN))
+              and os.path.isfile(_idea_path(gen_first, GEN)),
+              "restore failed to converge to generation 1 although "
+              "generation 2 sealed the extra idea's exact content")
+
         passed = sum(1 for _, c in RESULTS if c)
         print(f"CRITIC CHECKPOINT SEAL FIXTURE: {passed}/{len(RESULTS)} GREEN")
     finally:
@@ -351,6 +507,10 @@ def run_all():
         _cleanup(OVR)
         _cleanup(LEG)
         _cleanup(CUR)
+        _cleanup(NEW)
+        _cleanup(EMP)
+        _cleanup(ACC)
+        _cleanup(GEN)
 
 
 def smoke() -> bool:
