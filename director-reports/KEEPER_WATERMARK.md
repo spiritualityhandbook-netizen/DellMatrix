@@ -1,16 +1,18 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-25 ~22:15 CST  
-**UTC approx**: 2026-11-26T04:15:00Z  
+**Last cycle**: 2026-11-25 ~23:17 CST  
+**UTC approx**: 2026-11-26T05:17:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - Ripe gates:
-  - #532 at 68adb07ede10029d83222370ccaa79efe20d51af: named missing — terminal smoke CI at exact head. Package full in body, builds+browser green, smoke in_progress. Spot-check: changed_files:5 matches package.
-  - #531 at 2ae497475f5009966e0c9fb0471147f6d498be20: named missing — full §45 package at exact new head + terminal smoke CI. Head moved past prior stamp at 6a57faf6; prior CONFIRM voided. Builds+browser green, smoke in_progress.
-  - #529 at 781bea2c956ea174c22bc21db2f38f22898f74f1: prior SCOPED CONFIRM stands at current head. CI terminal green.
+  - #535 at 2e623d60a1ddf06aa1c718fa8f1b3f2b3528b644: named missing — terminal smoke SUCCESS at exact head. Smoke FAILURE (absence_matrix_test:smoke test_restart_real_shapes 66/67). Builds+browser SUCCESS. Spot-check: 4 files +338/−11 matches package. NOT confirm-ready. Comment 7183371310.
+  - #534 at 3afc13c04928a802829fabd5b1b30cbdcd6fd607: prior SCOPED CONFIRM (7183157703) stands at current head. CI terminal ALL SUCCESS.
+  - #533 at 8498d837961fd685eddca1c48c7156485be0f589: prior SCOPED CONFIRM (7183158126) stands at current head. CI terminal ALL SUCCESS.
+  - #532 at 68adb07ede10029d83222370ccaa79efe20d51af: prior SCOPED CONFIRM (7183158791) stands at current head. CI terminal ALL SUCCESS.
+  - #531 at 2ae497475f5009966e0c9fb0471147f6d498be20: prior SCOPED CONFIRM stands at current head. CI terminal green.
   - Drafts and #294 fenced skipped.
-- Merged-main proofs: #516 merged at e8cfda11ec34c985efb930fb71d42de0aa255d06 since last watermark. Prior SCOPED CONFIRM at head stands; no new merged-main credit package on record. Named: awaiting Uni merged-main behavioral proof + terminal CI on merge commit if credit confirmation sought.
+- Merged-main proofs: #529 merged at 2026-11-26T04:45:45Z since last watermark. Prior SCOPED CONFIRM at head 781bea2c stands. No new merged-main credit package on record. Named: awaiting Uni merged-main behavioral proof + terminal CI on merge commit if credit confirmation sought. Comment 7183372784.
 - Records reviews: none awaiting.
 - Trailing obligations: none remaining.
 
@@ -20,6 +22,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + missing named on #532 and #531. Nothing needed from Ace. Next step: terminal CI on #532/#531; full package at #531 new head.
+Proof of pass: this watermark advance + missing named on #535 and #529 credit. Nothing needed from Ace. Next step: Uni diagnosis of #535 smoke red; merged-main package on #529 if credit sought.
 
 — KEEPER
