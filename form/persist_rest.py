@@ -1450,7 +1450,8 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     p.forge_sessions = fsessions
     p.forge_sessions_malformed = fmalformed
     configs, cmalformed = validate_configurations_section(
-        data.get("bimo_configurations", _FG_MISSING), p.owner)
+        data.get("bimo_configurations", _FG_MISSING), p.owner,
+        layer=getattr(p, "persona_layer", None))
     p.bimo_configurations = configs
     p.bimo_configurations_malformed = cmalformed
     # R7.6: restore Connected World session evidence with the same

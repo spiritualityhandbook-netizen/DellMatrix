@@ -4746,7 +4746,8 @@ def _commit_forge_config(p, session, raw_name: str):
         return p
     config = make_configuration(name, p.owner, session.staged_slots,
                                 session.staged_pilot)
-    ok, err = validate_configuration(config, p.owner)
+    ok, err = validate_configuration(
+        config, p.owner, layer=getattr(p, "persona_layer", None))
     if not ok:
         session.record("save", "rejected: staged arrangement invalid")
         _say(f"Save rejected: {err}. Fix the staged arrangement "
@@ -5457,7 +5458,8 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         # inside the studio, a workshop, or onboarding.
         if line.lower() == "forge":
             from form.dell_matrix.bimo_forge import ForgeSession as _FS
-            _forge = _FS.open(p.owner, dict(p.bimo.slots), p.bimo.pilot)
+            _forge = _FS.open(p.owner, dict(p.bimo.slots), p.bimo.pilot,
+                              layer=getattr(p, "persona_layer", None))
             _forge.record("enter", "forge entered")
             _say("BIMO Forge — build a BIMO arrangement on a staged "
                  "copy. The live body does not change until you commit "

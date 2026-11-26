@@ -310,6 +310,7 @@ LIST = [
     "form.mandell.duobeta_cross_session_test:smoke",
     "form.duobeta_detail_whole_test:smoke",
     "form.critic_duobeta_distinct_fixture_test:smoke",
+    "form.critic_forge_layer_fixture_test:smoke",
     "form.r17_compose_bound_test:smoke",
     "form.r19_cycle_receipt_test:smoke",
     "form.mandell.polyglot_user_path_test:smoke",

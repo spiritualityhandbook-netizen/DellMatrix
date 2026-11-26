@@ -2141,7 +2141,8 @@ def dock(program, trusted_subject: str, provider: str = "fake", *,
                 f"unknown bimo configuration {_name!r}: "
                 "not committed in the Forge")
         _ok, _why = _forge.validate_configuration(
-            _rec, getattr(program, "owner", "") or "")
+            _rec, getattr(program, "owner", "") or "",
+            layer=getattr(program, "persona_layer", None))
         if not _ok:
             raise DockError(
                 f"bimo configuration {_name!r} is invalid: {_why}")
