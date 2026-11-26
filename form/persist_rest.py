@@ -155,8 +155,12 @@ def _preserve_unseen_exchange_records(program: Program,
       the loader itself uses — so the save lands WITH the
       completed import's provenance intact.
     * TYPED REFUSAL (fallback): when preservation cannot be
-      established (the durable state cannot be read), the save
-      raises StaleWriterSaveError before any byte changes.
+      established (the durable state cannot be read — including
+      a PRESENT section whose shell is malformed, which reads
+      as zero records through _section_entries and must never
+      be taken for an empty section; Director correction
+      7203516785), the save raises StaleWriterSaveError before
+      any byte changes. Lawful absent/empty sections proceed.
 
     Scoping, mirroring the R2 binding-loss contract beside it:
     a CURRENT instance (its version stamp matches the canonical
@@ -193,6 +197,22 @@ def _preserve_unseen_exchange_records(program: Program,
             ("exchange_receipts", "exchange_receipts",
              "exchange_receipts_malformed",
              _exchange._validate_receipt_entry)):
+        # Director correction 7203516785: a PRESENT but malformed
+        # section (or malformed entries container) is unreadable
+        # durable state, NOT zero records — _section_entries
+        # returns {} for both, so the shell is judged first, by
+        # the loader's own shell law. With live proposals on the
+        # line, preservation is unprovable over an unreadable
+        # shell: refuse typed, pre-byte. Lawful absent and lawful
+        # empty sections proceed.
+        shell_error = _exchange._section_shell_error(
+            program_raw, section)
+        if shell_error is not None:
+            raise StaleWriterSaveError(
+                f"save for owner {owner!r} cannot establish "
+                f"preservation: the durable {section} section "
+                f"is present but unreadable ({shell_error}); "
+                "refusing before any byte changes")
         durable = _exchange._section_entries(program_raw, section)
         if not durable:
             continue

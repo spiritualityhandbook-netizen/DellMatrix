@@ -22,9 +22,11 @@ Contract proven here (PROOF_SPEC §1–§3, §6):
   import completed must not silently drop the import's seed /
   receipt records at its ordinary save — the save preserves the
   unseen durable records (in-process and cross-process shapes).
-  When preservation cannot be established (durable read fails),
-  the save refuses typed (StaleWriterSaveError) before any byte
-  changes.
+  When preservation cannot be established (durable read fails —
+  including a PRESENT exchange section whose shell is malformed,
+  which is unreadable state and never an empty section;
+  Director correction 7203516785), the save refuses typed
+  (StaleWriterSaveError) before any byte changes.
 - INDEPENDENT OWNER: the witness is owner-scoped — the same
   packet imported by a second owner lands fresh there, and that
   owner's saves never touch the first owner's state.
@@ -339,6 +341,50 @@ def main() -> bool:
          and isinstance(err, StaleWriterSaveError), repr(err))
     _rec("Q9: refused save changed no durable bytes",
          _file_bytes(_program_path(owner)) == before)
+    _cleanup(owner)
+
+    # ---- Q10: Director correction 7203516785 — a PRESENT but
+    # malformed exchange section (here: the entries container is
+    # a list, not an object) is unreadable durable state, not
+    # zero records. With a live proposal, the stale save refuses
+    # typed pre-byte; the source bytes stay untouched. Control:
+    # with no live proposal, the same shape is outside this
+    # boundary's scope and the stale save proceeds.
+    owner = "Q1Shell"
+    _cleanup(owner)
+    stale = Program(owner=owner)
+    importer = Program(owner=owner)
+    imp = exchange.import_packet(importer, _packet())
+    pid = imp["pid"]
+    path = _program_path(owner)
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    data["exchange_seeds"]["entries"] = ["not", "an", "object"]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    before = _file_bytes(path)
+    err = None
+    try:
+        stale.save()
+    except Exception as e:  # noqa: BLE001 - verdict recorded below
+        err = e
+    _rec("Q10: present malformed exchange section + live proposal "
+         "-> stale save refuses TYPED pre-byte",
+         StaleWriterSaveError is not None
+         and isinstance(err, StaleWriterSaveError), repr(err))
+    _rec("Q10: refused save left the source bytes untouched",
+         _file_bytes(path) == before)
+    fresh = Program(owner=owner)
+    fresh.nursery.reject(pid)
+    fresh.nursery.clear_rejected()
+    err2 = None
+    try:
+        stale.save()
+    except Exception as e:  # noqa: BLE001 - verdict recorded below
+        err2 = e
+    _rec("Q10: same malformed shape with NO live proposal is out "
+         "of scope — stale save proceeds",
+         err2 is None, repr(err2))
     _cleanup(owner)
 
     passed = sum(1 for _, ok, _ in RESULTS if ok)

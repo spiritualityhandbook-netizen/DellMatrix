@@ -482,6 +482,30 @@ def _section_entries(program_raw: Any, section: str) -> Dict[str, Any]:
     return entries if isinstance(entries, dict) else {}
 
 
+def _section_shell_error(program_raw: Any, section: str) -> Any:
+    """None when a durable records section is lawfully readable
+    at the shell level — ABSENT (legacy absence, the loader's
+    MISSING case) or a well-formed shell — else the loader's
+    shell error kind ("null" / "shape" / "version"). Mirrors
+    validate_records_section's distinction exactly: a PRESENT
+    section whose shell fails (explicit null, non-object shell,
+    bad version, entries container not an object) is UNREADABLE
+    state, never an empty section — _section_entries alone
+    cannot tell the two apart, and a caller that must not take
+    a durability verdict from unreadable state (the save
+    boundary's stale-writer check) refuses on any non-None
+    return (Director correction 7203516785)."""
+    if section not in program_raw:
+        return None
+    from form.dell_matrix.session_section import section_shell
+    version = EXCHANGE_SEEDS_SECTION_VERSION \
+        if section == "exchange_seeds" \
+        else EXCHANGE_RECEIPTS_SECTION_VERSION
+    error, _malformed = section_shell(
+        program_raw[section], "entries", version)
+    return error
+
+
 def _durable_import_state(owner: str, pid: str) -> Dict[str, Any]:
     """What the canonical files actually hold for one import:
     proposal presence (nursery file) and seed/receipt entries
