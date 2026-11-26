@@ -13,6 +13,7 @@ Persona Matrix = spatial roster by category (how agents sit relative to each oth
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -270,36 +271,394 @@ DEFAULT_DOCK: Dict[str, str] = {
 }
 
 
-def normalize_persona_id(name: Optional[str]) -> Optional[str]:
+# Canonical alias map (extracted from normalize_persona_id so the
+# user layer can refuse ids that would shadow an alias — an alias
+# collision is a canonical collision).
+_ALIASES: Dict[str, str] = {
+    "ancient": "the_ancient",
+    "theancient": "the_ancient",
+    "the_ancients": "the_ancient",
+    "math": "mathelody",
+    "mathelody_apex": "mathelody",
+    "trufusion": "mathelody",
+    "manelody": "mathelody",
+    "trans": "translator",
+    "translate": "translator",
+    "quality": "della",
+    "gate": "della",
+    "plain": "mansplainer",
+    "explain": "mansplainer",
+    "executor": "dell",
+    "watch": "oracle",
+    "seer": "oracle",
+    "bimo": "bimo_core",
+    "fusion_body": "bimo_core",
+}
+
+# ---------------------------------------------------------------------------
+# User persona layer — row #155 PERSONAMATRIX (Ace ruling 2026-11-20
+# item 11): personamatrix is a user experimentation layer. Users may
+# create new personas on the existing BIMO/persona machinery.
+#
+# Authority law (unchanged): the canonical PERSONAS roster above is
+# the runtime authority for the built-in Psalm/persona pack and is
+# READ-ONLY at runtime — nothing in this layer mutates it. Custom
+# personas live in a UserPersonaLayer, resolve through the same
+# lookup functions (canonical wins: a custom id may never shadow a
+# canonical id or alias), and persist per owner through the Program
+# save (persist section "custom_personas", activated on load).
+#
+# Isolation law (Director CORRECTION REQUIRED 7069171691): a layer is
+# scoped to ONE owner/Program. Every Program owns its own layer;
+# Program surfaces (create/remove/lens/matrix/BIMO/persist load)
+# always address that layer, so two live Programs in one process can
+# never read, overwrite, or remove each other's custom personas.
+# The module-level functions keep working without a layer argument
+# against the process DEFAULT layer (CUSTOM_PERSONAS) — the surface
+# for single-program tools (REPL, vision, standalone BIMOBody); a
+# Program never writes the default layer.
+#
+# A persona is a SETTING — guidance, directives, abilities, limits,
+# preferred skins. Docking, fusing, or piloting a persona (built-in
+# or custom) confers NO authority: it cannot confirm Nursery
+# proposals or hold grants (cf. BIMOBody.effective_capabilities,
+# presentation-only by design).
+# ---------------------------------------------------------------------------
+
+_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,47}$")
+
+
+def _clean_str_list(value: Any, field_name: str):
+    """Return (list, None) for a non-empty list of non-empty strings,
+    else (None, refusal reason)."""
+    if not isinstance(value, (list, tuple)) or not value:
+        return None, f"{field_name} must be a non-empty list of strings"
+    out = []
+    for v in value:
+        if not isinstance(v, str) or not v.strip():
+            return None, f"{field_name} entries must be non-empty strings"
+        out.append(v.strip())
+    return out, None
+
+
+def _default_matrix(category: Optional[str]) -> Dict[str, int]:
+    """Placement for a persona: its category's axis, shell 1."""
+    cat = CATEGORIES.get(category) if isinstance(category, str) else None
+    axis = (cat or {}).get("axis") or (0, 0)
+    return {
+        "h": int(round(float(axis[0]))),
+        "v": int(round(float(axis[1]))),
+        "shell": 1,
+    }
+
+
+def validate_custom_persona(record: Any,
+                            persisted: bool = False) -> Optional[str]:
+    """Return a refusal reason, or None when the record is a lawful
+    user persona. Pure: never mutates anything.
+
+    ``persisted`` (Director CORRECTION_REQUIRED 7136802347): the
+    record comes from a saved file (the persist restore admission
+    path). A PRESENT matrix / prefer_skins field must then already
+    carry its lawful container type — a wrong-type value (an empty
+    list where matrix must be an object, an empty object where
+    prefer_skins must be a list, an explicit null) refuses instead
+    of passing through the ``or {}`` / ``or []`` coercions below:
+    on the persisted path those coercions let _normalize_record
+    substitute a default, and the next ordinary save erased the
+    recorded form durably. Absence stays legitimate, and valid
+    empty values ({} matrix, [] prefer_skins) pass. The standalone
+    create/activate contract (persisted=False) keeps its
+    intentionally permissive coercions unchanged."""
+    if not isinstance(record, dict):
+        return "persona record must be a mapping"
+    pid = record.get("id")
+    if not isinstance(pid, str) or not pid.strip():
+        return "persona id is required"
+    pid = pid.strip().lower()
+    if pid in PERSONAS:
+        return f"id {pid!r} collides with the canonical roster (read-only)"
+    if pid in _ALIASES:
+        return f"id {pid!r} collides with a canonical persona alias"
+    if not _ID_RE.match(pid):
+        return "persona id must be lowercase letters/digits/underscores"
+    if not isinstance(record.get("name"), str) or not record["name"].strip():
+        return "persona name is required"
+    category = record.get("category")
+    if not isinstance(category, str) or not category.strip():
+        return "persona category is required"
+    if category not in CATEGORIES:
+        return f"unknown category: {category!r}"
+    for f in ("role", "focus"):
+        if not isinstance(record.get(f), str) or not record[f].strip():
+            return f"{f} is required"
+    for f in ("directives", "abilities", "limits"):
+        _, reason = _clean_str_list(record.get(f), f)
+        if reason:
+            return reason
+    if persisted:
+        if "prefer_skins" in record and not isinstance(
+                record["prefer_skins"], (list, tuple)):
+            return "prefer_skins must be a list of strings"
+        if "matrix" in record and not isinstance(
+                record["matrix"], dict):
+            return "matrix must be a mapping {h, v, shell}"
+    skins = record.get("prefer_skins") or []
+    if not isinstance(skins, (list, tuple)) or any(
+        not isinstance(s, str) or not s.strip() for s in skins
+    ):
+        return "prefer_skins must be a list of strings"
+    slot = record.get("bimo_slot")
+    if slot is not None and slot not in BIMO_SLOTS:
+        return f"unknown bimo slot: {slot!r}"
+    m = record.get("matrix") or {}
+    if not isinstance(m, dict):
+        return "matrix must be a mapping {h, v, shell}"
+    base = _default_matrix(record.get("category"))
+    for k, lo, hi in (("h", -1, 1), ("v", -1, 1), ("shell", 0, 2)):
+        v = m.get(k, base[k])
+        if not isinstance(v, int) or isinstance(v, bool) or not (lo <= v <= hi):
+            return f"matrix {k} must be an int in [{lo}, {hi}]"
+    return None
+
+
+def _normalize_record(record: Dict[str, Any]) -> Dict[str, Any]:
+    """Fill cleaned lists + matrix defaults on a validated record."""
+    rec = dict(record)
+    rec["id"] = rec["id"].strip().lower()
+    for f in ("directives", "abilities", "limits"):
+        cleaned, _ = _clean_str_list(rec.get(f), f)
+        rec[f] = cleaned
+    rec["prefer_skins"] = [s.strip() for s in (rec.get("prefer_skins") or [])]
+    base = _default_matrix(rec.get("category"))
+    m = dict(rec.get("matrix") or {})
+    rec["matrix"] = {k: int(m.get(k, base[k])) for k in ("h", "v", "shell")}
+    rec["custom"] = True
+    rec["origin"] = "user"
+    return rec
+
+
+def _create_in(records: Dict[str, Dict[str, Any]],
+               name: Optional[str], category: Optional[str],
+               role: Optional[str], focus: Optional[str],
+               directives: Any, abilities: Any, limits: Any,
+               prefer_skins: Optional[Any] = None,
+               bimo_slot: Optional[str] = None,
+               matrix: Optional[Dict[str, Any]] = None,
+               emoji: str = "🧩",
+               color: str = "#888888") -> Dict[str, Any]:
+    """Create a user persona inside ONE layer's records dict."""
+    raw_id = ""
+    if isinstance(name, str):
+        raw_id = name.lower().replace(" ", "_").replace("-", "_").strip()
+    record = {
+        "id": raw_id,
+        "name": name.strip() if isinstance(name, str) else "",
+        "emoji": emoji or "🧩",
+        "category": category,
+        "role": role,
+        "focus": focus,
+        "directives": directives,
+        "abilities": abilities,
+        "limits": limits,
+        "prefer_skins": prefer_skins,
+        "bimo_slot": bimo_slot,
+        "matrix": matrix,
+        "color": color or "#888888",
+    }
+    reason = validate_custom_persona(record)
+    if reason:
+        return {"ok": False, "reason": reason}
+    if record["id"] in records:
+        return {"ok": False,
+                "reason": f"custom persona {record['id']!r} already exists — remove it first"}
+    rec = _normalize_record(record)
+    records[rec["id"]] = rec
+    return {"ok": True, "persona": dict(rec)}
+
+
+def _remove_from(records: Dict[str, Dict[str, Any]],
+                 name: Optional[str]) -> Dict[str, Any]:
+    """Remove a USER persona from ONE layer's records dict. Canonical
+    ids (and aliases) are refused — the roster is read-only."""
+    key = ""
+    if isinstance(name, str):
+        key = name.lower().replace(" ", "_").replace("-", "_").strip()
+    if key in PERSONAS or key in _ALIASES:
+        return {"ok": False,
+                "reason": "canonical roster is read-only"}
+    if key not in records:
+        return {"ok": False, "reason": f"unknown custom persona: {name}"}
+    del records[key]
+    return {"ok": True, "removed": key}
+
+
+class PersonaLoadError(Exception):
+    """Fail-closed: malformed persisted user-persona state is never
+    valid state. Raised by the persist restore path when the saved
+    custom-persona section cannot be honored as recorded — the load
+    refuses rather than presenting a silently emptied layer."""
+
+
+def _activate_into(records: Dict[str, Dict[str, Any]],
+                   recs: Any) -> Dict[str, Any]:
+    """Replace ONE layer's contents with validated records (the
+    Program load path). Mutates the dict in place. Invalid records
+    are skipped and reported — never half-applied, never silently
+    dropped without a count.
+
+    Staging: every record is validated and normalized into a fresh
+    dict BEFORE the layer is touched, and the swap is clear+update
+    only after the whole loop succeeds — a failure mid-loop (e.g.
+    inside normalization) leaves the prior layer fully intact,
+    never cleared-and-partial."""
+    staged: Dict[str, Dict[str, Any]] = {}
+    activated: List[str] = []
+    skipped: List[str] = []
+    for rec in recs or []:
+        if not isinstance(rec, dict):
+            skipped.append("<non-mapping>")
+            continue
+        reason = validate_custom_persona(rec)
+        if reason:
+            skipped.append(f"{rec.get('id')}: {reason}")
+            continue
+        norm = _normalize_record(rec)
+        staged[norm["id"]] = norm
+        activated.append(norm["id"])
+    records.clear()
+    records.update(staged)
+    return {"ok": True, "activated": activated, "skipped": skipped}
+
+
+class UserPersonaLayer:
+    """One scope's user-persona layer (row #155).
+
+    The canonical seam for owner isolation: each Program owns exactly
+    one layer, created with the Program and addressed by every
+    Program surface. Layers share nothing mutable — the canonical
+    PERSONAS roster stays the single read-only authority above all
+    of them, and no layer is a parallel registry: lookups resolve
+    canonical-first, then the addressed layer only.
+    """
+
+    def __init__(self) -> None:
+        self.records: Dict[str, Dict[str, Any]] = {}
+
+    def create(self, name: Optional[str], category: Optional[str],
+               role: Optional[str], focus: Optional[str],
+               directives: Any, abilities: Any, limits: Any,
+               prefer_skins: Optional[Any] = None,
+               bimo_slot: Optional[str] = None,
+               matrix: Optional[Dict[str, Any]] = None,
+               emoji: str = "🧩",
+               color: str = "#888888") -> Dict[str, Any]:
+        return _create_in(self.records, name, category, role, focus,
+                          directives, abilities, limits,
+                          prefer_skins=prefer_skins, bimo_slot=bimo_slot,
+                          matrix=matrix, emoji=emoji, color=color)
+
+    def remove(self, name: Optional[str]) -> Dict[str, Any]:
+        return _remove_from(self.records, name)
+
+    def activate(self, records: Any) -> Dict[str, Any]:
+        return _activate_into(self.records, records)
+
+    def all(self) -> List[Dict[str, Any]]:
+        return [dict(p) for p in self.records.values()]
+
+    def get(self, key: str) -> Optional[Dict[str, Any]]:
+        p = self.records.get(key)
+        return dict(p) if p else None
+
+
+# The process DEFAULT layer: module-level calls without a layer
+# argument address it (single-program tools — REPL, vision,
+# standalone BIMOBody). CUSTOM_PERSONAS is its records dict, kept as
+# the historical name for that default surface. Programs NEVER write
+# here; a Program's layer is its own UserPersonaLayer.
+_DEFAULT_LAYER = UserPersonaLayer()
+CUSTOM_PERSONAS: Dict[str, Dict[str, Any]] = _DEFAULT_LAYER.records
+
+
+def _resolve_layer(layer: Optional[UserPersonaLayer]) -> UserPersonaLayer:
+    return layer if layer is not None else _DEFAULT_LAYER
+
+
+def create_custom_persona(name: Optional[str], category: Optional[str],
+                          role: Optional[str], focus: Optional[str],
+                          directives: Any, abilities: Any, limits: Any,
+                          prefer_skins: Optional[Any] = None,
+                          bimo_slot: Optional[str] = None,
+                          matrix: Optional[Dict[str, Any]] = None,
+                          emoji: str = "🧩",
+                          color: str = "#888888",
+                          layer: Optional[UserPersonaLayer] = None
+                          ) -> Dict[str, Any]:
+    """Create a user persona in the experimentation layer.
+
+    The persona becomes resolvable/dockable immediately (same lookup
+    functions as the canonical roster) and is carried in the caller's
+    persisted records by the Program layer. Refusals: canonical id or
+    alias collision, unknown category/slot, missing role/focus, empty
+    directives/abilities/limits (every persona declares its fences),
+    duplicate custom id (remove first — no silent overwrite).
+
+    ``layer`` selects the owner scope; None addresses the process
+    default layer (single-program tools). Programs always pass their
+    own layer.
+    """
+    return _resolve_layer(layer).create(
+        name, category, role, focus, directives, abilities, limits,
+        prefer_skins=prefer_skins, bimo_slot=bimo_slot, matrix=matrix,
+        emoji=emoji, color=color)
+
+
+def remove_custom_persona(name: Optional[str],
+                          layer: Optional[UserPersonaLayer] = None
+                          ) -> Dict[str, Any]:
+    """Remove a USER persona from the experimentation layer. Canonical
+    ids (and aliases) are refused — the roster is read-only."""
+    return _resolve_layer(layer).remove(name)
+
+
+def activate_custom_personas(records: Any,
+                             layer: Optional[UserPersonaLayer] = None
+                             ) -> Dict[str, Any]:
+    """Replace a layer's contents with validated records (the Program
+    load path). Invalid records are skipped and reported — never
+    half-applied, never silently dropped without a count."""
+    return _resolve_layer(layer).activate(records)
+
+
+def custom_personas(layer: Optional[UserPersonaLayer] = None
+                    ) -> List[Dict[str, Any]]:
+    """Copies of a user layer (canonical roster excluded)."""
+    return _resolve_layer(layer).all()
+
+
+def all_personas(layer: Optional[UserPersonaLayer] = None
+                 ) -> List[Dict[str, Any]]:
+    """Canonical roster first (authority), then the user layer."""
+    return [dict(p) for p in PERSONAS.values()] + custom_personas(layer)
+
+
+def normalize_persona_id(name: Optional[str],
+                         layer: Optional[UserPersonaLayer] = None
+                         ) -> Optional[str]:
     if not name:
         return None
     key = name.lower().replace(" ", "_").replace("-", "_").strip()
-    aliases = {
-        "ancient": "the_ancient",
-        "theancient": "the_ancient",
-        "the_ancients": "the_ancient",
-        "math": "mathelody",
-        "mathelody_apex": "mathelody",
-        "trufusion": "mathelody",
-        "manelody": "mathelody",
-        "trans": "translator",
-        "translate": "translator",
-        "quality": "della",
-        "gate": "della",
-        "plain": "mansplainer",
-        "explain": "mansplainer",
-        "executor": "dell",
-        "watch": "oracle",
-        "seer": "oracle",
-        "bimo": "bimo_core",
-        "fusion_body": "bimo_core",
-    }
-    key = aliases.get(key, key)
-    return key if key in PERSONAS else None
+    key = _ALIASES.get(key, key)
+    if key in PERSONAS or key in _resolve_layer(layer).records:
+        return key
+    return None
 
 
-def list_personas(category: Optional[str] = None) -> List[Dict[str, Any]]:
-    out = [dict(p) for p in PERSONAS.values()]
+def list_personas(category: Optional[str] = None,
+                  layer: Optional[UserPersonaLayer] = None
+                  ) -> List[Dict[str, Any]]:
+    out = all_personas(layer)
     if category:
         cat = category.strip()
         out = [p for p in out if p.get("category") == cat or p.get("category", "").lower() == cat.lower()]
@@ -310,13 +669,20 @@ def list_categories() -> List[Dict[str, Any]]:
     return [dict(c) for c in CATEGORIES.values()]
 
 
-def get_persona(name: Optional[str]) -> Optional[Dict[str, Any]]:
-    key = normalize_persona_id(name)
-    return dict(PERSONAS[key]) if key else None
+def get_persona(name: Optional[str],
+                layer: Optional[UserPersonaLayer] = None
+                ) -> Optional[Dict[str, Any]]:
+    key = normalize_persona_id(name, layer=layer)
+    if not key:
+        return None
+    if key in PERSONAS:
+        return dict(PERSONAS[key])
+    return _resolve_layer(layer).get(key)
 
 
-def persona_guidance(name: Optional[str], context: str = "") -> List[str]:
-    p = get_persona(name)
+def persona_guidance(name: Optional[str], context: str = "",
+                     layer: Optional[UserPersonaLayer] = None) -> List[str]:
+    p = get_persona(name, layer=layer)
     if not p:
         names = " · ".join(sorted(PERSONAS.keys()))
         return [f"No active persona — use: persona <name>", f"All: {names}"]
@@ -335,10 +701,11 @@ def persona_guidance(name: Optional[str], context: str = "") -> List[str]:
     return lines
 
 
-def vision_lenses() -> Dict[str, Dict[str, Any]]:
+def vision_lenses(layer: Optional[UserPersonaLayer] = None
+                  ) -> Dict[str, Dict[str, Any]]:
     """Export lens table for vision.compute_vision (prefer_skins)."""
     out: Dict[str, Dict[str, Any]] = {}
-    for pid, p in PERSONAS.items():
+    for pid, p in {**PERSONAS, **_resolve_layer(layer).records}.items():
         out[pid] = {
             "emoji": p.get("emoji", ""),
             "prefer_skins": list(p.get("prefer_skins") or []),
@@ -355,10 +722,14 @@ def vision_lenses() -> Dict[str, Dict[str, Any]]:
 class PersonaMatrix:
     """How all personas sit on a shared matrix — category axes, not idea plane."""
     active: Optional[str] = None  # active persona id
+    # Owner scope for the user layer (None = process default layer).
+    # Bound by the owning Program; a runtime binding, never persisted.
+    layer: Optional[UserPersonaLayer] = field(default=None, repr=False,
+                                              compare=False)
 
     def cells(self) -> List[Dict[str, Any]]:
         cells = []
-        for p in PERSONAS.values():
+        for p in all_personas(self.layer):
             m = p.get("matrix") or {}
             cells.append({
                 "id": p["id"],
@@ -407,11 +778,13 @@ class PersonaMatrix:
         return lines
 
     def to_dict(self) -> Dict[str, Any]:
+        cells = self.cells()
         return {
             "active": self.active,
-            "cells": self.cells(),
+            "cells": cells,
             "categories": list_categories(),
-            "count": len(PERSONAS),
+            "count": len(cells),
+            "canonical_count": len(PERSONAS),
         }
 
 
@@ -428,6 +801,10 @@ class BIMOBody:
     active: bool = True
     pilot: str = "mathelody"  # default pilot persona
     mode: str = "docked"  # docked | fused | idle
+    # Owner scope for the user layer (None = process default layer).
+    # Bound by the owning Program; a runtime binding, never persisted.
+    layer: Optional[UserPersonaLayer] = field(default=None, repr=False,
+                                              compare=False)
 
     def __post_init__(self):
         if not self.slots:
@@ -437,12 +814,12 @@ class BIMOBody:
         slot = (slot or "").lower().strip()
         if slot not in BIMO_SLOTS:
             return {"ok": False, "reason": f"unknown slot: {slot}", "slots": list(BIMO_SLOTS)}
-        pid = normalize_persona_id(persona_id)
+        pid = normalize_persona_id(persona_id, layer=self.layer)
         if not pid:
             return {"ok": False, "reason": f"unknown persona: {persona_id}"}
         self.slots[slot] = pid
         self.mode = "docked"
-        return {"ok": True, "slot": slot, "persona": pid, "persona_meta": get_persona(pid)}
+        return {"ok": True, "slot": slot, "persona": pid, "persona_meta": get_persona(pid, layer=self.layer)}
 
     def undock(self, slot: str) -> Dict[str, Any]:
         slot = (slot or "").lower().strip()
@@ -466,7 +843,7 @@ class BIMOBody:
         return {"ok": True, "slots": dict(self.slots)}
 
     def set_pilot(self, persona_id: str) -> Dict[str, Any]:
-        pid = normalize_persona_id(persona_id)
+        pid = normalize_persona_id(persona_id, layer=self.layer)
         if not pid:
             return {"ok": False, "reason": f"unknown persona: {persona_id}"}
         self.pilot = pid
@@ -477,7 +854,7 @@ class BIMOBody:
         for slot, pid in self.slots.items():
             if not pid:
                 continue
-            p = get_persona(pid)
+            p = get_persona(pid, layer=self.layer)
             if p:
                 out.append({**p, "docked_slot": slot})
         return out
@@ -492,7 +869,7 @@ class BIMOBody:
             self.dock_defaults()
             docked = self.docked_personas()
         self.mode = "fused"
-        pilot = get_persona(self.pilot) or get_persona("mathelody")
+        pilot = get_persona(self.pilot, layer=self.layer) or get_persona("mathelody", layer=self.layer)
         directives: List[str] = []
         abilities: List[str] = []
         limits: List[str] = []
@@ -623,10 +1000,11 @@ class BIMOBody:
         return b
 
 
-def render_roster(active: Optional[str] = None) -> List[str]:
+def render_roster(active: Optional[str] = None,
+                  layer: Optional[UserPersonaLayer] = None) -> List[str]:
     lines = ["", "═══ PERSONA ROSTER ═══", ""]
     by_cat: Dict[str, List[Dict[str, Any]]] = {}
-    for p in PERSONAS.values():
+    for p in all_personas(layer):
         by_cat.setdefault(p["category"], []).append(p)
     for cat in CATEGORIES:
         members = by_cat.get(cat, [])
@@ -636,11 +1014,16 @@ def render_roster(active: Optional[str] = None) -> List[str]:
         lines.append(f"{cmeta['emoji']} {cat} — {cmeta['role']}")
         for p in members:
             status = "● ACTIVE" if p["id"] == active else "○ idle"
+            if p.get("custom"):
+                status += " · custom"
             lines.append(f"  {p['emoji']} {p['name']} — {status}")
             lines.append(f"     Role: {p['role']} | Focus: {p['focus']}")
             lines.append(f"     Slot: {p.get('bimo_slot')} | skins: {', '.join(p.get('prefer_skins') or ['(all)'])}")
         lines.append("")
-    lines.append(f"Total personas: {len(PERSONAS)} · categories: {len(CATEGORIES)}")
+    _n_custom = len(_resolve_layer(layer).records)
+    lines.append(f"Total personas: {len(PERSONAS) + _n_custom} "
+                 f"(canonical {len(PERSONAS)} · custom {_n_custom}) "
+                 f"· categories: {len(CATEGORIES)}")
     lines.append("Commands: persona <name> · personas · bimo · bimo dock · bimo fuse · matrix personas")
     return lines
 
@@ -656,7 +1039,7 @@ def smoke() -> bool:
     print(f"[{'PASS' if ok2 else 'FAIL'}] BIMO fuse threads={len(fused.get('threads') or [])}")
     m = PersonaMatrix(active="manny")
     cells = m.cells()
-    ok3 = len(cells) == len(PERSONAS) and any(c["active"] for c in cells)
+    ok3 = len(cells) == len(PERSONAS) + len(CUSTOM_PERSONAS) and any(c["active"] for c in cells)
     print(f"[{'PASS' if ok3 else 'FAIL'}] persona matrix cells={len(cells)}")
     ok4 = get_persona("Translator") is not None and get_persona("BIMO") is not None
     print(f"[{'PASS' if ok4 else 'FAIL'}] translator+bimo aliases")

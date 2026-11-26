@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 import json
+import math
 import os
 import sys
 
@@ -12,12 +13,29 @@ from form.mandell.language import bind, empty_language, parse_language
 from form.dell_matrix.plane import Perspective, Skin
 from form.dell_matrix.resonance import ResonanceState
 from form.dell_matrix.main_field import MainContribution, PullRecord
-from form.dell_matrix.harmonic_lattice import HarmonicLattice, OverlayMode, Perspective as LatPerspective
+from form.dell_matrix.harmonic_lattice import HarmonicLattice, OverlayMode, Perspective as LatPerspective, SnapModule
 from form.dell_matrix.perception import Form
 from form.avatar import Facing, Posture, Locomotion, Reach, Expression
 from form.open import Program, open_program
 from form.persist_core_ii import restore_core_ii
-from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION
+from form.persist import serialize, _path, _cp_path, _safe_owner, _STATE_DIR, VERSION, _finite_json_violation
+from form.dell_matrix.companion import _MAX_TRAIL as _COMPANION_MAX_TRAIL
+
+
+def _is_finite_number(v: Any) -> bool:
+    """True only for a finite int/float value.
+
+    math.isfinite raises OverflowError on an oversized int (a 1001-digit
+    integer token is valid JSON); such a value is not finite for any
+    writer in this program, so the overflow reads as not-finite here
+    instead of escaping as an untyped error.
+    """
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return False
+    try:
+        return math.isfinite(v)
+    except OverflowError:
+        return False
 
 
 class BindingLossSaveError(Exception):
@@ -215,6 +233,146 @@ def _restore_avatar(p: Program, data: Dict[str, Any]) -> None:
     p.face.custom_face = av.get("custom_face")
 
 
+# P0-R (Director 7085151190 item 2): lattice SnapModule registry format.
+# Lattice-local marker inside the lattice section (NOT an envelope
+# version bump): modules_format == 2 means `modules` is a list of
+# lossless records {id, kind, axis, index, meta, cells:[[h,v,f],...]}
+# whose coordinates reference the serialized lattice cells. Absence of
+# the marker is the legacy shape: the pre-fix writer emitted module IDs
+# only, so the records were never written.
+_LATTICE_MODULES_FORMAT = 2
+_LATTICE_MODULE_KEYS = frozenset(("id", "kind", "axis", "index", "meta", "cells"))
+
+
+def _stage_lattice_modules(raw: Dict[str, Any], owner: str):
+    """Validate the lattice modules field and return staged specs
+    [(id, kind, axis, index, meta, coords)] in file order.
+
+    Runs BEFORE the lattice is rebuilt and raises ProgramLoadError on
+    any violation; _load_impl builds a private Program and load never
+    writes, so a refusal swaps nothing and preserves the source bytes.
+
+    Legacy rule: with no format marker, an absent or empty modules
+    field is supported (empty registry). A NONEMPTY IDs-only list is
+    IRRECOVERABLE -- the payloads were never written -- so it fails
+    closed here; IDs are never dressed up as empty modules and no
+    facts are reconstructed from geometry.
+
+    Presence pin (Director CORRECTION_REQUIRED 7166217199): the
+    modules field itself is presence-checked, exactly like the format
+    marker below. A PRESENT null modules field is NOT an absent one:
+    the lawful legacy shapes are only a missing field or an empty
+    list, so a present null refuses typed here instead of loading as
+    an empty registry that a later save would rewrite as fact.
+
+    Marker pin (Director REVIEW 7137053864): legacy treatment keys on
+    the marker being ABSENT from the record. A PRESENT marker --
+    including an explicit null -- is never legacy; it falls through
+    to the format check below and refuses typed when it is not the
+    supported format.
+    """
+    mods = raw.get("modules")
+    if "modules_format" not in raw:
+        if "modules" in raw and mods is None:
+            raise ProgramLoadError(
+                "lattice modules field is present but null (records "
+                "without the modules_format marker): refusing load "
+                "rather than treating a present null as an absent "
+                "field or an empty registry")
+        if mods is None or mods == []:
+            return []
+        if isinstance(mods, list) and all(isinstance(m, str) for m in mods):
+            raise ProgramLoadError(
+                "lattice modules field is a legacy IDs-only list: the module "
+                "records were never written and are irrecoverable; refusing "
+                "load rather than fabricating modules from IDs")
+        raise ProgramLoadError(
+            "lattice modules field is malformed (records without the "
+            "modules_format marker): refusing load")
+    fmt = raw["modules_format"]
+    if isinstance(fmt, bool) or not isinstance(fmt, int) or fmt != _LATTICE_MODULES_FORMAT:
+        raise ProgramLoadError(
+            f"lattice modules_format {fmt!r} is not supported "
+            f"(current {_LATTICE_MODULES_FORMAT}): refusing load")
+    if not isinstance(mods, list):
+        raise ProgramLoadError(
+            "lattice modules field must be a list of module records "
+            "under modules_format 2: refusing load")
+    cells_raw = raw.get("cells") or {}
+    if not isinstance(cells_raw, dict):
+        raise ProgramLoadError("lattice cells field is not an object: refusing load")
+    seen_ids = set()
+    claimed: Dict[Any, str] = {}
+    staged = []
+    for i, item in enumerate(mods):
+        if not isinstance(item, dict):
+            raise ProgramLoadError(
+                f"lattice module record #{i} is not an object: refusing load")
+        if "owner" in item and item["owner"] != owner:
+            raise ProgramLoadError(
+                f"lattice module record #{i} carries foreign owner "
+                f"{item['owner']!r} (file owner {owner!r}): refusing load")
+        keys = set(item.keys())
+        if keys != _LATTICE_MODULE_KEYS:
+            raise ProgramLoadError(
+                f"lattice module record #{i} has inconsistent keys "
+                f"{sorted(keys)} (expected {sorted(_LATTICE_MODULE_KEYS)}): refusing load")
+        mid = item["id"]
+        if not isinstance(mid, str) or not mid:
+            raise ProgramLoadError(
+                f"lattice module record #{i} has invalid id {mid!r}: refusing load")
+        if mid in seen_ids:
+            raise ProgramLoadError(
+                f"duplicate lattice module id {mid!r}: refusing load")
+        seen_ids.add(mid)
+        kind, axis, index, meta = item["kind"], item["axis"], item["index"], item["meta"]
+        if not isinstance(kind, str) or not kind:
+            raise ProgramLoadError(
+                f"lattice module {mid!r} has invalid kind {kind!r}: refusing load")
+        if not isinstance(axis, str) or not axis:
+            raise ProgramLoadError(
+                f"lattice module {mid!r} has invalid axis {axis!r}: refusing load")
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise ProgramLoadError(
+                f"lattice module {mid!r} has invalid index {index!r}: refusing load")
+        if not isinstance(meta, dict):
+            raise ProgramLoadError(
+                f"lattice module {mid!r} meta is not an object: refusing load")
+        violation = _finite_json_violation(meta)
+        if violation is not None:
+            raise ProgramLoadError(
+                f"lattice module {mid!r} meta is not finite JSON "
+                f"({violation}): refusing load")
+        cells_field = item["cells"]
+        if not isinstance(cells_field, list):
+            raise ProgramLoadError(
+                f"lattice module {mid!r} cells is not a coordinate list: refusing load")
+        coords = []
+        local = set()
+        for c in cells_field:
+            if (not isinstance(c, (list, tuple)) or len(c) != 3
+                    or any(isinstance(x, bool) or not isinstance(x, int) for x in c)):
+                raise ProgramLoadError(
+                    f"lattice module {mid!r} has invalid cell coordinate {c!r}: refusing load")
+            coord = (c[0], c[1], c[2])
+            if coord in local:
+                raise ProgramLoadError(
+                    f"lattice module {mid!r} lists cell {coord} twice: refusing load")
+            local.add(coord)
+            if f"{coord[0]},{coord[1]},{coord[2]}" not in cells_raw:
+                raise ProgramLoadError(
+                    f"lattice module {mid!r} references cell {coord} absent "
+                    "from the lattice cells: refusing load")
+            if coord in claimed:
+                raise ProgramLoadError(
+                    f"lattice modules {claimed[coord]!r} and {mid!r} overlap "
+                    f"at cell {coord}: refusing load")
+            claimed[coord] = mid
+            coords.append(coord)
+        staged.append((mid, kind, axis, index, meta, coords))
+    return staged
+
+
 def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
     # Persistence-integrity (Part I SAVE/JOURNAL; Director clearance
     # PR #505 comment 7076723491): the lattice is user-authored content.
@@ -225,18 +383,26 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
     # the candidate is staged privately and swapped only after complete
     # validation, so one corrupt value can never wipe the owner's
     # authored lattice or be made permanent by a later save.
+    #
+    # Composition (PR #519 x PR #526, Uni, 2026-11-25): the staged
+    # fail-closed cell restore above is main's body; the modules
+    # registry staging and binding below is PR #519's P0-R repair,
+    # retargeted onto the staged lattice so both contracts hold at
+    # once — a malformed registry refuses the whole load typed, and a
+    # module referencing a cell that did not survive the staged cell
+    # restore refuses before the swap. This discharges the former
+    # KNOWN RESIDUAL noted against the modules field.
     if "lattice" not in data:
         return
-    # KNOWN RESIDUAL (cited per Director 7079022510; NOT repaired
-    # here): the serialized "modules" field carries SnapModule IDs
-    # only and this restore does not rebuild the snap registry — a
-    # clean save/load loses it. Separately scoped placement:
-    # hidden_files/MODULES_REGISTRY_RESIDUAL_2026-11-22.md.
     raw = data["lattice"]
     if not isinstance(raw, dict):
         raise ProgramLoadError(
             "lattice section is not an object: "
             f"{type(raw).__name__}; refusing load")
+    # P0-R: validate the modules field STAGED, before the cell
+    # restore — a malformed registry refuses the whole load typed
+    # instead of being swallowed into a default lattice.
+    staged_modules = _stage_lattice_modules(raw, p.owner)
 
     def _int_field(name: str, default: int) -> int:
         value = raw.get(name, default)
@@ -318,6 +484,22 @@ def _restore_lattice(p: Program, data: Dict[str, Any]) -> None:
             raise ProgramLoadError(
                 f"lattice cell {key!r} failed to restore: {exc}; "
                 "refusing load")
+    # Bind staged modules to the staged lattice cells by coordinate
+    # (Option B). A referenced coordinate that did not survive the
+    # staged cell restore refuses the load rather than binding a
+    # partial membership; the swap below has not happened yet, so the
+    # refusal swaps nothing.
+    for mid, kind, axis, index, meta, coords_list in staged_modules:
+        bound = {}
+        for coord in coords_list:
+            cell = staged.cells.get(coord)
+            if cell is None:
+                raise ProgramLoadError(
+                    f"lattice module {mid!r} references cell {coord} that did "
+                    "not survive lattice restore: refusing load")
+            bound[coord] = cell
+        staged.modules[mid] = SnapModule(
+            id=mid, kind=kind, axis=axis, index=index, cells=bound, meta=dict(meta))
     p.lattice = staged
 
 
@@ -384,9 +566,14 @@ def _validate_program_data(data: Any, owner: str) -> str:
     if not isinstance(plane, dict) or not isinstance(plane.get("units", {}), dict):
         raise ProgramLoadError("program data missing or invalid: 'plane' (with 'units') must be an object")
     file_owner = data.get("owner")
-    if file_owner is not None and (not isinstance(file_owner, str) or not file_owner):
-        raise ProgramLoadError("program data invalid: 'owner' must be a non-empty string")
-    return file_owner or owner
+    # Critic F7 (Director 7185483691): a PRESENT owner field must
+    # be a string; the empty string is a lawful owner (the
+    # program door accepts it and serialize writes it), so only a
+    # non-string value is invalid — None (absent) alone falls
+    # back to the requested owner.
+    if file_owner is not None and not isinstance(file_owner, str):
+        raise ProgramLoadError("program data invalid: 'owner' must be a string")
+    return file_owner if file_owner is not None else owner
 
 
 def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = True) -> Program:
@@ -515,6 +702,75 @@ def _load_impl(owner: str, path: str, nursery, activate: bool) -> Program:
     return p
 
 
+def _duo_target_generation(data: Dict[str, Any]) -> int:
+    """The saved duo_generation counter, type-checked (MEDIUM-four A).
+
+    The writer (form/persist.py) always emits an int. Anything else
+    present under the key is malformed and refuses typed instead of
+    crashing int() with an untyped error.
+    """
+    raw = data.get("duo_generation", 0)
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        raise ProgramLoadError(
+            f"program file 'duo_generation' is not an integer (got {raw!r}): refusing load")
+    return raw
+
+
+def _validate_duo_ledger_section(raw: Any) -> List[Dict[str, Any]]:
+    """Stage-validate a PRESENT duo_ledger section (MEDIUM-four A).
+
+    Returns the staged entry dicts in file order; raises ProgramLoadError
+    before any state is touched. The writer emits a list of
+    {gen:int, detail:str, ts:str, meta:dict} entries with gen >= 1 and
+    strictly increasing gens (generation gaps are lawful — the counter
+    can advance without an entry surviving — duplicates and regressions
+    are not). A malformed entry refuses the whole load: no silent entry
+    drops, no per-field emptying. Extra unknown keys on an entry are
+    forward compatibility, not refusal.
+    """
+    if not isinstance(raw, list):
+        raise ProgramLoadError(
+            f"program file 'duo_ledger' section is not a list "
+            f"(got {type(raw).__name__}): refusing load")
+    staged: List[Dict[str, Any]] = []
+    last = 0
+    for i, e in enumerate(raw):
+        if not isinstance(e, dict):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} is not an object "
+                f"(got {type(e).__name__}): refusing load")
+        gen = e.get("gen")
+        if isinstance(gen, bool) or not isinstance(gen, int):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has non-integer gen {gen!r}: refusing load")
+        if gen < 1:
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has gen {gen} < 1 "
+                f"(writer generations start at 1): refusing load")
+        if gen <= last:
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has gen {gen} not greater than "
+                f"the previous entry's gen {last} (duplicate or non-monotonic): refusing load")
+        detail = e.get("detail", "")
+        if not isinstance(detail, str):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has non-string detail "
+                f"(got {type(detail).__name__}): refusing load")
+        ts = e.get("ts", "")
+        if not isinstance(ts, str):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has non-string ts "
+                f"(got {type(ts).__name__}): refusing load")
+        meta = e.get("meta", {})
+        if not isinstance(meta, dict):
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' entry {i} has non-object meta "
+                f"(got {type(meta).__name__}): refusing load")
+        staged.append({"gen": gen, "detail": detail, "ts": ts, "meta": dict(meta)})
+        last = gen
+    return staged
+
+
 def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> None:
     """Restore the DuoBeta growth ledger faithfully (DCC-I).
 
@@ -522,38 +778,47 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
     are restored exactly, in order, with no synthetic entries. Legacy envelopes
     (no duo_ledger) restore the generation count with a single honest marker
     entry instead of fabricating per-generation history.
+
+    MEDIUM-four A: a PRESENT duo_ledger section is stage-validated whole
+    (_validate_duo_ledger_section) and any malformed entry refuses the load
+    with ProgramLoadError before the ledger is touched — the former
+    skip-and-continue restore silently dropped malformed entries and
+    emptied non-dict meta, and the next save made the loss permanent.
+
+    Present-but-empty with a positive generation is malformed, not legacy:
+    the writer pairs every generation increment with exactly one ledger
+    append (DuoBeta.evolve; duobeta_learn._append_learn_entry) and never
+    removes entries, so the serializer cannot emit it. It refuses typed
+    instead of receiving the legacy marker, which is for ABSENT keys only
+    (Director CORRECTION REQUIRED 7083412844).
     """
     from datetime import datetime, timezone
     from form.duobeta.growth import GrowthEntry
+
+    # Stage first: validation raises before any mutation below.
+    staged: List[Dict[str, Any]] = []
+    if "duo_ledger" in data:
+        staged = _validate_duo_ledger_section(data["duo_ledger"])
+        if not staged and target_gen > 0:
+            raise ProgramLoadError(
+                f"program file 'duo_ledger' section is present but empty while "
+                f"'duo_generation' is {target_gen} (the writer pairs every "
+                f"generation with a ledger entry): refusing load")
+    clean = [GrowthEntry(
+        gen=s["gen"],
+        # R26: detail restored WHOLE (former [:120] re-cut
+        # at load any whole entry written by repaired code).
+        detail=s["detail"],
+        ts=s["ts"],
+        # DBEL-I: restore learning metadata (additive; {} for legacy).
+        meta=s["meta"],
+    ) for s in staged]
 
     # The fresh Program from open_program() already carries one startup entry
     # ("Open"); the saved ledger is the truth, so reset before restoring.
     p.duo.ledger.clear()
     p.duo.generation = 0
 
-    clean: List[GrowthEntry] = []
-    raw = data.get("duo_ledger")
-    if isinstance(raw, list):
-        last = 0
-        for e in raw:
-            if not isinstance(e, dict):
-                continue
-            try:
-                gen = int(e.get("gen", 0))
-            except (TypeError, ValueError):
-                continue
-            if gen <= last:
-                continue
-            clean.append(GrowthEntry(
-                gen=gen,
-                # R26: detail restored WHOLE (former [:120] re-cut
-                # at load any whole entry written by repaired code).
-                detail=str(e.get("detail", "")),
-                ts=str(e.get("ts", "")),
-                # DBEL-I: restore learning metadata (additive; {} for legacy).
-                meta=dict(e.get("meta") or {}) if isinstance(e.get("meta"), dict) else {},
-            ))
-            last = gen
     if clean:
         p.duo.ledger.extend(clean)
         p.duo.generation = max(target_gen, clean[-1].gen)
@@ -564,6 +829,302 @@ def _restore_duo_ledger(p: Program, data: Dict[str, Any], target_gen: int) -> No
             ts=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         ))
         p.duo.generation = target_gen
+
+
+def _admit_custom_personas(section: List[Any]) -> None:
+    """Scope A restore admission (Director §5 ruling 7079370876).
+
+    A PRESENT custom_personas list is admitted only if EVERY record
+    is a mapping passing validate_custom_persona AND the normalized
+    ids (same strip().lower() as _normalize_record) are unique.
+    Otherwise PersonaLoadError naming the record index / id and the
+    reason — raised BEFORE activate_custom_personas or
+    _bind_persona_layer run, so a refusal mutates nothing: not the
+    input list, not the bound Program, not the source file, not the
+    default global persona layer, not any other owner's state.
+
+    Why refusal, not the previous skip-and-report: every saved
+    custom_personas record is user-authored. The skip policy dropped
+    a skipped record from user_personas, so the next ordinary save
+    destroyed its original bytes durably (isolation evidence
+    PR505_ISOLATION_EVIDENCE_2026-11-22 §4(1)), and duplicate
+    normalized ids silently overwrote last-write-wins (§4(2)). The
+    standalone activate_custom_personas skip contract is unchanged
+    for its other callers — this gate localizes to the persist
+    restore path only. No quarantine field is introduced (forbidden
+    this circuit: a downgraded v7 writer could silently delete an
+    unknown persisted field on ordinary save).
+
+    Admission validates with persisted=True (Director
+    CORRECTION_REQUIRED 7136802347): a PRESENT matrix /
+    prefer_skins field must carry its lawful container type as
+    recorded — the validator's permissive ``or {}`` / ``or []``
+    coercions are for the standalone contract only, since on this
+    path a coerced record is normalized into user_personas and
+    the next ordinary save erases the original form."""
+    from form.dell_matrix.personas import (
+        PersonaLoadError, validate_custom_persona)
+    seen: Dict[str, int] = {}
+    for index, record in enumerate(section):
+        if not isinstance(record, dict):
+            raise PersonaLoadError(
+                f"custom_personas record {index}: "
+                "persona record must be a mapping")
+        reason = validate_custom_persona(record, persisted=True)
+        if reason:
+            raise PersonaLoadError(
+                f"custom_personas record {index} "
+                f"(id {record.get('id')!r}): {reason}")
+        norm_id = record["id"].strip().lower()
+        if norm_id in seen:
+            raise PersonaLoadError(
+                f"custom_personas record {index} "
+                f"(id {record.get('id')!r}): duplicate normalized id "
+                f"{norm_id!r} (first at record {seen[norm_id]})")
+        seen[norm_id] = index
+
+
+def _validate_companion_section(raw: Any) -> None:
+    """Stage-validate a PRESENT companion section (MEDIUM-four B).
+
+    Raises ProgramLoadError before any state is touched. The writer
+    (AICompanion.to_dict) emits a dict of string fields, a 2-number pos,
+    and a trail of 2-number points. Any field failing that shape —
+    wrong container, non-string scalar in a string field, a bool or
+    nonfinite or non-numeric coordinate, a truncated or extra-coordinate
+    pos, one malformed trail point, a trail longer than the writer cap
+    — refuses the whole load: the former restore wrapped
+    from_dict in a blanket except/pass, so a single bad trail point
+    silently reset the companion's entire continuity state (identity,
+    position, mode, full trail) to the constructor default. Missing
+    fields keep from_dict's per-field defaults; extra unknown keys are
+    forward compatibility, not refusal; the derived z key is ignored.
+    A field PRESENT with an explicit null is not missing (Director
+    CORRECTION_REQUIRED 7136700328): the writer never emits null for
+    any companion field, so a present null refuses typed instead of
+    receiving from_dict's default substitution (pos -> [2, 1], a
+    string field -> its default, trail -> []).
+    """
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'companion' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    for field in ("name", "label", "facing", "mode", "doing", "last_action"):
+        if field not in raw:
+            continue
+        v = raw[field]
+        if not isinstance(v, str):
+            raise ProgramLoadError(
+                f"program file 'companion' field {field!r} is not a string "
+                f"(got {type(v).__name__}): refusing load")
+
+    def _coord(v: Any, where: str) -> None:
+        if not _is_finite_number(v):
+            raise ProgramLoadError(
+                f"program file 'companion' {where} is not a finite number "
+                f"(got {v!r}): refusing load")
+
+    def _point(pt: Any, where: str) -> None:
+        if not isinstance(pt, (list, tuple)) or len(pt) != 2:
+            raise ProgramLoadError(
+                f"program file 'companion' {where} is not a 2-number point: refusing load")
+        _coord(pt[0], where)
+        _coord(pt[1], where)
+
+    if "pos" in raw:
+        _point(raw["pos"], "'pos'")
+    if "trail" in raw:
+        trail = raw["trail"]
+        if not isinstance(trail, list):
+            raise ProgramLoadError(
+                f"program file 'companion' field 'trail' is not a list "
+                f"(got {type(trail).__name__}): refusing load")
+        if len(trail) > _COMPANION_MAX_TRAIL:
+            raise ProgramLoadError(
+                f"program file 'companion' field 'trail' holds "
+                f"{len(trail)} points, more than the writer ever emits "
+                f"({_COMPANION_MAX_TRAIL}): refusing load")
+        for i, pt in enumerate(trail):
+            _point(pt, f"'trail' point {i}")
+
+
+def _validate_self_knowledge_section(raw: Any) -> None:
+    """Stage-validate a PRESENT self_knowledge section (MEDIUM-four C).
+
+    Raises ProgramLoadError before any state is touched. The writer
+    (SelfKnowledge.to_dict) emits mastery as a dict of floats in
+    [0, 1], the counters probes/hits/generations_seen as non-negative
+    ints with hits <= probes, and the three inventories as lists of
+    strings. Anything failing that shape refuses the whole load: the
+    former restore wrapped from_dict in a blanket except/pass, so one
+    non-numeric mastery value silently blanked the entire self-model,
+    and list() on a string inventory silently rewrote it into single
+    characters (SK-E corruption). The derived keys (hit_rate,
+    ledger_len, avg_mastery) are serializer-computed and stay ignored
+    — recomputed from the restored fields, never trusted, never
+    validated. The dataclass fields last_reflect/ledger are NOT
+    serialized (ledger survives only as its length); that asymmetry is
+    intended nonpersistence, not corruption, and is left untouched.
+    A field PRESENT with an explicit null is not missing (Director
+    CORRECTION_REQUIRED 7136700328): the writer never emits null for
+    mastery, the counters, or the inventories, so a present null
+    refuses typed instead of receiving from_dict's default
+    substitution ({} / 0 / []). The derived keys stay exempt: they
+    are never read on restore, so a null there substitutes nothing.
+    """
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'self_knowledge' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    if "mastery" in raw:
+        mastery = raw["mastery"]
+        if not isinstance(mastery, dict):
+            raise ProgramLoadError(
+                f"program file 'self_knowledge' field 'mastery' is not an object "
+                f"(got {type(mastery).__name__}): refusing load")
+        for k, v in mastery.items():
+            if not _is_finite_number(v) or not (0.0 <= v <= 1.0):
+                raise ProgramLoadError(
+                    f"program file 'self_knowledge' mastery[{k!r}] is not a "
+                    f"finite number in [0, 1] (got {v!r}): refusing load")
+    counters: Dict[str, int] = {}
+    for field in ("probes", "hits", "generations_seen"):
+        if field not in raw:
+            counters[field] = 0
+            continue
+        v = raw[field]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise ProgramLoadError(
+                f"program file 'self_knowledge' field {field!r} is not a "
+                f"non-negative integer (got {v!r}): refusing load")
+        counters[field] = v
+    if counters["hits"] > counters["probes"]:
+        raise ProgramLoadError(
+            f"program file 'self_knowledge' hits ({counters['hits']}) exceeds "
+            f"probes ({counters['probes']}): refusing load")
+    for field in ("known_matrices", "known_snaps", "gaps_closed"):
+        if field not in raw:
+            continue
+        v = raw[field]
+        if not isinstance(v, list):
+            raise ProgramLoadError(
+                f"program file 'self_knowledge' field {field!r} is not a list "
+                f"(got {type(v).__name__}): refusing load")
+        for i, item in enumerate(v):
+            if not isinstance(item, str):
+                raise ProgramLoadError(
+                    f"program file 'self_knowledge' field {field!r} entry {i} "
+                    f"is not a string (got {type(item).__name__}): refusing load")
+
+
+def _validate_bimo_section(raw: Any) -> None:
+    """Stage-validate a PRESENT bimo section (MEDIUM-four D).
+
+    Raises ProgramLoadError before any state is touched. The writer
+    (BIMOBody.to_dict) emits slots as a dict over the canonical
+    BIMO_SLOTS roster with persona-id-or-None values, active as a
+    bool, and pilot/mode as strings. An unknown slot key is a
+    malformed present entry and refuses — the former restore silently
+    FILTERED unknown keys, so a renamed or newer-version slot
+    assignment vanished with no report — and a non-string slot value
+    or pilot is type confusion the writer cannot produce. Extra
+    unknown TOP-LEVEL keys are forward compatibility, not refusal.
+    A field PRESENT with an explicit null is not missing (Director
+    CORRECTION_REQUIRED 7136700328): the writer emits slots as an
+    object, active as a bool, and pilot/mode as strings, so a present
+    null in any of them refuses typed instead of receiving
+    from_dict's default substitution (active -> false). Null remains
+    lawful exactly where the writer emits it: a slot VALUE (an
+    undocked slot), which still loads whole.
+    """
+    from form.dell_matrix.personas import BIMO_SLOTS
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'bimo' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    if "slots" in raw:
+        slots = raw["slots"]
+        if not isinstance(slots, dict):
+            raise ProgramLoadError(
+                f"program file 'bimo' field 'slots' is not an object "
+                f"(got {type(slots).__name__}): refusing load")
+        for slot, pid in slots.items():
+            if slot not in BIMO_SLOTS:
+                raise ProgramLoadError(
+                    f"program file 'bimo' slots key {slot!r} is not a canonical "
+                    f"BIMO slot: refusing load")
+            if pid is not None and not isinstance(pid, str):
+                raise ProgramLoadError(
+                    f"program file 'bimo' slot {slot!r} value is not a persona "
+                    f"id string or null (got {type(pid).__name__}): refusing load")
+    if "active" in raw:
+        active = raw["active"]
+        if not isinstance(active, bool):
+            raise ProgramLoadError(
+                f"program file 'bimo' field 'active' is not a boolean "
+                f"(got {type(active).__name__}): refusing load")
+    for field in ("pilot", "mode"):
+        if field not in raw:
+            continue
+        v = raw[field]
+        if not isinstance(v, str):
+            raise ProgramLoadError(
+                f"program file 'bimo' field {field!r} is not a string "
+                f"(got {type(v).__name__}): refusing load")
+
+
+_LIFECYCLE_MISSING = object()  # sentinel: section absent != section null
+
+
+def _validate_lifecycle_section(raw: Any) -> Dict[str, Dict[str, Any]]:
+    """Stage the TPP-I lifecycle presence section, fail-closed.
+
+    Critic Finding 6 repair (Director disposition 7180713277). The
+    writer (form/persist.py) always emits a dict of dicts. Lawful
+    legacy ABSENCE (section key missing) yields an empty mapping —
+    the documented legacy treatment, unchanged. Any PRESENT malformed
+    shape raises ProgramLoadError before binding:
+
+    - section explicitly null or not a dict;
+    - an entry that is null or not a dict (the previous restore
+      silently DROPPED such entries via an isinstance filter, which
+      flipped the unit to participating via the legacy-absence
+      fallback and let the next re-save erase the record entirely).
+
+    Presence VALUES are deliberately NOT policed here: the settled
+    absence-matrix contract (form/mandell/absence_matrix_test.py,
+    test_restart_real_shapes) persists presence=None through the
+    real writer and requires the record to LOAD, be preserved, and
+    be excluded by the consumer verdicts in
+    canonical_lifecycle._presence_state (malformed presence). Shape
+    malformation refuses at this door; value malformation is the
+    consumer layer's family.
+
+    Entry keys are normalized with str(k), exactly as the previous
+    restore did for well-formed entries.
+    """
+    if raw is _LIFECYCLE_MISSING:
+        return {}
+    if raw is None:
+        raise ProgramLoadError(
+            "program file 'lifecycle' section is explicitly null: "
+            "refusing load")
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'lifecycle' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    staged: Dict[str, Dict[str, Any]] = {}
+    for k, v in raw.items():
+        if v is None:
+            raise ProgramLoadError(
+                f"program file 'lifecycle' entry {k!r} is explicitly "
+                f"null: refusing load")
+        if not isinstance(v, dict):
+            raise ProgramLoadError(
+                f"program file 'lifecycle' entry {k!r} is not an "
+                f"object (got {type(v).__name__}): refusing load")
+        staged[str(k)] = dict(v)
+    return staged
 
 
 def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program:
@@ -644,28 +1205,41 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     p.main.pulls = []
     for pr in data.get("main", {}).get("pulls", []):
         p.main.pulls.append(PullRecord(unit_id=pr.get("unit_id", ""), tag=pr.get("tag", ""), weight=float(pr.get("weight", 0)), ts=pr.get("ts", "")))
-    target_gen = int(data.get("duo_generation", 0))
+    target_gen = _duo_target_generation(data)
     _restore_duo_ledger(p, data, target_gen)
     _restore_avatar(p, data)
     # Nursery decisions are NOT restored from the serialized "nursery" field (kept in the file format for
     # back-compat only). p.nursery is the owner's live nursery file loaded by Program; restore never
     # creates pending/confirmed/rejected transitions and never writes any nursery file.
     _restore_lattice(p, data)
-    try:
-        from form.dell_matrix.companion import AICompanion
-        p.companion = AICompanion.from_dict(data.get("companion") or {})
-    except Exception:
-        pass
+    # MEDIUM-four B: a PRESENT companion section is stage-validated whole
+    # (_validate_companion_section) and refuses typed before the swap;
+    # the former blanket except/pass silently substituted the constructor
+    # default for the whole section on any single malformed field. An
+    # ABSENT section keeps the documented constructor default.
+    from form.dell_matrix.companion import AICompanion
+    if "companion" in data:
+        _validate_companion_section(data["companion"])
+        p.companion = AICompanion.from_dict(data["companion"])
+    else:
+        p.companion = AICompanion.from_dict({})
     try:
         from form.dell_matrix.inspire_pack import InspireState
         p.inspire = InspireState.from_dict(data.get("inspire") or {})
     except Exception:
         pass
-    try:
-        from form.dell_matrix.self_model import SelfKnowledge
-        p.self_knowledge = SelfKnowledge.from_dict(data.get("self_knowledge") or {})
-    except Exception:
-        pass
+    # MEDIUM-four C: a PRESENT self_knowledge section is stage-validated
+    # whole (_validate_self_knowledge_section) and refuses typed before
+    # the swap; the former blanket except/pass silently blanked the
+    # whole self-model on any single bad scalar, and list() on a string
+    # inventory silently character-split it. An ABSENT section keeps
+    # the documented blank model.
+    from form.dell_matrix.self_model import SelfKnowledge
+    if "self_knowledge" in data:
+        _validate_self_knowledge_section(data["self_knowledge"])
+        p.self_knowledge = SelfKnowledge.from_dict(data["self_knowledge"])
+    else:
+        p.self_knowledge = SelfKnowledge.from_dict({})
     ux = data.get("ux") or {}
     if ux:
         try:
@@ -710,12 +1284,83 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         raise
     except Exception as exc:
         raise SpatialLoadError(f"spatial restore failed: {exc}")
-    try:
-        from form.dell_matrix.personas import BIMOBody, PersonaMatrix
-        p.bimo = BIMOBody.from_dict(data.get("bimo") or {})
-        p.persona_matrix = PersonaMatrix(active=getattr(p, "persona_lens", None))
-    except Exception:
-        pass
+    # MEDIUM-four D: BIMO and PersonaMatrix are staged SEPARATELY — the
+    # former single try/except-pass coupled them, so one malformed bimo
+    # section silently dropped BOTH the dock arrangement and the
+    # PersonaMatrix rebuild (persona_matrix.active lost). A PRESENT
+    # bimo section is stage-validated whole (_validate_bimo_section)
+    # and refuses typed before any bound state mutates; the matrix
+    # rebuild from the owner's persona lens is its own step with its
+    # own failure domain and proceeds independently of the bimo
+    # section's presence. An ABSENT bimo section keeps the default body.
+    from form.dell_matrix.personas import BIMOBody, PersonaMatrix
+    if "bimo" in data:
+        _validate_bimo_section(data["bimo"])
+        p.bimo = BIMOBody.from_dict(data["bimo"])
+    else:
+        p.bimo = BIMOBody.from_dict({})
+    p.persona_matrix = PersonaMatrix(active=getattr(p, "persona_lens", None))
+    # Row #155 PERSONAMATRIX: restore the user persona layer into the
+    # loaded program's OWN layer (owner-scoped, Director 7069171691 —
+    # never the module default layer, so loading owner B cannot clear
+    # or expose owner A's personas). Absent section = legacy (no user
+    # personas) — but the replaced surfaces are STILL re-bound to the
+    # program's own layer in that case (the else branch below; Critic
+    # Finding 1, Director ruling 7180708590). FAIL CLOSED, like the
+    # spatial / agent-local sections above (except-pass finding
+    # 7075379118): a present-but-malformed
+    # section (not a list) or any activation / re-bind failure refuses
+    # the load with PersonaLoadError — never a silent empty layer.
+    # Scope A admission (_admit_custom_personas, Director 7079370876)
+    # runs BEFORE activation: every record of a present list must be
+    # lawful with a unique normalized id, or the load refuses with
+    # the file untouched — a malformed or duplicate user-authored
+    # record is never skipped-and-dropped (its bytes would be
+    # destroyed by the next save) and never silently overwritten.
+    # Admitted records all activate, so the report that LANDS on the
+    # loaded program (p.persona_restore_report) accounts for every
+    # record exactly once and user_personas mirrors the layer. The
+    # BIMO / matrix surfaces replaced just above are re-bound to
+    # the layer.
+    from form.dell_matrix.personas import (
+        PersonaLoadError, activate_custom_personas)
+    if "custom_personas" in data:
+        _section = data["custom_personas"]
+        if not isinstance(_section, list):
+            raise PersonaLoadError(
+                "custom_personas section is not a list: "
+                f"{type(_section).__name__}")
+        _admit_custom_personas(_section)
+        _player = getattr(p, "persona_layer", None)
+        if _player is None:
+            raise PersonaLoadError(
+                "user persona restore failed: program has no persona layer")
+        try:
+            _report = activate_custom_personas(_section, layer=_player)
+            p._bind_persona_layer()
+        except PersonaLoadError:
+            raise
+        except Exception as exc:
+            raise PersonaLoadError(f"user persona restore failed: {exc}")
+        p.persona_restore_report = {
+            "activated": list(_report.get("activated", [])),
+            "skipped": list(_report.get("skipped", [])),
+        }
+        p.user_personas = _player.all()
+    else:
+        # Critic Finding 1 (Director ruling 7180708590): a legacy save
+        # with NO custom_personas section still had its BIMO / matrix
+        # surfaces replaced unconditionally above, and the re-bind to
+        # the program's OWN layer used to run only inside the presence
+        # block — so a legacy restore's surfaces fell back to the
+        # process-default layer and could resolve (even dock) personas
+        # that exist only there, while the program's own layer stayed
+        # clean. The re-bind is part of surface replacement, not of
+        # section admission: run it for every successful restore.
+        try:
+            p._bind_persona_layer()
+        except Exception as exc:
+            raise PersonaLoadError(f"user persona restore failed: {exc}")
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
@@ -972,14 +1617,12 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
                 _load_drops = max(0, len(_pre) - _kept)
         setattr(p, _attr + "_dropped_total", _stored + _load_drops)
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
-    try:
-        lc_data = data.get("lifecycle")
-        if isinstance(lc_data, dict):
-            p.lifecycle = {str(k): dict(v) for k, v in lc_data.items() if isinstance(v, dict)}
-        else:
-            p.lifecycle = {}
-    except Exception:
-        p.lifecycle = {}
+    # Critic Finding 6 repair (Director disposition 7180713277):
+    # staged strict validation — malformed PRESENT data raises
+    # ProgramLoadError here, inside PREPARE, before any binding/swap;
+    # lawful legacy absence keeps the empty-mapping treatment.
+    p.lifecycle = _validate_lifecycle_section(
+        data.get("lifecycle", _LIFECYCLE_MISSING))
     # R6.4: restore agent-local behavioral state (IntrinsicAgent).
     # Directive §4: a sentinel distinguishes genuine absence (section
     # missing -> fresh default, pre-R6.4 generations) from explicit null

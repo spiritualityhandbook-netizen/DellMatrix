@@ -1044,8 +1044,8 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     from form.mandell.checkpoint_generation import _check_fail, CheckpointError
     from form.dell_matrix.atomic_write import atomic_write_json
     from form.dell_matrix.nursery import (
-        CONFIRMATION_RECEIPT_SECTION_KEY, DISPOSITION_SECTION_KEY,
-        EDIT_RECEIPT_SECTION_KEY, _disk_sig,
+        DISPOSITION_SECTION_KEY, EDIT_RECEIPT_SECTION_KEY,
+        GRANT_USE_RECEIPT_SECTION_KEY, OWNER_SECTION_KEY, _disk_sig,
         NurseryConflictError, owner_nursery_path,
     )
 
@@ -1066,15 +1066,24 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
         op_id: dict(rec)
         for op_id, rec in nursery.organization_edit_receipts.items()
     }
-    # FI-011 (A8): the confirmation-receipt section rides the same
-    # reconstruction — a rollback must preserve the selected
-    # generation's confirmation attribution, not silently drop it
-    # (a confirmed status restored without its receipt would
-    # re-create the unattributed-confirmation hole at restore time).
-    nursery_payload[CONFIRMATION_RECEIPT_SECTION_KEY] = {
-        rid: dict(rec)
-        for rid, rec in nursery.confirmation_receipts.items()
-    }
+    # FI-011 A7: grant-use receipts ride the same reconstruction
+    # (emitted only when non-empty, matching Nursery.save) - a
+    # rollback must not silently drop the selected generation's
+    # grant-use evidence.
+    if nursery.grant_use_receipts:
+        nursery_payload[GRANT_USE_RECEIPT_SECTION_KEY] = {
+            rid: dict(rec)
+            for rid, rec in nursery.grant_use_receipts.items()
+        }
+    # Critic F7: the owner-identity record rides the same
+    # reconstruction when the staged nursery knows its owner — a
+    # rollback must not silently UNBIND the live nursery file.
+    # Director 7185483691: the test is None (no known owner), not
+    # truthiness — the empty string is a lawful owner whose
+    # identity record must ride too (cf. Nursery.save, which
+    # stamps whenever the effective owner is not None).
+    if getattr(nursery, "owner", None) is not None:
+        nursery_payload[OWNER_SECTION_KEY] = {"owner": nursery.owner}
     # R2: Ideas payload. The ideas_snapshot_path_for_rollback is passed
     # explicitly to avoid guessing. It points to the sealed generation's
     # ideas member file.

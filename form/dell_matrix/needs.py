@@ -23,44 +23,34 @@ import time
 # ─── Strong create ─────────────────────────────────────────────────────────
 
 def parse_and_place(program, raw: str) -> Dict[str, Any]:
-    """Parse create line with detail:/goals: and place a strong idea.
-
-    FI-012: a typed parse refusal (IdeaCreateError) is surfaced in
-    the public result — ok=False, refused=True, and a refusal record
-    naming field / authored size / supported bound — and NOTHING is
-    placed. The composed path never reports ok=True over partial
-    content (PR #507 matrix row 7; Director choice 7066291209).
-    """
-    from form.idea_create import (
-        IdeaCreateError, parse_create_line, unique_unit_id, format_report)
+    """Parse create line with detail:/goals: and place a strong idea."""
+    from form.idea_create import parse_create_line, unique_unit_id, format_report
     from form.dell_matrix.plane import Skin
 
-    try:
-        parsed = parse_create_line(raw)
-    except IdeaCreateError as exc:
+    parsed = parse_create_line(raw)
+    label = parsed["label"]
+    # R24-L no-silent-truncation contract (Director 7098988693): the
+    # canonical label budget is MAX_LABEL_CHARS = 200 (Nursery Q-S2.1;
+    # the inference dock enforces the same bound by explicit refusal).
+    # Labels within budget place losslessly; an over-budget label is
+    # refused BEFORE any mutation — never sliced to fit.
+    from form.dell_matrix.nursery import MAX_LABEL_CHARS
+    if len(label) > MAX_LABEL_CHARS:
         return {
             "ok": False,
-            "refused": True,
-            "refusal": {
-                "field": exc.field,
-                "authored": exc.authored,
-                "bound": exc.bound,
-                "error": str(exc),
-            },
-            "error": str(exc),
-            "id": None,
-            "label": "",
-            "detail": "",
-            "goals": [],
-            "complete": False,
-            "strength": 0.0,
-            "grade": "Empty",
-            "missing": ["detail", "goals"],
-            "hint": "",
-            "unit": None,
-            "report": f"Create refused: {exc}",
+            "error": "label_over_budget",
+            "label": label,
+            "label_chars": len(label),
+            "max_label_chars": MAX_LABEL_CHARS,
+            "detail": parsed.get("detail") or "",
+            "goals": list(parsed.get("goals") or []),
+            "complete": parsed.get("complete"),
+            "strength": parsed.get("strength"),
+            "grade": parsed.get("grade"),
+            "missing": parsed.get("missing") or [],
+            "hint": parsed.get("hint") or "",
+            "report": format_report(parsed),
         }
-    label = parsed["label"]
     # Canonical slug + collision dedup (idea_create.unique_unit_id).
     uid = unique_unit_id(program.cube.session.plane.units, label)
 
@@ -79,7 +69,7 @@ def parse_and_place(program, raw: str) -> Dict[str, Any]:
         "label": label,
         "ts": time.time(),
     })
-    result = {
+    return {
         "ok": True,
         "id": uid,
         "label": label,
@@ -99,15 +89,16 @@ def parse_and_place(program, raw: str) -> Dict[str, Any]:
         },
         "report": format_report(parsed),
     }
-    if parsed.get("words_capped"):
-        # FI-012 preservation contract, surfaced in the public
-        # result: the placed detail is whole; words is the
-        # declared-500 excerpt of it.
-        result["words_capped"] = parsed["words_capped"]
-    return result
 
 
 def format_create_end(res: Dict[str, Any]) -> str:
+    if not res.get("ok", True):
+        return "\n".join([
+            f'Create refused ({res.get("error") or "refused"}): '
+            f'label is {res.get("label_chars")} chars; the bound is '
+            f'{res.get("max_label_chars")} chars — nothing was placed.',
+            "  tip: shorten the label and create again.",
+        ])
     lines = [
         f'Created idea: "{res.get("label")}" id={res.get("id")}',
         f"  strength={res.get('strength')} ({res.get('grade')}) complete={res.get('complete')}",
@@ -165,10 +156,7 @@ def set_detail(program, ref: str, detail: str) -> Dict[str, Any]:
     old = getattr(u, "detail", "") or ""
     u.detail = (detail or "").strip()[:2000]
     if not (u.words or "").strip() and u.detail:
-        # FI-012 (7066291209 choice 1): the words derivation follows
-        # the same declared 500 contract as the parse door — the
-        # historical [:120] silently cut the derivation at 120.
-        u.words = u.detail[:500]
+        u.words = u.detail[:120]
     push_action(program, {"kind": "edit_detail", "id": uid, "old": old, "new": u.detail, "ts": time.time()})
     program.note_seed(4, "Transform", f"detail_{uid}")
     return {"ok": True, "id": uid, "label": u.label, "detail": u.detail}
@@ -615,7 +603,8 @@ def redo_last(program) -> Dict[str, Any]:
 def history_report(program, n: int = 16) -> List[str]:
     hist = list(getattr(program, "history", []) or [])[-max(1, n):]
     stack = list(_stack(program))[-8:]
-    lines = [f"History · {len(hist)} notes (last {len(hist)} shown):"]
+    retained = len(getattr(program, "history", []) or [])
+    lines = [f"History · {retained} retained notes (last {len(hist)} shown):"]
     if not hist:
         lines.append("  (empty — act, then history fills)")
     else:

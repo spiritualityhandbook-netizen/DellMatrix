@@ -394,7 +394,14 @@ def test_revalidation_not_applicable():
     _invalidate(p, aid)
     # nursery offers no confirmed->* transition; plane offers no un-remove
     assert p.nursery.reject(aid) is None, "confirmed cannot be rejected"
-    assert p.nursery.confirm(aid) is None, "confirmed cannot be re-confirmed"
+    # FI-011 A8 migration: the raw Nursery.confirm door is RETIRED;
+    # the no-re-confirm property now lives on the canonical writer.
+    assert not hasattr(p.nursery, "confirm"), \
+        "raw Nursery.confirm door must stay retired (FI-011 A8)"
+    _re = p.confirm_proposal(
+        aid, _producer="test",
+        _review_context=p.make_review_context(aid, "test"))
+    assert not _re.get("ok"), "confirmed cannot be re-confirmed"
     assert not hasattr(p.cube.session.plane, "unremove")
     assert not hasattr(p.cube.session.plane, "restore_unit")
     # invalidity persists: recomputed from current state, never cached-away

@@ -5,7 +5,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
+import json
 import sys
+import threading
 
 try:
     from form.mandell.floor import FLOOR, assert_floor_intact, floor_status
@@ -99,6 +101,30 @@ except ImportError:
     from form.avatar import Avatar, FaceController, Expression, build_default_registry
 
 
+# ─── R5-D S7 history admission (Director ruling 7079092723) ──────
+# Adopted R5-C budget (PR #498): the LOGICAL in-memory history of one
+# Program admits at most HISTORY_ENTRY_CAP entries AND
+# HISTORY_BYTE_CAP canonical bytes, canonical bytes =
+# len(json.dumps(history, indent=2, ensure_ascii=True).encode()).
+# Enforcement scope is EXACTLY the seven S7 methods (radial_drift,
+# internet_on/off, sandbox_on/off, enhance_on/off) at their entries,
+# under the one per-Program reentrant admission RLock that
+# Program.note also funnels through. Admission is PER-PROCESS and
+# per-instance; no cross-process coordination is claimed.
+# DEFERRED and visibly NOT fixed by this build (separate save/load
+# phase): T1 note() 120-char entry cut, T2 note() history_max list
+# cut, T3 serializer [-24:] slice, T4 restore [:120]/[-24:] cuts.
+HISTORY_ENTRY_CAP = 10_000
+HISTORY_BYTE_CAP = 2_097_152
+
+
+class HistoryAdmissionRefusal(Exception):
+    """Typed R5-D S7 refusal: the prospective SANITIZED logical
+    history would exceed the adopted budget. Raised BEFORE any
+    mutation — no effect, no append, no file change. The message
+    carries counts/bytes only, never history content."""
+
+
 @dataclass
 class Program:
     owner: str = "Operator"
@@ -128,6 +154,24 @@ class Program:
     keys: KeyLedger = field(default_factory=KeyLedger)
     history: List[str] = field(default_factory=list)
     history_max: int = 24
+    # R5-D S7: the ONE per-Program reentrant history-admission lock.
+    # Held across S7 preflight + effects + note append, and taken by
+    # Program.note itself (the funnel every history writer reaches),
+    # so check-and-append is atomic against every writer on this
+    # instance. Lock hierarchy: owner_state_lock (cross-process file
+    # transaction, form.owner_state_lock) is the OUTER lock — the
+    # save path takes it first and the serializer's history snapshot
+    # takes this lock briefly inside it. Code holding THIS lock must
+    # never acquire owner_state_lock: no S7 effect and no note path
+    # saves, so the order owner -> admission is the only nesting and
+    # no circular wait exists (incl. save/restore and note recursion;
+    # the RLock makes note_seed -> note re-entry safe).
+    # Copy/pickle: excluded from instance state by __getstate__
+    # below and recreated fresh per materialized instance — an RLock
+    # is uncopyable and a copy must never share admission state.
+    _history_admission_lock: Any = field(
+        default_factory=threading.RLock, init=False,
+        repr=False, compare=False)
     # DCC-XX: durable execution-outcome evidence (Outcome Record V1).
     # outcome_id -> outcome record; outcome_seq is the per-owner durable
     # sequence counter used for stable outcome identity. Persisted via
@@ -181,6 +225,27 @@ class Program:
     body_style: str = "stick"  # ascii body: stick|block|shadow|robot
     bimo: BIMOBody = field(default_factory=BIMOBody)
     persona_matrix: PersonaMatrix = field(default_factory=PersonaMatrix)
+    # Row #155 PERSONAMATRIX: user-created persona records (the
+    # experimentation layer). The ACTIVE layer is this program's own
+    # personas.UserPersonaLayer (persona_layer below), (re)activated
+    # from these records at construction/load; these records are what
+    # persist (persist section "custom_personas"). Owner-scoped per
+    # Director 7069171691: a program never reads or writes another
+    # program's layer, nor the module default layer. Settings only —
+    # a persona never carries authority (see personas.py layer law).
+    user_personas: List[Dict[str, Any]] = field(default_factory=list)
+    # The program's own UserPersonaLayer (form.dell_matrix.personas);
+    # created in __post_init__ when unset. Runtime state only — the
+    # durable form is user_personas above.
+    persona_layer: Any = field(default=None, repr=False, compare=False)
+    # Persist-restore diagnostic for the user persona layer: the
+    # activation report of the last persist load,
+    # {"activated": [...], "skipped": [...]}. Skipped records are
+    # dropped from user_personas at load (never silently re-saved as
+    # zombies) and are accounted for HERE, on the loaded program.
+    # None = no persist restore has run for this program.
+    persona_restore_report: Optional[Dict[str, Any]] = field(
+        default=None, repr=False, compare=False)
     # First-person matrix walk (inside centerpoints)
     center_f: int = 0  # up/down lattice axis (frequency / height)
     look_pitch: str = "level"  # down | level | up
@@ -232,6 +297,17 @@ class Program:
         # WO-5.1: Initialize session-scoped acceptance policy (default DENY).
         from form.dell_matrix.acceptance_policy import AcceptancePolicy
         self.acceptance_policy = AcceptancePolicy()
+        # Row #155: activate THIS program's own user persona layer
+        # (empty for a fresh program; persist restore re-activates
+        # from the saved records after construction). Owner-scoped —
+        # never the module default layer (Director 7069171691).
+        from form.dell_matrix.personas import (
+            UserPersonaLayer, activate_custom_personas)
+        if getattr(self, "persona_layer", None) is None:
+            self.persona_layer = UserPersonaLayer()
+        activate_custom_personas(getattr(self, "user_personas", []) or [],
+                                 layer=self.persona_layer)
+        self._bind_persona_layer()
         from form.dell_matrix.nursery import owner_nursery_path
         # Private injection hook for generation-member loads: when open_program
         # is given a staged Nursery, __post_init__ uses it instead of reading
@@ -277,7 +353,14 @@ class Program:
             recover_checkpoint_intent(self.owner)
             recover_confirmation_intent(self.owner)
             recover_supersede_intent(self.owner)
-        self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
+        # Critic F7: the live nursery load names its owner, so the
+        # nursery file's identity record is enforced at this door
+        # exactly as the program file's is above (72-34/DD-12) —
+        # a colliding owner is refused before any foreign proposal
+        # is exposed. The injected generation-member path stays
+        # exempt: it is bound to a sealed member, never the live
+        # file.
+        self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner), owner=self.owner)
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)
         if not hasattr(self, "keys") or self.keys is None:
@@ -342,11 +425,103 @@ class Program:
             )
         self.duo.evolve("01[Initiate] > 15[Map] >> 09[Show] :: Open")
 
+    # ─── R5-D S7 admission machinery (Director 7079092723) ──────
+    def __getstate__(self):
+        """Copy/pickle state: the FULL instance __dict__ minus the
+        admission RLock. A threading.RLock can be neither deepcopied
+        nor pickled, and it must never be shared with a copy anyway:
+        form.dell_matrix.simulate_board isolates a simulation by
+        deepcopying the live Program, and the copy's admission state
+        must be its own. Excluding exactly this one key makes
+        deepcopy/pickle safe without dropping any other field; the
+        materialized instance recreates a FRESH lock lazily through
+        _admission_lock()'s __dict__ fallback. (Save serialization
+        never carried the lock — form.persist builds its payload
+        field-by-field — so persisted bytes are unchanged.)"""
+        state = dict(self.__dict__)
+        state.pop("_history_admission_lock", None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+    def _admission_lock(self):
+        """The per-Program reentrant admission RLock. The dataclass
+        field covers normal construction; the __dict__ fallback
+        covers instances materialized without __init__ (restore /
+        copy paths), created atomically via setdefault."""
+        lock = self.__dict__.get("_history_admission_lock")
+        if lock is None:
+            lock = self.__dict__.setdefault(
+                "_history_admission_lock", threading.RLock())
+        return lock
+
+    def history_snapshot(self) -> List[str]:
+        """Atomic snapshot of the logical history under the
+        admission lock — the save serializer reads history ONLY
+        through here, so a save can never observe a half-appended
+        state. (The serializer's [-24:] slice of this snapshot is
+        the DEFERRED T3 cut, unchanged.)"""
+        with self._admission_lock():
+            return list(self.history)
+
+    def _s7_entry(self, dell: int, term: str, label: str = "") -> str:
+        """The exact entry an S7 note appends: note_seed's format
+        over the SANITIZED label — the adopted sanitize screening
+        (form.mandell.redaction.sanitize_text) runs BEFORE admission
+        measurement and before storage — shaped by note()'s own
+        strip/[:120] rule, so the measured entry is byte-identical
+        to the stored entry."""
+        if label:
+            from form.mandell.redaction import sanitize_text
+
+            label = sanitize_text(label)
+        body = f"{dell:02d}[{term}]"
+        if label:
+            body = f"{body} :: {label[:40]}"
+        return body.strip()[:120]
+
+    def _s7_admit(self, dell: int, term: str, label: str = "") -> str:
+        """Preflight ONE S7 note against the adopted R5-C budget.
+        MUST be called with the admission lock held, BEFORE the
+        method's first effect. Computes count and UTF-8 bytes on
+        the exact prospective SANITIZED logical history via
+        json.dumps(..., indent=2, ensure_ascii=True). Returns the
+        exact prospective entry on admission (exact fits pass);
+        raises HistoryAdmissionRefusal — counts/bytes only, never
+        history content — before any mutation when the prospective
+        history would exceed the entry or byte budget."""
+        entry = self._s7_entry(dell, term, label)
+        prospective = list(self.history) + [entry]
+        count = len(prospective)
+        if count > HISTORY_ENTRY_CAP:
+            raise HistoryAdmissionRefusal(
+                f"history admission refused: {count} entries would "
+                f"exceed the {HISTORY_ENTRY_CAP}-entry budget "
+                "(R5-D S7; no state mutated)")
+        nbytes = len(json.dumps(prospective, indent=2,
+                                ensure_ascii=True).encode("utf-8"))
+        if nbytes > HISTORY_BYTE_CAP:
+            raise HistoryAdmissionRefusal(
+                f"history admission refused: {nbytes} canonical "
+                f"bytes would exceed the {HISTORY_BYTE_CAP}-byte "
+                "budget (R5-D S7; no state mutated)")
+        return entry
+
     def note(self, action: str) -> None:
-        text = (action or "").strip()[:120]
-        self.history.append(text)
-        if len(self.history) > self.history_max:
-            self.history = self.history[-self.history_max :]
+        # R5-D S7 funnel: EVERY history append takes the per-Program
+        # admission RLock, so a non-S7 writer can never interleave
+        # between an S7 preflight and its append. Admission itself
+        # is enforced ONLY at the seven S7 method entries
+        # (_s7_admit); note() never refuses.
+        # DEFERRED (separate save/load phase; Director 7079092723):
+        # the T1 [:120] entry cut and the T2 history_max list cut
+        # below remain in force — unfixed, and visible here.
+        with self._admission_lock():
+            text = (action or "").strip()[:120]
+            self.history.append(text)
+            if len(self.history) > self.history_max:
+                self.history = self.history[-self.history_max :]
 
     def note_seed(self, dell: int, term: str, label: str = "") -> None:
         # Step 3b (DAF-02 chain follow-up): while a chain containing
@@ -510,7 +685,8 @@ class Program:
         if room:
             lines.append(f"View room: {room.get('emoji', '')} {room.get('name')} — {room.get('description')}")
         if self.persona_lens:
-            pe = get_persona(self.persona_lens)
+            pe = get_persona(self.persona_lens,
+                             layer=getattr(self, "persona_layer", None))
             if pe:
                 lines.append(f"Persona: {pe.get('emoji')} {pe.get('name')} · {pe.get('focus')}")
         # body art under look (sprite-animated when walking)
@@ -742,7 +918,8 @@ class Program:
             if hasattr(self, "persona_matrix"):
                 self.persona_matrix.active = None
         else:
-            key = normalize_persona_id(name)
+            key = normalize_persona_id(
+                name, layer=getattr(self, "persona_layer", None))
             self.persona_lens = key or name.lower().replace(" ", "_").strip()
             if hasattr(self, "persona_matrix"):
                 # Q-OD.2: the writer syncs in EVERY branch — an
@@ -752,13 +929,68 @@ class Program:
                 # persona_purity_test t6).
                 self.persona_matrix.active = key
             # if BIMO slot exists, dock this persona into its slot
-            pe = get_persona(key) if key else None
+            pe = get_persona(key, layer=getattr(self, "persona_layer", None)) if key else None
             if pe and hasattr(self, "bimo") and pe.get("bimo_slot"):
                 self.bimo.dock(pe["bimo_slot"], key)
         return self.persona_lens
 
     def personas_roster(self) -> List[str]:
-        return render_roster(self.persona_lens)
+        return render_roster(self.persona_lens,
+                             layer=getattr(self, "persona_layer", None))
+
+    def _bind_persona_layer(self) -> None:
+        """Point this program's BIMO body and persona matrix at the
+        program's own user persona layer. Called at construction and
+        after persist restore replaces those surfaces, so a loaded
+        program's surfaces never fall back to the default layer."""
+        layer = getattr(self, "persona_layer", None)
+        if layer is None:
+            return
+        if hasattr(self, "bimo"):
+            self.bimo.layer = layer
+        if hasattr(self, "persona_matrix"):
+            self.persona_matrix.layer = layer
+
+    def create_persona(self, name=None, category=None, role=None,
+                       focus=None, directives=None, abilities=None,
+                       limits=None, prefer_skins=None, bimo_slot=None,
+                       matrix=None, emoji="🧩",
+                       color="#888888") -> Dict[str, Any]:
+        """Row #155 PERSONAMATRIX: create a user persona on this
+        program (experimentation layer).
+
+        The persona resolves/docks immediately through the canonical
+        personas machinery and is carried in this program's persisted
+        records (call save() to make it durable). A persona is a
+        setting: creating or docking one confers NO authority and
+        cannot confirm Nursery proposals — confirmation stays behind
+        this program's AcceptancePolicy.
+        """
+        from form.dell_matrix.personas import create_custom_persona
+        res = create_custom_persona(
+            name, category, role, focus, directives, abilities, limits,
+            prefer_skins=prefer_skins, bimo_slot=bimo_slot,
+            matrix=matrix, emoji=emoji, color=color,
+            layer=getattr(self, "persona_layer", None))
+        if res.get("ok"):
+            rec = res["persona"]
+            self.user_personas = [
+                r for r in self.user_personas if r.get("id") != rec["id"]
+            ] + [dict(rec)]
+        return res
+
+    def remove_persona(self, name=None) -> Dict[str, Any]:
+        """Row #155: remove a USER persona from this program. The
+        canonical roster is read-only — removing a built-in persona
+        is refused by the personas layer."""
+        from form.dell_matrix.personas import remove_custom_persona
+        res = remove_custom_persona(
+            name, layer=getattr(self, "persona_layer", None))
+        if res.get("ok"):
+            self.user_personas = [
+                r for r in self.user_personas if r.get("id") != res["removed"]
+            ]
+        return res
 
     def persona_matrix_status(self) -> Dict[str, Any]:
         # Q-OD.2: pure read — writers own the lens->active sync
@@ -822,10 +1054,11 @@ class Program:
         }
 
     def personas_status(self) -> Dict[str, Any]:
-        active = get_persona(self.persona_lens) if self.persona_lens else None
+        _layer = getattr(self, "persona_layer", None)
+        active = get_persona(self.persona_lens, layer=_layer) if self.persona_lens else None
         return {
             "active": active,
-            "list": list_personas(),
+            "list": list_personas(layer=_layer),
             "categories": list_categories(),
             "count": len(PERSONAS),
             "bimo": self.bimo.status() if hasattr(self, "bimo") else {},
@@ -833,7 +1066,8 @@ class Program:
         }
 
     def guide(self, context: str = "") -> List[str]:
-        return persona_guidance(self.persona_lens, context or f"view={self.active_view}")
+        return persona_guidance(self.persona_lens, context or f"view={self.active_view}",
+                                layer=getattr(self, "persona_layer", None))
 
     def set_body_style(self, style: str) -> str:
         s = (style or "stick").lower().strip()
@@ -1112,9 +1346,13 @@ class Program:
 
     def radial_drift(self, outer_shell: int = 6) -> Dict[str, Any]:
         """Soft-forget far-shell payloads; keys remain (Existence rule)."""
-        out = apply_radial_soft_forget(self.lattice, self.keys, outer_shell=outer_shell)
-        self.note_seed(16, "Decay", f"drift_{outer_shell}")
-        return out
+        # R5-D S7: lock + preflight BEFORE the first effect
+        # (apply_radial_soft_forget precedes the note here).
+        with self._admission_lock():
+            entry = self._s7_admit(16, "Decay", f"drift_{outer_shell}")
+            out = apply_radial_soft_forget(self.lattice, self.keys, outer_shell=outer_shell)
+            self.note(entry)
+            return out
 
     def place(self, id: str, label: str, **kwargs):
         # Phase 4: coordinate selection is decided by the canonical spatial
@@ -1214,19 +1452,30 @@ class Program:
     # ─── Internet (opt-in) + Code Evolution root ─────────────────────
 
     def internet_on(self) -> Dict[str, Any]:
-        if not self.internet:
-            from form.dell_matrix.internet_gate import InternetGate
-            self.internet = InternetGate()
-        out = self.internet.turn_on()
-        self.note_seed(25, "Pulse", "internet_on")
-        return out
+        # R5-D S7: lock + preflight BEFORE the first effect
+        # (gate creation + turn_on precede the note here).
+        with self._admission_lock():
+            entry = self._s7_admit(25, "Pulse", "internet_on")
+            if not self.internet:
+                from form.dell_matrix.internet_gate import InternetGate
+                self.internet = InternetGate()
+            out = self.internet.turn_on()
+            self.note(entry)
+            return out
 
     def internet_off(self) -> Dict[str, Any]:
-        if not self.internet:
-            return {"ok": True, "on": False}
-        out = self.internet.turn_off()
-        self.note_seed(32, "Pause", "internet_off")
-        return out
+        # R5-D S7: the lock is taken first so the gate test itself is
+        # inside the section; the legitimate no-gate no-note no-op
+        # return is preserved BEFORE history preflight — a refusal
+        # can never create a gate or mutate other state. With a gate,
+        # preflight precedes turn_off (the first effect).
+        with self._admission_lock():
+            if not self.internet:
+                return {"ok": True, "on": False}
+            entry = self._s7_admit(32, "Pause", "internet_off")
+            out = self.internet.turn_off()
+            self.note(entry)
+            return out
 
     def internet_status(self) -> Dict[str, Any]:
         if not self.internet:
@@ -1364,27 +1613,19 @@ class Program:
             fail_n = 0
             labels: List[str] = []
             skipped_ids: List[str] = []
-            origin_refusals: List[Dict[str, Any]] = []
+            skipped_origin_ids: List[str] = []
+            bred_n = 0
             for prop in pending:
-                # FI-011 remediation (A12): the sweep is a standing
-                # gate, and its terms are origin-aware. A proposal
-                # authored by a docked-AI / agent producer (origin
-                # classes "agent:" / "dock:") may only ever sit
-                # PENDING for a human confirm — the sweep refuses it
-                # with a typed refusal recorded in the sweep receipt,
-                # never confirms it by origin-blindness.
-                _origin = str(prop.get("origin") or "")
-                _origin_class = _origin.split(":", 1)[0]
-                if _origin_class in ("agent", "dock"):
-                    origin_refusals.append({
-                        "id": prop["id"],
-                        "origin": _origin,
-                        "reason": "auto_origin_ineligible",
-                    })
-                    continue
                 res = self.confirm_proposal(prop["id"], _producer="grow_auto")
                 if res.get("ok"):
                     ok_n += 1
+                    # FI-011 A12: confirmations of growth-bred
+                    # children are visible as such (sub-count),
+                    # never indistinguishable from confirmations of
+                    # pre-existing pending proposals.
+                    _fam = str(prop.get("origin") or "").split(":", 1)[0]
+                    if _fam == "growth":
+                        bred_n += 1
                     labels.append(res.get("label") or prop.get("label") or prop.get("id"))
                 elif res.get("reason") == "auto_mixed_wall_noneligible":
                     # Q-U.5: mixed-wall proposals are NON-ELIGIBLE
@@ -1392,6 +1633,13 @@ class Program:
                     # never a failure; the proposal stays pending
                     # for a manual (choice-carrying) confirm.
                     skipped_ids.append(prop["id"])
+                elif res.get("reason") == "auto_origin_noneligible":
+                    # FI-011 A12: origin-ineligible proposals are a
+                    # SKIP in their own named bucket (never folded
+                    # into failed); they stay pending and are
+                    # re-listed on each cycle's report while the
+                    # sweep is on.
+                    skipped_origin_ids.append(prop["id"])
                 else:
                     fail_n += 1
             result["auto_confirm"] = {
@@ -1401,7 +1649,9 @@ class Program:
                 "labels": labels[:20],
                 "skipped_noneligible": len(skipped_ids),
                 "skipped_ids": skipped_ids,
-                "skipped_origin_ineligible": origin_refusals,
+                "skipped_origin_noneligible": len(skipped_origin_ids),
+                "skipped_origin_ids": skipped_origin_ids,
+                "confirmed_bred": bred_n,
             }
             result["nursery_pending"] = len(self.list_proposals())
             result["ideas_now"] = len(self.cube.session.plane.units)
@@ -1856,6 +2106,12 @@ class Program:
         if not live.get("allowed"):
             # No mutation has occurred; proposal remains pending and
             # retryable. Staged work (none yet) needs no recovery.
+            # FI-011 A7: the entry check may have reserved a grant
+            # for this act - a denial consumes nothing, so the
+            # reservation is released here.
+            if isinstance(_review_context, dict):
+                policy.release_grant_reservation(
+                    _review_context.get("grant_id"), pid)
             return {
                 "ok": False,
                 "reason": "acceptance_policy_denied",
@@ -1881,7 +2137,22 @@ class Program:
             "subject": _subject,
             "placement": _placement,
         }
-        return _confirm_proposal(self, pid, _auth=_auth)
+        # FI-011 A7: try/finally backstop - any non-commit exit of
+        # a grant-riding confirmation (a non-ok writer receipt or a
+        # propagating exception) releases the grant reservation, so
+        # a denied or aborted write never consumes the grant. On
+        # success the writer has already converted the reservation
+        # into consumption, and release is a no-op for consumed
+        # grants by construction.
+        _result = None
+        try:
+            _result = _confirm_proposal(self, pid, _auth=_auth)
+            return _result
+        finally:
+            if not (isinstance(_result, dict) and _result.get("ok")):
+                if isinstance(_review_context, dict):
+                    policy.release_grant_reservation(
+                        _review_context.get("grant_id"), pid)
 
     def confirm_rollback(self, generation_id=None,
                          _review_context: dict = None,
@@ -2071,23 +2342,36 @@ class Program:
         return {"ok": True, "id": prop.id, "label": prop.label}
 
     def sandbox_on(self, all_units: bool = True) -> Dict[str, Any]:
-        self.note_seed(23, "Lock", "sandbox_on")
-        if all_units:
-            return self.sandbox.apply_on(self.cube.session.plane)
-        self.sandbox.turn_on()
-        return {"ok": True, "on": True}
+        # R5-D S7: lock + preflight first; the note remains the
+        # method's first effect, apply_on/apply_off after it.
+        with self._admission_lock():
+            entry = self._s7_admit(23, "Lock", "sandbox_on")
+            self.note(entry)
+            if all_units:
+                return self.sandbox.apply_on(self.cube.session.plane)
+            self.sandbox.turn_on()
+            return {"ok": True, "on": True}
 
     def sandbox_off(self) -> Dict[str, Any]:
-        self.note_seed(24, "Unlock", "sandbox_off")
-        return self.sandbox.apply_off(self.cube.session.plane)
+        # R5-D S7: lock + preflight first; note first effect.
+        with self._admission_lock():
+            entry = self._s7_admit(24, "Unlock", "sandbox_off")
+            self.note(entry)
+            return self.sandbox.apply_off(self.cube.session.plane)
 
     def enhance_on(self) -> None:
-        self.enhance.turn_on()
-        self.note_seed(25, "Pulse", "enhance_on")
+        # R5-D S7: lock + preflight BEFORE turn_on (first effect).
+        with self._admission_lock():
+            entry = self._s7_admit(25, "Pulse", "enhance_on")
+            self.enhance.turn_on()
+            self.note(entry)
 
     def enhance_off(self) -> None:
-        self.enhance.turn_off()
-        self.note_seed(32, "Pause", "enhance_off")
+        # R5-D S7: lock + preflight BEFORE turn_off (first effect).
+        with self._admission_lock():
+            entry = self._s7_admit(32, "Pause", "enhance_off")
+            self.enhance.turn_off()
+            self.note(entry)
 
     def pulse(self) -> Dict[str, Any]:
         out = self.enhance.pulse(self.cube.session.plane, program=self)

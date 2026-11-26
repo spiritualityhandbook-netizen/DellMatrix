@@ -170,7 +170,11 @@ def smoke() -> bool:
     # G5: status separation.
     n5, _ = _fresh(tmp, "g5.json")
     q1 = n5.add(**BASE)
-    n5.confirm(q1.id, actor="suite:growdup")
+    # FI-011 A8 migration: raw Nursery.confirm retired; the
+    # confirmed state this separation leg needs is authored
+    # directly in trusted test code (setup convenience, A8.2).
+    n5.proposals[q1.id].status = "confirmed"
+    n5.save()
     q2 = n5.add(**BASE)
     check("G5.after_confirm_stored", q2.id != q1.id and q2.status == "pending")
     n5.reject(q2.id)
@@ -243,9 +247,16 @@ def smoke() -> bool:
         pA = nA.add(**BASE)
         nB = Nursery.load(pathA)
         if act == "confirm":
-            nB.confirm(pA.id, actor="suite:growdup")
+            # FI-011 A8 migration: the raw Nursery.confirm door is
+            # retired, so B's deciding mutation is staged directly
+            # in trusted test code and persisted through the same
+            # save() lost-update guard this case exercises (the
+            # packet's sanctioned setup convenience). The reject
+            # leg still rides the surviving Nursery.reject door.
+            nB.proposals[pA.id].status = "confirmed"
+            nB.save()
         else:
-            nB.reject(pA.id)
+            getattr(nB, act)(pA.id)
         refused = False
         try:
             nA.add(**BASE)

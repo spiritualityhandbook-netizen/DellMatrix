@@ -34,6 +34,15 @@ class NurseryConflictError(RuntimeError):
     """The owner's nursery file changed on disk since this instance loaded/saved it (lost update refused)."""
 
 
+class NurseryGrantReceiptCollisionError(RuntimeError):
+    """A grant-use receipt identity is already held by a DIFFERENT
+    receipt (FI-011 A7, Director delta 7088557617). Durable grant-use
+    receipts are append-only audit records: staging a colliding
+    different receipt is refused typed before any commit, so an old
+    receipt can never be silently overwritten. Re-staging the
+    identical record is idempotent, not a collision."""
+
+
 class NurseryLoadError(ValueError):
     """The owner's canonical nursery file exists but is not a complete valid
     generation (truncated/malformed JSON or invalid proposal records).
@@ -42,17 +51,6 @@ class NurseryLoadError(ValueError):
     NEVER silently replaced with an empty nursery. Precedence is
     valid-canonical -> load, else -> this error. No recovery generation is
     fabricated."""
-
-
-class NurseryConfirmError(ValueError):
-    """A confirmation was attempted at the core store door without an
-    identified actor (FI-011 remediation A8, PR #507 matrix row 3).
-
-    Confirmation is the owner's sovereign act or a capability grant
-    strictly bound to an actor; the store door itself now enforces
-    that. A raw ``Nursery.confirm(pid)`` with no actor is refused
-    with this typed error BEFORE any mutation or save — enforcement
-    no longer lives only in the Program writer path."""
 
 
 class NurseryReasonError(ValueError):
@@ -282,14 +280,47 @@ DISPOSITION_SECTION_KEY = "__conflict_dispositions__"
 # embedded in the file that digest describes.
 EDIT_RECEIPT_SECTION_KEY = "__organization_edit_receipts__"
 
-# FI-011 remediation (A8): reserved nursery-file key for CONFIRMATION
-# receipts — one attributed record per successful confirmation
-# (actor, grant, target), written by the store door itself or staged
-# by the canonical writer inside its checkpoint transaction. Same
-# section precedent as the edit receipts above; can never collide
-# with a proposal ID for the same _slug() reason. Stored receipts
-# carry no file digest.
-CONFIRMATION_RECEIPT_SECTION_KEY = "__confirmation_receipts__"
+# FI-011 A7 (Director 7085151190 item 1; packet A7.3): reserved
+# nursery-file key for durable GRANT-USE receipts - one record per
+# consumed nursery.confirm grant, staged by the canonical writer
+# inside the same checkpoint transaction as the confirmation it
+# authorizes, so receipt and confirmation live or die together.
+# Receipts name grants by issuance seq only; a handle value is
+# never written. Emitted ONLY when non-empty, so grant-free owners'
+# files stay byte-compatible with pre-A7 readers.
+GRANT_USE_RECEIPT_SECTION_KEY = "__grant_use_receipts__"
+
+# Critic F7 (PR #530 finding 4702349097; Uni verdict 7178450928;
+# Director authorization 7180713277): reserved nursery-file key
+# for the file's OWNER IDENTITY record — the raw owner this
+# nursery file belongs to. _safe_owner is many-to-one
+# ("Fresh/Owner" and "Fresh_Owner" share one safe name, hence
+# one nursery file), and before this circuit the nursery payload
+# recorded no owner anywhere, so the nursery door had no identity
+# to check: in the nursery-first order (Nursery.add persists
+# before any program file exists) a colliding second owner
+# silently adopted the first owner's proposals, private detail
+# included, and the first owner was locked out once the second
+# saved. The writer stamps the raw owner under this key;
+# Nursery.load(path, owner=...) refuses with the existing
+# OwnerCollisionError on a PROVEN mismatch, extending the program
+# file's 72-34/DD-12 identity doctrine to the nursery surface.
+# Can never collide with a proposal ID for the same _slug()
+# reason as the sections above. Emitted on save whenever an
+# owner is known (the writer's own, or the binding already on
+# disk — ownerless writers carry a binding through, never drop
+# it). Legacy files without the record are adopted only under
+# the proof rules in Nursery.load; see there.
+OWNER_SECTION_KEY = "__owner__"
+
+# FI-011 A9 (Director 7085151190 item 1; packet A9.1): the lawful
+# proposal status set. The complete production writer census
+# produces exactly these values (confirm_lineage writes
+# "confirmed"/"pending"; Nursery.reject writes "rejected";
+# supersession uses the separate lifecycle_state field, never
+# status). A PRESENT status outside this set at load is refused
+# typed; an ABSENT status key keeps the legacy "pending" default.
+LAWFUL_STATUSES = frozenset({"pending", "confirmed", "rejected"})
 
 # C5R.3 creation-seed rule (seed-rule v1). Deterministic, applied
 # ONLY at Nursery.add() construction of a genuinely NEW proposal:
@@ -380,6 +411,38 @@ def owner_nursery_path(owner: str) -> str:
     """Per-owner nursery file: nursery_<_safe_owner(owner)>.json (existing persist._safe_owner, no new sanitizer)."""
     from form.persist import _safe_owner
     return os.path.join(_STATE_DIR, f"nursery_{_safe_owner(owner)}.json")
+
+
+def stored_nursery_owner(path: Optional[str]) -> Optional[str]:
+    """Raw owner recorded in the nursery file at ``path``.
+
+    Returns the stored owner string when the file exists and
+    carries a well-formed OWNER_SECTION_KEY record; None when the
+    file is absent, unreadable, not a JSON object, or carries no
+    well-formed owner record (legacy unbound file — no reliable
+    identity to check against). Only a PROVEN mismatch (a stored
+    owner different from the requested owner) is a collision,
+    mirroring persist.stored_program_owner. The recorded identity
+    is the exact raw owner string: the empty string is a lawful
+    (degenerate) owner — the program door accepts it and
+    _safe_owner maps it to ``operator`` — so a file stamped with
+    "" returns "" here, agreeing with the loader's shape check;
+    None means the section is ABSENT (or not a string record),
+    never that the recorded owner was empty."""
+    if not path:
+        return None
+    try:
+        with open(path, "rb") as f:
+            data = json.loads(f.read().decode("utf-8"))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    section = data.get(OWNER_SECTION_KEY)
+    if not isinstance(section, dict):
+        return None
+    owner = section.get("owner")
+    return owner if isinstance(owner, str) else None
 
 
 def _disk_sig(path: str) -> Optional[str]:
@@ -639,7 +702,8 @@ class Nursery:
     # so it is never serialized into the owner file.
     suppression_receipts: List[Dict[str, Any]] = field(
         default_factory=list, repr=False, compare=False)
-    # FI-012 row 9: DUPLICATE-INTAKE receipts. An add demonstrably
+    # FI-012 row 9 (carried from the Part I draft at the 2026-11-26
+    # recompose): DUPLICATE-INTAKE receipts. An add demonstrably
     # identical to a still-PENDING proposal (full content equality,
     # same (seed, label) ID stream, freshness-guarded) is STORED as
     # its own proposal — the standing duplicate policy (DCC-VII:
@@ -658,15 +722,14 @@ class Nursery:
     # door appends receipts.
     organization_edit_receipts: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False, compare=False)
-    # FI-011 remediation (A8): CONFIRMATION receipts (receipt_id ->
-    # record {proposal_id, actor, grant_seq, at}). Serialized under
-    # CONFIRMATION_RECEIPT_SECTION_KEY in the same atomic write as
-    # the proposals, so a confirmed status never persists without
-    # its attribution. Appended by Nursery.confirm (store door) and
-    # by the canonical writer (confirm_lineage) at staging time;
-    # discarded again on every compensation path that reverts the
-    # confirmation, so a receipt exists iff the confirmation stands.
-    confirmation_receipts: Dict[str, Dict[str, Any]] = field(
+    # FI-011 A7: durable grant-use receipts (receipt_id -> record),
+    # serialized under GRANT_USE_RECEIPT_SECTION_KEY in the same
+    # atomic write as the proposals - but ONLY when non-empty (see
+    # the constant's note). Staged by the canonical writer at its
+    # commit point; discarded again on every compensation path that
+    # reverts the confirmation, so a receipt exists iff the
+    # confirmation it authorizes stands.
+    grant_use_receipts: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False, compare=False)
     # C5R.3: the most recent organization operation's RETURNED
     # receipt (receipt_with_file_digest form, including the
@@ -684,6 +747,16 @@ class Nursery:
     # _lens_present). Never serialized.
     _present_fields: Dict[str, set] = field(
         default_factory=dict, repr=False, compare=False)
+    # Critic F7: the raw owner this nursery is bound to — staged
+    # from the file's OWNER_SECTION_KEY record at load, or the
+    # owner a load was performed for; stamped back on every save
+    # and enforced at the load/add/save doors (see
+    # OWNER_SECTION_KEY). None = ownerless (the pre-F7 default for
+    # in-memory and checkpoint-member nurseries); an ownerless
+    # writer never drops an existing on-disk binding (save()
+    # carries it through).
+    owner: Optional[str] = field(
+        default=None, repr=False, compare=False)
 
     def _suppression_fresh(self) -> bool:
         """True when this instance provably sees the current owner
@@ -767,29 +840,34 @@ class Nursery:
         provenance persisted on the record in this same save; the
         creation receipt's returned form (including the canonical
         post-save digest) is exposed as last_organization_receipt.
-
-        FI-012 row 9: for the label, the typed refusal covers type
-        and emptiness, not only size — a non-string or empty label
-        raises NurseryLabelError BEFORE any mutation (the historical
-        code crashed untyped inside _slug on label=None/123 and
-        silently stored label=""). The refusal is label-only by
-        design (standing non-string usages exist for other fields).
-        An identical still-PENDING intake is stored as its own
-        proposal under the standing duplicate policy (DCC-VII) and
-        receipted on duplicate_receipts, so a duplicate intake is
-        never silent (see the duplicate block).
         """
-        # FI-012 row 9: for the LABEL, the typed refusal covers TYPE
-        # and EMPTINESS, not only size. The historical isinstance-
-        # guard let a non-string label fall through to _slug and
-        # crash untyped (AttributeError), and an empty label was
-        # silently stored. The refusal is deliberately LABEL-ONLY:
-        # the other fields have standing non-string usages a type
-        # refusal would break (the lock-order census — a real
-        # operation under lock instrumentation — adds with words as
-        # a token LIST, and this wave's first cut refused it and
-        # crashed that suite deterministically; row 9's legs name
-        # the label, so the label is where the refusal lives).
+        # Critic F7: the add door refuses BEFORE any mutation when
+        # this instance's bound owner is proven different from the
+        # owner recorded in the file on disk — a second distinct
+        # raw owner whose safe name collides must never append into
+        # the first owner's file. (The load door is the primary
+        # gate; this re-check keeps add() honest for instances
+        # whose binding was established any other way.)
+        if self.path and self.owner is not None:
+            _disk_owner = stored_nursery_owner(self.path)
+            if _disk_owner is not None and _disk_owner != self.owner:
+                from form.persist import OwnerCollisionError
+                raise OwnerCollisionError(
+                    f"Nursery add: owner namespace collision — the "
+                    f"nursery file {os.path.basename(self.path)} "
+                    f"belongs to owner {_disk_owner!r}, not "
+                    f"{self.owner!r}. Refusing to append another "
+                    f"owner's proposal; no bytes written.")
+        # FI-012 row 9 (carried from the Part I draft at the
+        # 2026-11-26 recompose): for the LABEL, the typed refusal
+        # covers TYPE and EMPTINESS, not only size. The historical
+        # isinstance-guard let a non-string label fall through to
+        # _slug and crash untyped (AttributeError), and an empty
+        # label was silently stored. The refusal is deliberately
+        # LABEL-ONLY: the other fields have standing non-string
+        # usages a type refusal would break (the lock-order census
+        # adds with words as a token LIST; row 9's legs name the
+        # label, so the label is where the refusal lives).
         if not isinstance(label, str):
             raise NurseryLabelError(
                 f"label must be a string, not "
@@ -855,7 +933,6 @@ class Nursery:
         # the normal add path, whose save raises the canonical
         # NurseryConflictError. A genuine skip (fresh instance) still
         # performs no save and writes nothing.
-        #
         if origin == "growth:token" and self._suppression_fresh():
             for existing in self.proposals.values():
                 if (
@@ -879,10 +956,10 @@ class Nursery:
                         "label": label,
                     })
                     return existing
-        # FI-012 row 9 (PR #507 matrix 7065903337, Director-accepted
-        # 7066291209) — duplicate intake, resolved against the
-        # standing duplicate policy. The matrix's observed failure
-        # was SILENCE: an identical intake added twice landed as two
+        # FI-012 row 9 (carried from the Part I draft at the
+        # 2026-11-26 recompose) — duplicate intake, resolved against
+        # the standing duplicate policy. The observed failure was
+        # SILENCE: an identical intake added twice landed as two
         # live duplicates with no dedup signal or receipt. True
         # suppression of non-token adds is NOT available here: the
         # certified duplicate policy (DCC-VII) holds that duplicate
@@ -988,91 +1065,49 @@ class Nursery:
     def pending(self) -> List[Proposal]:
         return [p for p in self.proposals.values() if p.status == "pending"]
 
-    def stage_confirmation_receipt(self, pid: str, *, actor: str,
-                                   grant_seq: Optional[int] = None) -> str:
-        """Append an attributed CONFIRMATION receipt (in memory only).
+    # FI-011 A8 (Director 7085151190 item 1): the raw store-door
+    # confirm method that used to live here is RETIRED - deleted,
+    # not guarded. It confirmed with no actor, no grant, and no
+    # receipt, bypassing every enforcement in the canonical writer
+    # (Program.confirm_proposal / confirm_lineage), and it had zero
+    # production callers. Confirmation is the owner's sovereign act
+    # or a grant-bound act through the canonical writer only; there
+    # is no second door. (Nursery.reject and clear_rejected are
+    # sibling doors under separate review - untouched by A8.)
 
-        The record names the proposal (target), the identified actor
-        that confirmed it, and the capability grant it rode on, if
-        any (FI-011 A8: every confirmation is receipted and
-        attributable — the Witness Law binds the store too). The
-        grant is named by its policy issuance SEQUENCE, never by
-        handle value: the handle is a secret and is never logged or
-        persisted (R6.1 no-leak rule). The caller owns persistence:
-        Nursery.confirm saves immediately; the canonical writer
-        stages the receipt inside its checkpoint transaction and
-        discards it again on any compensation path that reverts the
-        confirmation. Returns the receipt_id.
+    def stage_grant_use_receipt(self, receipt: Dict[str, Any]) -> str:
+        """Stage a grant-use receipt in memory (FI-011 A7.3).
+
+        The caller (the canonical writer) owns persistence: the
+        receipt rides the checkpoint transaction that persists the
+        confirmation, and the writer discards it again on any
+        compensation path that reverts the confirmation. Returns
+        the receipt_id. Raises NurseryGrantReceiptCollisionError
+        if the identity is already held by a different receipt.
         """
-        receipt_id = (f"confirm:{pid}:"
-                      f"{len(self.confirmation_receipts) + 1}")
-        self.confirmation_receipts[receipt_id] = {
-            "receipt_id": receipt_id,
-            "proposal_id": pid,
-            "actor": actor,
-            "grant_seq": grant_seq,
-            "at": utc_now_str(),
-        }
+        receipt_id = receipt.get("receipt_id")
+        if not isinstance(receipt_id, str) or not receipt_id:
+            raise ValueError("grant-use receipt requires a receipt_id")
+        # FI-011 A7 (Director delta 7088557617): receipts are
+        # append-only audit records. A DIFFERENT receipt arriving
+        # under an identity already held is refused typed HERE -
+        # before any commit - so the stored record is never
+        # overwritten. The canonical writer treats the refusal as a
+        # failed commit: the confirmation is refused and the staged
+        # state is discarded, leaving the old receipt intact.
+        existing = self.grant_use_receipts.get(receipt_id)
+        if existing is not None and existing != dict(receipt):
+            raise NurseryGrantReceiptCollisionError(
+                f"grant-use receipt identity {receipt_id!r} is "
+                "already held by a different receipt; refusing to "
+                "overwrite a durable audit record")
+        self.grant_use_receipts[receipt_id] = dict(receipt)
         return receipt_id
 
-    def discard_confirmation_receipt(self, receipt_id: Optional[str]) -> None:
-        """Drop a staged confirmation receipt (compensation paths)."""
+    def discard_grant_use_receipt(self, receipt_id: Optional[str]) -> None:
+        """Drop a staged grant-use receipt (compensation paths)."""
         if receipt_id:
-            self.confirmation_receipts.pop(receipt_id, None)
-
-    def discard_confirmation_receipts_for(self, pid: str) -> int:
-        """Drop EVERY confirmation receipt naming ``pid``.
-
-        For enclosing-transaction rollbacks (supersession) that
-        remove a proposal whose confirmation was staged/performed
-        inside their boundary: the receipt invariant is that a
-        receipt exists iff the confirmation stands, so removing the
-        confirmation removes its receipts. Returns the count dropped.
-        """
-        doomed = [rid for rid, rec in self.confirmation_receipts.items()
-                  if isinstance(rec, dict) and rec.get("proposal_id") == pid]
-        for rid in doomed:
-            self.confirmation_receipts.pop(rid, None)
-        return len(doomed)
-
-    def confirm(self, pid: str, *, actor: Optional[str] = None,
-                grant_seq: Optional[int] = None) -> Optional[Proposal]:
-        """Confirm a pending proposal AT THE CORE STORE DOOR.
-
-        FI-011 remediation (A8): this door previously confirmed with
-        no actor, no grant, and no receipt — all enforcement lived
-        only in the Program writer path. Now the door itself refuses
-        a confirm that names no identified actor (typed
-        NurseryConfirmError, before any mutation), and every
-        successful confirm writes an attributed confirmation receipt
-        in the same save. Callers acting for an authorized principal
-        pass that principal as ``actor`` (and the grant's policy
-        issuance sequence as ``grant_seq`` when the confirm rides a
-        capability grant — the handle itself is never recorded).
-
-        A missing or non-pending proposal still returns None (no
-        transition exists to refuse). A save failure reverts the
-        status AND the staged receipt, and propagates (A11).
-        """
-        p = self.proposals.get(pid)
-        if not p or p.status != "pending":
-            return None
-        if not isinstance(actor, str) or not actor:
-            raise NurseryConfirmError(
-                "Nursery.confirm requires an identified actor: "
-                "confirmation is the owner's sovereign act or a "
-                "grant-bound act, never an unattributed one "
-                f"(proposal {pid!r})")
-        receipt_id = self.stage_confirmation_receipt(
-            pid, actor=actor, grant_seq=grant_seq)
-        p.status = "confirmed"
-        try:
-            self.save()
-        except Exception:
-            p.status = "pending"
-            self.discard_confirmation_receipt(receipt_id)
-            raise
-        return p
+            self.grant_use_receipts.pop(receipt_id, None)
 
     def reject(self, pid: str) -> Optional[Proposal]:
         p = self.proposals.get(pid)
@@ -1976,6 +2011,15 @@ class Nursery:
             raise NurseryConflictError(
                 f"nursery file changed on disk since load: {os.path.basename(self.path)} (lost update refused)"
             )
+        # Critic F7: resolve the owner binding this write carries.
+        # A writer that knows its owner stamps it (below); an
+        # ownerless writer (restores, recovery, tools) carries the
+        # on-disk binding through — a save must never silently
+        # UNBIND a bound file. A proven mismatch cannot reach this
+        # point through the load/add doors; both refuse earlier.
+        effective_owner = self.owner
+        if effective_owner is None:
+            effective_owner = stored_nursery_owner(self.path)
         payload = {}
         for k, v in self.proposals.items():
             d = v.to_dict()
@@ -2012,14 +2056,26 @@ class Nursery:
             op_id: dict(rec)
             for op_id, rec in self.organization_edit_receipts.items()
         }
-        # FI-011 (A8): the confirmation-receipt section rides the
-        # same atomic write, so a confirmed status and its
-        # attribution always persist together — never one without
-        # the other.
-        payload[CONFIRMATION_RECEIPT_SECTION_KEY] = {
-            rid: dict(rec)
-            for rid, rec in self.confirmation_receipts.items()
-        }
+        # FI-011 A7: the grant-use receipt section rides the same
+        # atomic write - but ONLY when non-empty, a deliberate
+        # deviation from the sibling sections' always-emit pattern:
+        # pre-A7 readers refuse files carrying unknown sections, so
+        # grant-free owners' files must stay byte-compatible with
+        # them. Receipts are evidentiary only; no proposal, status,
+        # or placement semantics depend on them.
+        if self.grant_use_receipts:
+            payload[GRANT_USE_RECEIPT_SECTION_KEY] = {
+                rid: dict(rec)
+                for rid, rec in self.grant_use_receipts.items()
+            }
+        # Critic F7: the owner-identity record rides the same
+        # atomic write whenever an owner is known — always emitted
+        # (like the disposition section, unlike grant receipts:
+        # identity is not evidentiary-optional), so a bound file
+        # stays bound across every writer. Files with no known
+        # owner and none on disk keep the pre-F7 shape exactly.
+        if effective_owner is not None:
+            payload[OWNER_SECTION_KEY] = {"owner": effective_owner}
         blob = atomic_write_json(self.path, payload, _fail_at=_fail_at)
         self._seen = hashlib.sha256(blob).hexdigest()
         # C5R.3 (Resolution 3): the canonical post-save digest is
@@ -2028,7 +2084,8 @@ class Nursery:
         return self._seen
 
     @classmethod
-    def load(cls, path: Optional[str] = None) -> "Nursery":
+    def load(cls, path: Optional[str] = None,
+             *, owner: Optional[str] = None) -> "Nursery":
         """Load the nursery owned by ``path``. No path -> empty ownerless in-memory nursery (save refuses).
         The legacy ownerless NURSERY_PATH is never read implicitly.
 
@@ -2038,8 +2095,28 @@ class Nursery:
         canonical file raises NurseryLoadError explicitly -- it is never
         silently replaced with an empty nursery and a failed load never
         leaves a partially mutated nursery behind.
+
+        Critic F7 owner binding: when ``owner`` is given (the
+        Program construction door), the file's OWNER_SECTION_KEY
+        identity record is enforced inside the same private
+        staging, before anything is applied: a PROVEN mismatch
+        refuses with OwnerCollisionError and exposes nothing. A
+        legacy file with NO identity record is adopted only when
+        adoption cannot hand one owner's data to another — the
+        sibling program file proves this requester is the owner,
+        or the file holds no owner-scoped content at all (no
+        proposals, conflict dispositions, organization edit
+        receipts, or grant-use receipts; Director 7181859606);
+        an unbound legacy file holding ANY such content with no
+        proof refuses fail-closed (bytes preserved; resolution
+        is the authorized adoption/migration the 72-34 doctrine
+        reserves, never a silent first-come claim). Ownerless
+        loads (checkpoint members, tools, tests) stage the
+        recorded owner without judging it.
         """
         n = cls(path=path)
+        if owner is not None:
+            n.owner = owner
         # R6.3: record restoration epoch; pre-restoration instances
         # are stale for save purposes (checked by check_save_allowed).
         # Uses canonical (_safe_owner) key from path (already sanitized).
@@ -2072,7 +2149,8 @@ class Nursery:
         staged_present: Dict[str, set] = {}
         staged_dispositions: Dict[str, Dict[str, Any]] = {}
         staged_edit_receipts: Dict[str, Dict[str, Any]] = {}
-        staged_confirmation_receipts: Dict[str, Dict[str, Any]] = {}
+        staged_grant_use_receipts: Dict[str, Dict[str, Any]] = {}
+        staged_owner: Optional[str] = None
         try:
             for k, v in raw.items():
                 # DCC-XIX: the reserved disposition section is staged
@@ -2109,29 +2187,72 @@ class Nursery:
                     staged_edit_receipts = {
                         op_id: dict(rec) for op_id, rec in v.items()}
                     continue
-                # FI-011 (A8): the reserved confirmation-receipt
-                # section is staged separately under the same
-                # arrangement; it is never mistaken for a proposal.
-                if k == CONFIRMATION_RECEIPT_SECTION_KEY:
+                # FI-011 A7: the reserved grant-use receipt section
+                # is staged separately under the same arrangement;
+                # it is never mistaken for a proposal. (Pre-A7
+                # readers refuse files carrying this section - the
+                # reason save() emits it only when non-empty.)
+                if k == GRANT_USE_RECEIPT_SECTION_KEY:
                     if not isinstance(v, dict):
                         raise NurseryLoadError(
                             f"nursery file {os.path.basename(path)} has a malformed "
-                            f"{CONFIRMATION_RECEIPT_SECTION_KEY} section (not an object)"
+                            f"{GRANT_USE_RECEIPT_SECTION_KEY} section (not an object)"
                         )
                     for rid, rec in v.items():
                         if not isinstance(rid, str) or not isinstance(rec, dict):
                             raise NurseryLoadError(
                                 f"nursery file {os.path.basename(path)} has a malformed "
-                                f"confirmation receipt for {rid!r}"
+                                f"grant-use receipt for {rid!r}"
                             )
-                    staged_confirmation_receipts = {
+                    staged_grant_use_receipts = {
                         rid: dict(rec) for rid, rec in v.items()}
+                    continue
+                # Critic F7: the reserved owner-identity section is
+                # staged separately under the same arrangement; it
+                # is never mistaken for a proposal. A MALFORMED
+                # identity record refuses the whole load typed —
+                # an identity record that cannot be read cannot be
+                # trusted to bind the file or to clear it.
+                if k == OWNER_SECTION_KEY:
+                    # The recorded identity is the exact raw owner
+                    # string; validity is isinstance(owner, str) —
+                    # the empty string is a lawful (degenerate)
+                    # owner the program door already accepts, so
+                    # only a NON-STRING owner value (number, list,
+                    # dict, null) is malformed here. The collision
+                    # judgment below stays exact-match: "" binds
+                    # only to "".
+                    if not isinstance(v, dict) \
+                            or not isinstance(v.get("owner"), str):
+                        raise NurseryLoadError(
+                            f"nursery file {os.path.basename(path)} has a malformed "
+                            f"{OWNER_SECTION_KEY} section (not an object carrying "
+                            f"an owner string)"
+                        )
+                    staged_owner = v["owner"]
                     continue
                 if not isinstance(v, dict):
                     raise NurseryLoadError(
                         f"nursery file {os.path.basename(path)} has an invalid proposal record for {k!r}"
                     )
                 rec = Proposal(**v)
+                # FI-011 A9: status membership, checked inside
+                # private staging before anything is applied. A
+                # PRESENT status outside the lawful set refuses the
+                # WHOLE load typed - an unknown status is a zombie
+                # no counter, query, or sweep can ever see. An
+                # ABSENT status key keeps the legacy dataclass
+                # default ("pending") and loads exactly as before.
+                # A forged VALID value (e.g. "confirmed") is not
+                # distinguishable here and stays inside the retained
+                # file-tamper disclosure by design.
+                if "status" in v and rec.status not in LAWFUL_STATUSES:
+                    raise NurseryLoadError(
+                        f"nursery file {os.path.basename(path)} has a "
+                        f"proposal record for {k!r} with unknown "
+                        f"status {rec.status!r} (lawful: "
+                        f"{sorted(LAWFUL_STATUSES)!r})"
+                    )
                 _validate_loaded_organization(k, rec, path)
                 staged[k] = rec
                 staged_present[k] = set(v.keys())
@@ -2141,11 +2262,102 @@ class Nursery:
             raise NurseryLoadError(
                 f"nursery file {os.path.basename(path)} has an invalid proposal record: {exc}"
             ) from exc
+        # Critic F7: owner binding, decided entirely inside private
+        # staging — on refusal nothing is applied, nothing is
+        # exposed, and no byte of the file is touched. Only a
+        # caller that NAMES its owner (the Program construction
+        # door) is judged; ownerless loads keep the recorded owner
+        # as staged state.
+        if owner is not None:
+            if staged_owner is not None and staged_owner != owner:
+                from form.persist import OwnerCollisionError
+                raise OwnerCollisionError(
+                    f"Nursery load: owner namespace collision — "
+                    f"the nursery file {os.path.basename(path)} "
+                    f"belongs to owner {staged_owner!r}, not "
+                    f"{owner!r} (both normalize to the same safe "
+                    f"name). Refusing to expose or adopt another "
+                    f"owner's nursery; the stored bytes are "
+                    f"preserved unchanged. Resolve by using the "
+                    f"stored owner's exact name, or by an "
+                    f"authorized namespace migration (72-34/DD-12).")
+            if staged_owner is None:
+                # Legacy unbound file (pre-F7: no identity
+                # record). Adoption is permitted only when it
+                # cannot hand one owner's data to another: the
+                # sibling program file PROVES this requester is
+                # the owner, or the file holds no owner-scoped
+                # content at all — no proposals, dispositions,
+                # edit receipts, or grant-use receipts (Director
+                # 7181859606). Anything else refuses fail-closed.
+                import re as _re_f7
+                from form.persist import stored_program_owner
+                _proof = None
+                _m_f7 = _re_f7.search(r"nursery_(.+)\.json$", path)
+                if _m_f7:
+                    _proof = stored_program_owner(os.path.join(
+                        os.path.dirname(path),
+                        f"program_{_m_f7.group(1)}.json"))
+                if _proof is not None and _proof != owner:
+                    from form.persist import OwnerCollisionError
+                    raise OwnerCollisionError(
+                        f"Nursery load: owner namespace collision "
+                        f"— the program file for this safe name "
+                        f"belongs to owner {_proof!r}, not "
+                        f"{owner!r}, and the unbound legacy nursery "
+                        f"file {os.path.basename(path)} follows the "
+                        f"program file's proven identity. Refusing "
+                        f"to expose another owner's nursery; the "
+                        f"stored bytes are preserved unchanged "
+                        f"(72-34/DD-12).")
+                # Director 7181859606: the no-proof test covers
+                # EVERY owner-scoped section the loader applies —
+                # proposals, conflict dispositions, organization
+                # edit receipts and grant-use receipts. Zero
+                # proposals alone never proved "nothing exists to
+                # hand over": a records-only legacy file was
+                # silently adopted by a colliding namesake, who
+                # read the first owner's records and whose next
+                # save restamped the file as his own.
+                _holdings = []
+                if staged:
+                    _holdings.append(f"{len(staged)} proposal(s)")
+                if staged_dispositions:
+                    _holdings.append(
+                        f"{len(staged_dispositions)} conflict "
+                        f"disposition(s)")
+                if staged_edit_receipts:
+                    _holdings.append(
+                        f"{len(staged_edit_receipts)} organization "
+                        f"edit receipt(s)")
+                if staged_grant_use_receipts:
+                    _holdings.append(
+                        f"{len(staged_grant_use_receipts)} grant-use "
+                        f"receipt(s)")
+                if _proof is None and _holdings:
+                    from form.persist import OwnerCollisionError
+                    raise OwnerCollisionError(
+                        f"Nursery load: the legacy nursery file "
+                        f"{os.path.basename(path)} predates owner "
+                        f"binding, holds "
+                        f"{', '.join(_holdings)}, "
+                        f"and no program file proves whether it "
+                        f"belongs to {owner!r}. Refusing to serve "
+                        f"or adopt an unbound nursery whose owner "
+                        f"cannot be proven — a first-come claim "
+                        f"could hand one owner's pending ideas to "
+                        f"a colliding namesake. The stored bytes "
+                        f"are preserved unchanged; resolution is "
+                        f"an authorized adoption/migration "
+                        f"(72-34/DD-12).")
+            n.owner = owner
+        elif staged_owner is not None:
+            n.owner = staged_owner
         # Only now apply: nothing partial can escape.
         n.proposals = staged
         n._present_fields = staged_present
         n.conflict_dispositions = staged_dispositions
         n.organization_edit_receipts = staged_edit_receipts
-        n.confirmation_receipts = staged_confirmation_receipts
+        n.grant_use_receipts = staged_grant_use_receipts
         n._seen = hashlib.sha256(blob).hexdigest()
         return n

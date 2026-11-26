@@ -10,10 +10,15 @@ pins the register's missing evidence at the PROGRAM level:
 
   Controls (must hold):
   - N* Nursery level (isolated temp file): two stale instances;
-    first confirm succeeds; stale second refused with
-    NurseryConflictError, in-memory status rolled back; fresh
-    reload confirmed exactly once; duplicate confirm on one
-    instance is a clean no-op; stale ADD refused, no lost update.
+    first guarded mutation (organize_proposal, riding save())
+    succeeds; stale second refused with NurseryConflictError,
+    in-memory value rolled back; fresh reload shows the mutation
+    exactly once; stale ADD refused, no lost update. (FI-011 A8:
+    the raw Nursery.confirm door this case originally raced on is
+    RETIRED — the stale-instance negative is preserved on the
+    surviving guarded mutation door; the raw door's absence is
+    itself checked. Confirmation racing stays pinned at the
+    PROGRAM level by P*/D1/D2 below.)
   - P* Program level, sequential stale (both instances loaded
     from the SAME generation before either confirms): first
     confirm ok; stale second refused explicitly
@@ -127,25 +132,36 @@ def case_nursery():
         check("N.both_see_pending",
               a.proposals[pid].status == "pending"
               and b.proposals[pid].status == "pending")
-        ra = a.confirm(pid, actor="suite:race")
-        check("N.first_confirm_ok",
-              ra is not None and ra.status == "confirmed")
+        # FI-011 A8 re-vehicle: the raw Nursery.confirm door is
+        # retired, so the stale-instance race is exercised on the
+        # surviving guarded mutation door (organize_proposal,
+        # which persists through the same save() lost-update
+        # guard). The properties preserved are the race properties
+        # themselves: first writer wins, stale writer refused with
+        # NurseryConflictError, loser's in-memory state rolled
+        # back, reload shows the winning mutation exactly once.
+        check("N.raw_confirm_retired", not hasattr(a, "confirm"))
+        _pre_topic = b.proposals[pid].topic
+        ra = a.organize_proposal(pid, actor="race-a", topic="Alpha")
+        check("N.first_mutation_ok",
+              isinstance(ra, dict) and ra.get("ok") is True
+              and a.proposals[pid].topic == "Alpha",
+              str(ra)[:200])
         try:
-            b.confirm(pid, actor="suite:race")
+            b.organize_proposal(pid, actor="race-b", topic="Beta")
             bout = "no-raise"
         except NurseryConflictError:
             bout = "conflict"
         except Exception as e:  # noqa: BLE001
             bout = f"other:{type(e).__name__}"
-        check("N.stale_confirm_refused", bout == "conflict", bout)
+        check("N.stale_mutation_refused", bout == "conflict", bout)
         check("N.stale_inmemory_rolled_back",
-              b.proposals[pid].status == "pending")
+              b.proposals[pid].topic == _pre_topic)
         c = Nursery.load(path)
-        check("N.reload_confirmed_once",
-              c.proposals[pid].status == "confirmed"
-              and c.summary()["confirmed"] == 1
+        check("N.reload_mutated_once",
+              c.proposals[pid].topic == "Alpha"
+              and len(c.organization_edit_receipts) == 1
               and c.summary()["total"] == 1)
-        check("N.dup_confirm_noop", c.confirm(pid) is None)
         d, e = Nursery.load(path), Nursery.load(path)
         d.add("Second Idea", words="gamma")
         try:

@@ -348,14 +348,6 @@ def _rollback_unconfirmed(program: Any, succ_id: Optional[str]) -> Dict[str, Any
             removed.append("proposal")
         except Exception as e:
             failures.append(f"proposal:{type(e).__name__}")
-        # FI-011 (A8): the successor's confirmation receipts stand
-        # only while its confirmation stands — this rollback removes
-        # the confirmation, so its receipts are removed with it.
-        try:
-            program.nursery.discard_confirmation_receipts_for(succ_id)
-            removed.append("confirmation_receipts")
-        except Exception as e:
-            failures.append(f"confirmation_receipts:{type(e).__name__}")
         # Remove plane unit
         try:
             program.cube.session.plane.remove(succ_id)
@@ -456,14 +448,6 @@ def _rollback_full(program: Any, old: Any, old_snap: Dict[str, Any],
             removed.append("proposal")
         except Exception as e:
             failures.append(f"proposal:{type(e).__name__}")
-        # FI-011 (A8): drop the successor's confirmation receipts
-        # with its confirmation (receipt invariant — see
-        # _rollback_unconfirmed).
-        try:
-            program.nursery.discard_confirmation_receipts_for(succ_id)
-            removed.append("confirmation_receipts")
-        except Exception as e:
-            failures.append(f"confirmation_receipts:{type(e).__name__}")
         try:
             program.cube.session.plane.remove(succ_id)
             removed.append("unit")
@@ -661,7 +645,21 @@ def _supersede_impl(program: Any, old_id: str, words: str,
         raise SupersedeError("injected_failure", "create")
 
     # ---- Phase 2: create successor via the legitimate nursery path ----
-    new_label = (label or f"revision of {getattr(old, 'label', old_id)}")[:80]
+    # R24-L sibling (Director 7136782069): the successor label is NOT
+    # sliced. The canonical budget is MAX_LABEL_CHARS = 200 (Nursery
+    # Q-S2.1); the approval context binds the FULL effective label, so
+    # the old [:80] cut both destroyed admitted content and broke the
+    # derived-approval payload match for any label over 80 chars. An
+    # over-budget label — explicit or generated — refuses HERE, before
+    # any write: predecessor preserved, no partial successor, no
+    # journal, no receipt.
+    new_label = (label or f"revision of {getattr(old, 'label', old_id)}")
+    from form.dell_matrix.nursery import MAX_LABEL_CHARS
+    if len(new_label) > MAX_LABEL_CHARS:
+        raise SupersedeError(
+            "label_over_budget",
+            f"successor label is {len(new_label)} chars; "
+            f"the bound is {MAX_LABEL_CHARS} chars; nothing created")
     succ = nursery.add(
         new_label,
         words=words,

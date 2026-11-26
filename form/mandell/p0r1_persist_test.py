@@ -147,7 +147,12 @@ def t_r1_postrollback_mutation_keeps_member_byte_identical(rec) -> None:
     p2 = _t_mediated_rollback(o)
     # Two different mutation paths, both autosave.
     p2.nursery.add("r1 second", words="w2")
-    p2.nursery.confirm(first.id, actor="suite:p0r1")
+    # FI-011 A8 migration: the raw Nursery.confirm door is retired.
+    # This leg's subject is sealed-member immutability under ANY
+    # live mutation, so the confirmed state is staged directly in
+    # trusted test code (the packet's sanctioned setup convenience).
+    p2.nursery.proposals[first.id].status = "confirmed"
+    p2.nursery.save()
     ok = _sha256(mpath) == manifest_sha
     # The committed generation still loads, byte-valid.
     p3, rc3 = CG.load_checkpoint(o, activate=False)

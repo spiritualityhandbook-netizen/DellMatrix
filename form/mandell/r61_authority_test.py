@@ -734,13 +734,24 @@ def test_checks_disabled_negatives_fail():
 # ---------------------------------------------------------------- J. content semantics (Director 2026-10-07 AMEND)
 # Absence vs empty: None = unconstrained (documented positive);
 # every valid Mapping, including {}, is hashed and bound.
+#
+# FI-011 SUPERSESSION (Director ruling 7085151190 item 1,
+# 2026-11-22; packet A7.1): the 2026-10-07 "content=None =
+# UNCONSTRAINED documented positive" PRESENTMENT semantics are
+# superseded for nursery.confirm. None remains a lawful RECORD
+# value (an attenuation may leave a dimension unbound in the
+# record, and the record-shape checks below still pin that), but
+# a grant may no longer be PRESENTED for nursery.confirm unless
+# it is bound to BOTH the target pid and the live content hash.
+# The J1/J2 allow legs are amended to the new presentment law;
+# their record-shape checks are preserved verbatim.
 
 def test_none_content_is_unconstrained_positive():
     from form.dell_matrix import agent_authority as aa
     owner = "R61_J1"
     p = fresh_program(owner)
     pr = p.nursery.add("NoneContent", words="v1")
-    # No content_pid -> content=None -> unconstrained by content.
+    # No content_pid -> content=None in the RECORD (unchanged).
     root = aa.issue_root_grant(p, issuer="human:ace", subject="agent-a",
                                max_depth=1)
     child = aa.attenuate_for(p, root["grant_id"], target=pr.id)
@@ -749,7 +760,13 @@ def test_none_content_is_unconstrained_positive():
           .get("content_hash") is None)
     pr.words = "changed words entirely"
     r = aa.agent_confirm(p, pr.id, child["grant_id"], "agent-a")
-    check("J1:unconstrained_allows", r.get("ok") is True, str(r))
+    # AMENDED (FI-011 A7.1): presentment of a content-unbound
+    # grant for nursery.confirm now DENIES, even though the
+    # record itself stays lawful.
+    check("J1:unbound_presentment_denies", r.get("ok") is False,
+          str(r))
+    check("J1:still_pending",
+          p.nursery.proposals[pr.id].status == "pending")
 
 
 def test_empty_dict_content_binds():
@@ -763,12 +780,27 @@ def test_empty_dict_content_binds():
     check("J2:empty_hashed_not_none",
           rec.get("content_hash") == canonical_hash({}),
           str(rec.get("content_hash")))
-    # Exact hash match allows (policy level).
+    # AMENDED (FI-011 A7.1): this grant's record carries no
+    # target, so PRESENTMENT for nursery.confirm denies as
+    # unbound even with an exact content-hash match.
     d = p.acceptance_policy.check(
         "agent:a", "any-pid", {"grant_id": g["grant_id"]},
         proposal_version=canonical_hash({}), operation="confirm",
         subject="agent-a", owner=owner)
-    check("J2:exact_match_allows", d.get("allowed") is True, str(d))
+    check("J2:unbound_target_denies", d.get("allowed") is False
+          and "unbound" in str(d.get("detail") or "").lower(), str(d))
+    # Fully bound (target + content): exact hash match allows
+    # (policy level).
+    g2 = p.acceptance_policy.issue_grant(
+        issuer="human:ace", subject="agent-a", owner=owner,
+        operation="nursery.confirm", target="any-pid", content={},
+        max_depth=0)
+    d3 = p.acceptance_policy.check(
+        "agent:a", "any-pid", {"grant_id": g2["grant_id"]},
+        proposal_version=canonical_hash({}), operation="confirm",
+        subject="agent-a", owner=owner)
+    check("J2:bound_exact_match_allows", d3.get("allowed") is True,
+          str(d3))
     # Different content denies (policy level).
     d2 = p.acceptance_policy.check(
         "agent:a", "any-pid", {"grant_id": g["grant_id"]},

@@ -191,7 +191,19 @@ def _state_payload(program) -> Dict[str, Any]:
     # Cap keeps lattice page responsive without dropping graph capability elsewhere.
     _EDGE_CAP = 480
     raw_edges = list(view.edges or [])
-    edges = [e.to_dict() for e in raw_edges[:_EDGE_CAP]]
+    # Truth-in-counts (Director challenge 7097430407): the client draws
+    # an edge only when BOTH endpoints resolve in the shipped node set
+    # (nodes_payload ids). Sandbox-kind edges target a sandbox id,
+    # which is never a shipped node, so shipping them would make
+    # edges_shown exceed what is actually drawn. Ship only resolvable
+    # edges and disclose the excluded count; never manufacture a node
+    # for a box. The room filter annotates nodes but never drops ids,
+    # so `nodes` here is the same id set the payload ships.
+    node_ids = {str(n.get("id")) for n in nodes if isinstance(n, dict)}
+    resolvable = [e for e in raw_edges
+                  if str(getattr(e, "source", "")) in node_ids
+                  and str(getattr(e, "target", "")) in node_ids]
+    edges = [e.to_dict() for e in resolvable[:_EDGE_CAP]]
     form = lat.get("form", "cube")
     # form grammar colors
     form_theme = {
@@ -265,7 +277,10 @@ def _state_payload(program) -> Dict[str, Any]:
         "edges": edges,
         "edges_total": len(raw_edges),
         "edges_shown": len(edges),
+        "edges_unresolvable": len(raw_edges) - len(resolvable),
         "nursery": nursery[:20],
+        "nursery_total": len(nursery),
+        "nursery_shown": min(20, len(nursery)),
         "avatar": avatar,
         "user": body,
         "user_trail": list(getattr(program, "user_trail", []) or []),
@@ -366,6 +381,35 @@ def _handle_ai_command(program, cmd: str) -> Optional[Dict[str, Any]]:
         except Exception:
             return {"ok": False, "error": "usage: ai goto X Y"}
     return {"ok": False, "error": f"unknown ai command: {rest}"}
+
+
+def _browser_confirm(program, pid: str) -> Dict[str, Any]:
+    """Confirm one proposal on behalf of the local human at this UI.
+
+    Critic Finding 9 (Director disposition 7180713277 on issue #512):
+    the browser confirm branches called confirm_proposal with no
+    producer and no review context, so the acceptance policy denied
+    every browser-path confirm as anonymous — while the REPL path,
+    which issues a bound review context, confirmed fine. This server
+    is the local human's own UI (127.0.0.1, origin-checked POST /cmd);
+    its confirm dispatch is trusted dispatch code exactly like
+    form/repl.py's, so it issues the review context the same way
+    (producer/reviewer "repl_user", approval issued by this session's
+    policy via make_review_context). The policy still refuses
+    anonymous, context-free, and forged-context confirms everywhere
+    else; nothing here bypasses it, and confirmation remains the
+    human's act. Programs without the review-context surface keep
+    the legacy bare call.
+    """
+    if not hasattr(program, "confirm_proposal"):
+        return {"ok": False, "reason": "no confirm"}
+    if hasattr(program, "make_review_context"):
+        return program.confirm_proposal(
+            pid,
+            _producer="repl_user",
+            _review_context=program.make_review_context(pid, "repl_user"),
+        )
+    return program.confirm_proposal(pid)
 
 
 def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]]:
@@ -707,7 +751,8 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
                 f"{i:2}. [{p.get('id')}] {p.get('label') or p.get('id')} · aff={p.get('affinity','—')} · "
                 f"{(p.get('words') or '')[:80]}"
             )
-        return {"ok": True, "msg": "\n".join(lines), "nursery": props[:20]}
+        return {"ok": True, "msg": "\n".join(lines), "nursery": props[:20],
+                "nursery_total": len(props), "nursery_shown": min(20, len(props))}
     # ─── Needs: strong create · edit · undo · history · nbd · ready ───
     if lower.startswith("create an idea") or lower.startswith("create idea") or lower.startswith("plant "):
         from form.dell_matrix.needs import parse_and_place, format_create_end
@@ -716,12 +761,23 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
             name = raw.split(maxsplit=1)[1].strip()
             line = f"create an idea called {name}"
         res = parse_and_place(program, line)
-        if res.get("ok") is False:
-            # FI-012: a parse refusal reaches the user as a refusal —
-            # never dressed up as a creation under an ok=True wrapper.
-            return {"ok": False,
-                    "error": res.get("error") or "create refused",
-                    "create": res, "end": "create_refused"}
+        if not res.get("ok", True):
+            # E-1 (Director 7100595543): a refused create stays a refusal
+            # through this envelope — propagate the real ok and the typed
+            # error, no create_strong end signal, and do not echo the
+            # refused label back inside the machine-readable result.
+            return {
+                "ok": False,
+                "error": str(res.get("error") or "create_refused"),
+                "msg": format_create_end(res),
+                "create": {
+                    "ok": False,
+                    "error": str(res.get("error") or "create_refused"),
+                    "label_chars": res.get("label_chars"),
+                    "max_label_chars": res.get("max_label_chars"),
+                },
+                "end": "create_refused",
+            }
         return {"ok": True, "msg": format_create_end(res), "create": res, "end": "create_strong"}
     if lower.startswith("set detail "):
         rest = raw[len("set detail "):].strip().split(None, 1)
@@ -865,7 +921,7 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         fail_n = 0
         labels = []
         for prop in list(props)[:40]:
-            res = program.confirm_proposal(prop["id"]) if hasattr(program, "confirm_proposal") else {}
+            res = _browser_confirm(program, prop["id"])
             if res.get("ok"):
                 ok_n += 1
                 labels.append(res.get("label") or prop.get("label") or prop.get("id"))
@@ -878,7 +934,7 @@ def _handle_ux_command(program, lower: str, raw: str) -> Optional[Dict[str, Any]
         }
     if lower.startswith("confirm "):
         pid = raw.split(maxsplit=1)[1].strip()
-        res = program.confirm_proposal(pid) if hasattr(program, "confirm_proposal") else {"ok": False, "reason": "no confirm"}
+        res = _browser_confirm(program, pid)
         if res.get("ok"):
             return {"ok": True, "msg": f'Confirmed · "{res.get("label")}" is live on the lattice', "confirm": res}
         return {"ok": False, "error": f"Could not confirm: {res.get('reason')}", "confirm": res}

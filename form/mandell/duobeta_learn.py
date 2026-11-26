@@ -107,6 +107,21 @@ def saturate_learned_score(raw: int) -> float:
     return (raw * SATURATION_SCALE) / (SATURATION_SCALE + abs(raw))
 
 
+def _distinct_ids(ids: Any) -> List[Any]:
+    """Order-preserving distinct view of an outcome-ID list.
+
+    Critic Finding 8 (Director disposition 7180713277): one outcome is
+    one observation no matter how many times it is listed. Every
+    evidence count in this module — the gate and every reported total
+    derived from it — counts DISTINCT outcome IDs only.
+    """
+    out: List[Any] = []
+    for oid in ids or []:
+        if oid not in out:
+            out.append(oid)
+    return out
+
+
 def _ts() -> str:
     return utc_now_str()
 
@@ -230,8 +245,8 @@ def gate_proposal(program: Any, proposal_id: Any) -> Dict[str, Any]:
     Rules:
       1. kind allowed else REJECTED(forbidden_kind)
       2. 1<=dell<=99 else REJECTED(out_of_scope)
-      3. >=MIN_EVIDENCE supporting outcomes else REJECTED(insufficient_evidence)
-      4. supporting results match kind else REJECTED(evidence_mismatch)
+      3. >=MIN_EVIDENCE DISTINCT supporting outcomes else REJECTED(insufficient_evidence)
+      4. DISTINCT supporting results match kind else REJECTED(evidence_mismatch)
       5. knowledge_id in evidence knowledge (when claimed) else REJECTED(evidence_mismatch)
       6. not already APPLIED for (kind,dell,knowledge_id) else REJECTED(duplicate)
     """
@@ -268,7 +283,10 @@ def gate_proposal(program: Any, proposal_id: Any) -> Dict[str, Any]:
     dell_matched = []
     supporting = []
     knowledge_seen = set()
-    for oid in oids:
+    # Finding 8: iterate DISTINCT outcome IDs only — a repeated listing
+    # of the same outcome is not independent evidence and must count
+    # once toward both the dell-matched leg and the supporting leg.
+    for oid in _distinct_ids(oids):
         rec = get_outcome(program, oid)
         if not rec:
             continue
@@ -337,8 +355,12 @@ def preference_index(program: Any) -> Dict[Tuple[Any, Any], Dict[str, Any]]:
         key = (m.get("dell"), m.get("knowledge_id"))
         cell = idx.setdefault(key, {"success": 0, "failure": 0,
                                     "blocked": 0, "last_seen": ""})
-        n = len((m.get("evidence") or {}).get("supporting", [])
-                or (m.get("evidence") or {}).get("outcome_ids", []))
+        # Finding 8: reported totals count DISTINCT outcome IDs, even
+        # for entries recorded before the gate repair whose stored
+        # supporting list already carries duplicates.
+        n = len(_distinct_ids(
+            (m.get("evidence") or {}).get("supporting", [])
+            or (m.get("evidence") or {}).get("outcome_ids", [])))
         pk = m.get("proposal_kind")
         if pk == "preference":
             cell["success"] += n

@@ -57,9 +57,17 @@ through the public seed path:
 - 46 Rank: "Ranked <n> proposals:" plus one line per
   PENDING proposal, affinity-descending (equal
   affinities keep the lens order — score descending,
-  then id; the lens has no insertion-order term, see
-  the symbiosis oracle correction), format
-  "<i>. aff=<aff:.3f> [<kind>] <id> — <label>".
+  then id; the lens has no insertion-order term),
+  format "<i>. aff=<aff:.3f> [<kind>] <id> — <label>".
+  The order Rank prints is the order
+  ranked_proposals() serves — the S lens order
+  (Director 7074761282 / §42 delta 7080635172; see
+  the symbiosis oracle union below): fresher first
+  on the FRESH fade at one-second granularity, exact
+  score ties broken by proposal id. Dell 46's own
+  affinity sort is stable: at equal affinity it
+  preserves the input order it was served (proven in
+  isolation in the symbiosis block below).
 - 47 Embed (core_i_ops): HONEST REFUSAL — ok=False
   embed_unavailable, representation "none", no
   provider; labeled and bare refuse identically.
@@ -83,8 +91,11 @@ through the public seed path:
   with zero mutation.
 
 Cluster symbiosis: Rank (46) ranks the pending
-proposals Nurture (37) wrote, and returns to zero
-after Nurture confirms/rejects them all; Discover
+proposals Nurture (37) wrote — in S lens order,
+pinned with controlled created stamps so no
+wall-clock straddle can move the result — and
+returns to zero after Nurture confirms/rejects
+them all; Discover
 (35, circuit 18) find_idea locates the unit Nurture's
 confirm promoted; TokenCount (40) counts the units
 Manifest (50) and Distill (38) minted. One literal-
@@ -185,6 +196,62 @@ def main():
     pid2 = getattr(p, "last_nurture", {}).get("pid", "")
 
     # -- symbiosis: Rank reads Nurture's pending set.
+    #
+    #    ORACLE UNION (Director §42 COMPOSITION RULING
+    #    7090358247, 2026-11-22 ~21:00 CST; blocker
+    #    7090289557): TEST-ONLY union of the two competing
+    #    corrections of this block. Governing law: the
+    #    adopted lens orders by (-score, id); the FRESH
+    #    term reads the created stamp at ONE-SECOND
+    #    granularity; neither side's tests redefine
+    #    production behavior. Case-by-case crosswalk:
+    #
+    #    U1 = main's equal-stamp ID tie-break (Director
+    #      §42 delta 7080635172; classification
+    #      D1_LEAF4_CLASSIFICATION_2026-11-22): pin the
+    #      second proposal's created stamp to the first's;
+    #      exactly equal scores tie-break by id. KEPT
+    #      VERBATIM as the first check below. Branch (b)
+    #      (Director 7074761282, PR #506) asserted the
+    #      same control — identical stamps, id tie-break,
+    #      same expected order — using absolute controlled
+    #      stamps instead of the relative pin. EQUIVALENT:
+    #      consolidated into U1; no distinct behavior or
+    #      negative case lost.
+    #    U2 = main's boundary control (§42 delta
+    #      7080635172): the second proposal exactly one
+    #      second younger ranks FIRST on its strictly
+    #      larger FRESH score. KEPT VERBATIM as the second
+    #      check below. Branch (a) (7074761282) asserted
+    #      the same configuration and outcome with
+    #      absolute stamps (pid2 at "...T00:00:01Z" vs
+    #      pid1 at "...T00:00:00Z"). EQUIVALENT:
+    #      consolidated into U2; no distinct behavior or
+    #      negative case lost.
+    #    U3 = branch (c) (7074761282), DISTINCT, kept
+    #      verbatim as the third check: the id tie-break
+    #      governs against insertion order (Zebra added
+    #      first, Apple second; Apple ranks first at
+    #      identical stamps). Main's version has no such
+    #      case — its tie-break pair's ids coincide with
+    #      insertion order, so it cannot distinguish the
+    #      two orders.
+    #    U4 = branch (d) (7074761282), DISTINCT, kept
+    #      verbatim as the fourth check: Dell 46 isolated
+    #      from the lens — served a pre-ranked list
+    #      directly, its stable affinity sort preserves
+    #      the served input order at equal affinity.
+    #
+    #    Failing-first provenance: each side's correction
+    #    was written against a documented campaign red of
+    #    the pre-correction oracle — main's pin against
+    #    the leg-1 35/36 red, the branch's controlled
+    #    stamps against the leg-3 red (both reds the same
+    #    wall-clock second-straddle under the old
+    #    insertion-order pin). The union preserves both
+    #    corrections' controls; no assertion from either
+    #    side was weakened.
+    #
     #    ORACLE CORRECTION (Director §42 delta 7080635172;
     #    classification D1_LEAF4_CLASSIFICATION_2026-11-22):
     #    the adopted lens orders by (-score, id) — there is
@@ -213,8 +280,8 @@ def main():
                       f"  2. aff=0.000 [new] {pid2} — Second Idea"],
          str(_msgs(r)))
 
-    # -- symbiosis boundary control: with the second
-    #    proposal's created stamp exactly one second
+    # -- symbiosis boundary control (union U2): with the
+    #    second proposal's created stamp exactly one second
     #    younger, its strictly larger FRESH score MUST
     #    rank it first — the freshness ordering is the
     #    adopted semantics, not noise. This is the exact
@@ -233,6 +300,54 @@ def main():
                       f"  2. aff=0.000 [new] {pid1} — First Idea"],
          str(_msgs(r)))
     p.nursery.proposals[pid2].created = _stamp
+
+    # -- symbiosis (c) (union U3): the id tie-break is NOT
+    #    insertion order — a pair whose slugs sort
+    #    against their insertion order still comes
+    #    out in id order at identical stamps.
+    owner_c = "D1RegLeaf4Lens"
+    pc = _program(owner_c)
+    _run(pc, "37[Nurture] :: Zebra Idea")
+    pidz = getattr(pc, "last_nurture", {}).get("pid", "")
+    _run(pc, "37[Nurture] :: Apple Idea")
+    pida = getattr(pc, "last_nurture", {}).get("pid", "")
+    pc.nursery.proposals[pidz].created = "2026-01-01T00:00:00Z"
+    pc.nursery.proposals[pida].created = "2026-01-01T00:00:00Z"
+    r = _run(pc, "46[Rank]")
+    _rec("symbiosis: Rank (46) tie-break follows "
+         "proposal id against insertion order — Apple "
+         "(added second) ranks before Zebra (added "
+         "first) at identical stamps",
+         _msgs(r) == ["Ranked 2 proposals:",
+                      f"  1. aff=0.000 [new] {pida} — Apple Idea",
+                      f"  2. aff=0.000 [new] {pidz} — Zebra Idea"],
+         str(_msgs(r)))
+    _cleanup(owner_c)
+
+    # -- symbiosis (d) (union U4): Dell 46 isolated from
+    #    the lens — served a pre-ranked list directly, its
+    #    stable affinity sort preserves the input
+    #    order at equal affinity.
+    owner_s = "D1RegLeaf4Rank46"
+    ps = _program(owner_s)
+    feed = [{"id": "zz_feed", "label": "Zeta Feed",
+             "kind": "new", "affinity": 0.0},
+            {"id": "aa_feed", "label": "Alpha Feed",
+             "kind": "new", "affinity": 0.0},
+            {"id": "mm_feed", "label": "Mid Feed",
+             "kind": "new", "affinity": 0.0}]
+    ps.ranked_proposals = lambda: [dict(d) for d in feed]
+    r = _run(ps, "46[Rank]")
+    _rec("symbiosis: Dell 46 in isolation preserves "
+         "its served input order at equal affinity — "
+         "zz_feed, aa_feed, mm_feed print in feed "
+         "order, not id order",
+         _msgs(r) == ["Ranked 3 proposals:",
+                      "  1. aff=0.000 [new] zz_feed — Zeta Feed",
+                      "  2. aff=0.000 [new] aa_feed — Alpha Feed",
+                      "  3. aff=0.000 [new] mm_feed — Mid Feed"],
+         str(_msgs(r)))
+    _cleanup(owner_s)
 
     # -- 44 Bridge: honest refusal, bare and labeled
     before = list(_units(p))

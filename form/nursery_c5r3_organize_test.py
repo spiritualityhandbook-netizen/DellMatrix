@@ -811,7 +811,13 @@ def smoke() -> bool:
         check("O22.actor_token_refused",
               "ARGUMENT_INVALID" in out22b
               and p22.nursery.proposals[e22.id].topic == "MixedCase")
-        p22.nursery.confirm(e22.id, actor="suite:c5r3")
+        # FI-011 A8 migration: raw Nursery.confirm retired; the
+        # confirmed state this leg organizes against is produced by
+        # the canonical owner confirmation path.
+        _c22 = p22.confirm_proposal(
+            e22.id, _producer="repl_user",
+            _review_context=p22.make_review_context(e22.id, "repl_user"))
+        assert _c22.get("ok"), f"O22 setup confirm failed: {_c22}"
         capture_output(lambda: _dispatch_public_line(
             p22, f"proposals organize {e22.id} cluster:PostConfirm",
             "o22"))

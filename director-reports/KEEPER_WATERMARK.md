@@ -1,27 +1,28 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-21 ~06:23 CST  
-**UTC approx**: 2026-11-21T12:23:00Z  
+**Last cycle**: 2026-11-26 ~07:30 CST  
+**UTC approx**: 2026-11-26T13:30:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Ripe gates: No new ripe gates at current heads. Existing stamps (Gemini carrier on #508 d0cfb0d2 PLAN, #507 da3f9c1e) and Director SCOPED PLAN-CONFIRM on #508 stand. #294 fenced under Q1 GATE HOLD. Other open Parts not ripe for new stamp.
-- Merged-main proofs: #509 merged 2026-11-21T11:33:00Z (merge SHA d1e1fb25). Pre-merge CODE CONFIRM at head stands. Post-merge Form smoke 44899637603 FAILURE; Uni diagnosis timing-oracle instrument defect in c7profile t8 (product not implicated). Exact missing for CODE credit: terminal merged-main CI ALL SUCCESS or Director close of the OPEN exception. Comment posted on PR. #504/#503 prior merges stand (no new credit owed this pass).
-- Records reviews: No new records packages awaiting review.
-- Trailing obligations: 0 discharged, 0 remaining.
+- Ripe gates:
+  - #536 at 1efe1d99005e6e8fa88fb1f9702178808b255163: prior SCOPED CONFIRM (7190627854) at exact current head stands. Terminal CI ALL SUCCESS (check-runs verified). Mergeable CLEAN. No new stamp.
+  - #532 at 402445eecc9592f147a6c3b1c7d7fa83849880be: prior SCOPED CONFIRM (7190626816) at exact current head stands. Terminal CI ALL SUCCESS (smoke re-run verified). Mergeable CLEAN. No new stamp.
+  - Drafts #508/#505/#502 and fenced #294 skipped.
+- Merged-main proofs:
+  - #533 merged 2026-11-26T08:15:22Z, merge SHA 0126bd33: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193493479). Package complete: postmerge 19/19 + terminal CI on merge.
+  - #534 merged 2026-11-26T10:03:47Z, merge SHA 903c4520: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193494034). Package complete: postmerge 12/12 + terminal CI on merge.
+  - #535 merged 2026-11-26T11:23:23Z, merge SHA b6e431bf: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193494816). Package complete: postmerge 17/17 + terminal CI on merge.
+  - #531 merged 2026-11-26T13:10:48Z, merge SHA c13a8b02: named missing terminal Form smoke SUCCESS on merge commit (receipt 7193255301 showed IN PROGRESS; no terminal receipt yet). Behavioral proof 19/19 posted. Prior SCOPED CONFIRM at head stands. Comment 7193495682.
+- Records reviews: none awaiting.
+- Trailing obligations: discharged merged-main credits for #533/#534/#535. #531 remaining pending terminal smoke.
 
 ## Trailing ledger
-- discharged this run: 0
-- remaining: 0
-- gaps: none
-
-## Scoreboard audit
-Live main post-#509. Claimed board 43/182 COMPLETE (from #509 register flips #120/#172/#174). Dual-belt PLAN 242 / CODE 198 separate. Documented baseline 35 of 182 (Manifest Sitting #002) unchanged. No blend. #21 remains OPEN.
-
-## Automation posture
-Named exact missing on #509 merged-main CODE credit (post-merge CI exception OPEN). No new stamps. Deep pass complete. Nothing needed from Ace. Next: Director ruling on #509 instrument diagnosis/repair path; Uni re-run merged-main smoke post-resolution.
+- discharged this run: 3 (merged-main credits #533/#534/#535)
+- remaining: 1 (#531 terminal smoke on merge)
+- gaps: terminal Form smoke SUCCESS at c13a8b02 for #531
 
 ## Silence flag
-#294/#233 fenced. #496 CREDIT HOLD. Open Part PRs have stamps or named holds at current heads. #509 CODE credit pending exception close. #501 closed with PLAN + RECORDS CONFIRM.
+Proof of pass: this watermark advance + CODE CREDIT CONFIRMs on #533/#534/#535 + missing named on #531. Nothing needed from Ace. Next step: Uni terminal smoke receipt on #531 merge commit if credit sought.
 
 — KEEPER

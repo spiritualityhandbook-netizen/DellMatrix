@@ -168,6 +168,11 @@ LIST = [
     # vocabulary (profile annotation, D-6 refusal visibility,
     # T-1..T-6 incl. T-5a/b/c boundary cases).
     "form.mandell.g31_contract_test",
+    # Director 7085151190 item 4 — FlowOver (`>>>`) immediately
+    # before 61[Join] non-termination fix: both lawful triggers
+    # terminate, Join dispatched exactly once, per-gap one-time
+    # flow consumption, shipped-shape controls unchanged.
+    "form.mandell.chain_exec_flowover_test",
     # Master plan P11 — satellite disposition guards (sandbox
     # matrices retired per Ace's ruling; useful survivors live).
     "form.mandell.p11_satellites_test",
@@ -193,7 +198,26 @@ LIST = [
     "form.translate_intent_args_test",
     "form.translate_word_counts_test",
     "form.translate_dead_args_test",
+    "form.c9_dualmode_test",
+    # Part IV row #155 PERSONAMATRIX (C8.MultiPsalm; Ace ruling
+    # 2026-11-20 item 11): user persona layer on the canonical
+    # BIMO/persona machinery — roster placement, user creation +
+    # persistence round-trip, fusion guidance/limits union, and the
+    # no-authority fence (a docked persona cannot confirm).
+    "form.personamatrix_test",
+    # Critic Findings 5+6 paired lifecycle repair (Director
+    # disposition 7180713277): malformed presence excluded by
+    # is_active AND is_participating AND selection (consumer side);
+    # malformed present lifecycle data refuses typed at restore
+    # before binding, legacy absence preserved (restore side).
+    "form.critic_lifecycle_fixture_test",
     "form.r19sib_count_door_test",
+    "form.r24_operand_integrity_test",
+    "form.r23_outcome_evidence_test",
+    "form.gpe08_admission_test",
+    "form.gpe08_route_integration_test",
+    "form.gpe08_admission_gate_test",
+    "form.gpe07_audit_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
     "form.h7_dirsync_seams_test",
@@ -211,8 +235,6 @@ LIST = [
     "form.nursery_c5r2_see_test",
     "form.nursery_c5r3_organize_test",
     "form.nursery_c5r4_lens_test",
-    "form.fi011_remediation_test:smoke",
-    "form.fi012_remediation_test:smoke",
     "form.core_ii_version_validation_test",
     "form.atomic_write_boundaries_test",
     "form.forcefield_gravity_evolution_test",
@@ -227,6 +249,7 @@ LIST = [
     "form.supersession_lineage_restart_test",
     "form.precuts_caller_words_test",
     "form.owner_namespace_collision_test",
+    "form.critic_owner_collision_fixture_test",
     "form.resonance_lifecycle_gate_test",
     "form.four_way_equivalence_test",
     "form.mandell.d1_dell84_copy_test",
@@ -294,6 +317,7 @@ LIST = [
     "form.mandell.resonance_command_test:smoke",
     "form.mandell.duobeta_cross_session_test:smoke",
     "form.duobeta_detail_whole_test:smoke",
+    "form.critic_duobeta_distinct_fixture_test:smoke",
     "form.r17_compose_bound_test:smoke",
     "form.r19_cycle_receipt_test:smoke",
     "form.mandell.polyglot_user_path_test:smoke",
@@ -340,6 +364,9 @@ LIST = [
     "form.dd31_sanitize_copula_test:smoke",
     "form.dd42_predicate_infix_test:smoke",
     "form.r25_extra_operand_test:smoke",
+    "form.r24l_label_lossless_test:smoke",
+    "form.r24l_sibling_labels_test:smoke",
+    "form.ud2_english_routing_test:smoke",
     # eval_predicate surplus circuit (Director 7008502649):
     # explicit binary/unary forms with surplus operands refuse
     # condition_extra_operand at the engine and at 57/73 +
@@ -393,7 +420,20 @@ LIST = [
     # 2026-11-13): the three malformed-claim consumers refuse
     # fail-closed; the F-d stale state still reads UNBOXED.
     "form.fd_consistency_test:smoke",
+    "form.v08_truth_counts_test:smoke",
     "form.confirm_placement_test:smoke",
+    # Part VI — Unknowns probe evidence (2026-11-20): read-only
+    # census/behavior/capability probes discharging or narrowing
+    # the open-question packets (Q-FI012.8 census; #119/#175
+    # censuses; DD-42.2/DD-18.2/R21 current-main behavior;
+    # Q-U.3/.4/.5 re-verification; Q-GS.1 caller census;
+    # Q-FI016.1 measured capability + scale). They pin CURRENT
+    # behavior: a deliberate future change to a probed behavior
+    # updates the probe in the same circuit, like the
+    # atomic_write no-production-caller pin.
+    "form.fi012_q8_census_probe_test:smoke",
+    "form.part6_unknowns_probe_test:smoke",
+    "form.fi016_capability_probe_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
@@ -439,6 +479,52 @@ LIST = [
     # code-stage step zero registers the suite in the same change
     # that lands reconcile_gate in director-reports/certification_runner.py.
     "form.gate_reconciliation_test:smoke",
+    # Part 0 GP-E25 (Edition 1 circuit): Muse Space snapshot
+    # reducer (S1), static exported view (S2), live revalidation
+    # (S3) -- code-stage step zero registers the suite in the same
+    # change that lands form/muse_space_snapshot.py and
+    # form/muse_space_views.py (build record 2026-11-20 section 5).
+    "form.muse_space_test:smoke",
+    # Q-35.1 (Director ruling 7085151190 item 7): sweep_stale_tmps
+    # manual-only safety repair — exact mint-shape ownership, lstat
+    # no-symlink, identity revalidation, typed refusals/reasons.
+    "form.sweep_stale_tmps_safety_test:smoke",
+    # FI-011 corrections (Director 7085151190 item 1): A7 bound
+    # single-use grant presentment + atomic grant-use receipts,
+    # A8 raw Nursery.confirm retirement, A12 grow_auto origin
+    # allowlist, A9 staged typed status refusal.
+    "form.fi011_corrections_test:smoke",
+    # Critic Finding 9 (Director disposition 7180713277): browser
+    # confirm routes the authenticated human review context (single
+    # + batch) through live_visual; anonymous/forged confirms stay
+    # refused. Verified via the real HTTP entry point.
+    "form.critic_livevisual_confirm_fixture_test:smoke",
+    # SOUND S0 (Director ruling 7085160720 on PR #505): pure read-only
+    # sonification projection (form/dell_matrix/sonification.py) --
+    # pitch from the harmonic_lattice chromatic law, set harmony only
+    # from harmony.harmony_score on a named active neighborhood of 2+,
+    # spatial cues from spatial_audio; fail-first acceptance
+    # one_state_one_sound / different_actual_math_changes_sound /
+    # unknown_is_silence / solo_not_pair_harmony / view_audio_parity /
+    # no_authority.
+    "form.sonification_test:smoke",
+    # P0-R (Director 7085151190 item 2): lattice SnapModule registry
+    # persistence -- lossless modules_format=2 records, staged typed
+    # restore, legacy IDs-only fail-closed.
+    "form.lattice_modules_restore_test:smoke",
+    # Part 0 GP-E25 C1 (Director BUILD AUTHORIZATION 7136743763):
+    # views CLI pin wiring -- optional explicit pin, revalidation
+    # verdict + offline age surfaced in the export, typed refusal
+    # on a bad pin, STALE distinguished from EVIDENCE_UNAVAILABLE.
+    "form.muse_space_views_pin_test:smoke",
+    # MEDIUM-four persistence-restore family (Director Gate 2 clearance
+    # 7081067283): fail-closed staged restore for duo_ledger, companion,
+    # self_knowledge, bimo/persona_matrix in form/persist_rest.py.
+    "form.medium_four_restore_test:smoke",
+    # DAF-09 D1 (Director ruling 7085151190 item 3): history header
+    # must report the retained total, not the display-slice length.
+    "form.daf09_history_header_test:smoke",
+    "form.r5d_s7_admission_test:smoke",
 ]
 
 TIMEOUT_S = 900
