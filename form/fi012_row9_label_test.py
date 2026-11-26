@@ -208,5 +208,39 @@ def smoke() -> bool:
             os.unlink(os.path.join(tmp, name))
         os.rmdir(tmp)
 
+    # ---- LEG D: ID allocation never overwrites a live proposal --
+    # Director delta review 7203509168 (source finding, reproduced
+    # first-hand before this leg was written): three duplicates
+    # take base/_1/_2; reject + clear_rejected removes the middle
+    # one; the count-based suffix then points at the still-live
+    # _2 key and the next add silently REPLACED it (count stayed,
+    # the live proposal's independent confirmation invalidated).
+    tmpd = tempfile.mkdtemp()
+    try:
+        nd = Nursery.load(os.path.join(tmpd, "nursery.json"))
+        a1 = nd.add(label="dup idea", seed="7", words="w1")
+        a2 = nd.add(label="dup idea", seed="7", words="w1")
+        a3 = nd.add(label="dup idea", seed="7", words="w1")
+        rec("d_three_duplicates_distinct_ids",
+            len({a1.id, a2.id, a3.id}) == 3 and len(nd.proposals) == 3,
+            f"ids={a1.id},{a2.id},{a3.id}")
+        nd.reject(a2.id)
+        nd.clear_rejected()
+        keep = {pid: (p.label, p.words, p.status, p.intake_seed)
+                for pid, p in nd.proposals.items()}
+        a4 = nd.add(label="dup idea", seed="7", words="w1")
+        after = {pid: (p.label, p.words, p.status, p.intake_seed)
+                 for pid, p in nd.proposals.items()}
+        rec("d_add_after_removal_takes_unused_id",
+            a4.id not in keep and len(nd.proposals) == 3,
+            f"new={a4.id} count={len(nd.proposals)}")
+        rec("d_live_proposals_preserved_byte_exact",
+            all(after.get(pid) == v for pid, v in keep.items()),
+            "every surviving proposal's record is unchanged")
+    finally:
+        for name in os.listdir(tmpd):
+            os.unlink(os.path.join(tmpd, name))
+        os.rmdir(tmpd)
+
     print(f"=== {sum(r)}/{len(r)} ===")
     return all(r)

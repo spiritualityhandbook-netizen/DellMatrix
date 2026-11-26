@@ -1001,9 +1001,21 @@ class Nursery:
                 duplicate_of = existing
                 break
         pid = base_pid
-        # avoid exact id collision
+        # Avoid exact id collision: the first candidate keeps the
+        # historical count suffix, but the key MUST be unused —
+        # after a lawful rejection + clear_rejected removal the
+        # count can point at a still-live later suffix, and writing
+        # that key would silently replace a live proposal and
+        # invalidate its independent confirmation (Director delta
+        # review on PR #544, 7203509168; reproduced first-hand:
+        # three duplicates _/ _1 / _2, middle rejected + cleared,
+        # next add re-took _2 and the count never grew). Advance
+        # until the key is free; prior IDs and contents never move.
         if pid in self.proposals:
-            pid = pid + "_" + str(len(self.proposals))
+            suffix = len(self.proposals)
+            while f"{pid}_{suffix}" in self.proposals:
+                suffix += 1
+            pid = f"{pid}_{suffix}"
         # C5R.3 (AC-3.2): the creation seed is derived HERE, at
         # construction of a genuinely NEW proposal — the GROW-DUP
         # suppression path above returns its survivor BEFORE this
