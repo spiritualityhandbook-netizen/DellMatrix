@@ -1068,6 +1068,60 @@ def _validate_bimo_section(raw: Any) -> None:
                 f"(got {type(v).__name__}): refusing load")
 
 
+_LIFECYCLE_MISSING = object()  # sentinel: section absent != section null
+
+
+def _validate_lifecycle_section(raw: Any) -> Dict[str, Dict[str, Any]]:
+    """Stage the TPP-I lifecycle presence section, fail-closed.
+
+    Critic Finding 6 repair (Director disposition 7180713277). The
+    writer (form/persist.py) always emits a dict of dicts. Lawful
+    legacy ABSENCE (section key missing) yields an empty mapping —
+    the documented legacy treatment, unchanged. Any PRESENT malformed
+    shape raises ProgramLoadError before binding:
+
+    - section explicitly null or not a dict;
+    - an entry that is null or not a dict (the previous restore
+      silently DROPPED such entries via an isinstance filter, which
+      flipped the unit to participating via the legacy-absence
+      fallback and let the next re-save erase the record entirely).
+
+    Presence VALUES are deliberately NOT policed here: the settled
+    absence-matrix contract (form/mandell/absence_matrix_test.py,
+    test_restart_real_shapes) persists presence=None through the
+    real writer and requires the record to LOAD, be preserved, and
+    be excluded by the consumer verdicts in
+    canonical_lifecycle._presence_state (malformed presence). Shape
+    malformation refuses at this door; value malformation is the
+    consumer layer's family.
+
+    Entry keys are normalized with str(k), exactly as the previous
+    restore did for well-formed entries.
+    """
+    if raw is _LIFECYCLE_MISSING:
+        return {}
+    if raw is None:
+        raise ProgramLoadError(
+            "program file 'lifecycle' section is explicitly null: "
+            "refusing load")
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'lifecycle' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    staged: Dict[str, Dict[str, Any]] = {}
+    for k, v in raw.items():
+        if v is None:
+            raise ProgramLoadError(
+                f"program file 'lifecycle' entry {k!r} is explicitly "
+                f"null: refusing load")
+        if not isinstance(v, dict):
+            raise ProgramLoadError(
+                f"program file 'lifecycle' entry {k!r} is not an "
+                f"object (got {type(v).__name__}): refusing load")
+        staged[str(k)] = dict(v)
+    return staged
+
+
 def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program:
     """PREPARE a private Program from validated data. Touches no process language state.
 
@@ -1558,14 +1612,12 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
                 _load_drops = max(0, len(_pre) - _kept)
         setattr(p, _attr + "_dropped_total", _stored + _load_drops)
     # TPP-I: Restore lifecycle presence metadata (NBD-Ω-048).
-    try:
-        lc_data = data.get("lifecycle")
-        if isinstance(lc_data, dict):
-            p.lifecycle = {str(k): dict(v) for k, v in lc_data.items() if isinstance(v, dict)}
-        else:
-            p.lifecycle = {}
-    except Exception:
-        p.lifecycle = {}
+    # Critic Finding 6 repair (Director disposition 7180713277):
+    # staged strict validation — malformed PRESENT data raises
+    # ProgramLoadError here, inside PREPARE, before any binding/swap;
+    # lawful legacy absence keeps the empty-mapping treatment.
+    p.lifecycle = _validate_lifecycle_section(
+        data.get("lifecycle", _LIFECYCLE_MISSING))
     # R6.4: restore agent-local behavioral state (IntrinsicAgent).
     # Directive §4: a sentinel distinguishes genuine absence (section
     # missing -> fresh default, pre-R6.4 generations) from explicit null

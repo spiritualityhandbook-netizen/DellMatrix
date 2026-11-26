@@ -205,6 +205,12 @@ LIST = [
     # persistence round-trip, fusion guidance/limits union, and the
     # no-authority fence (a docked persona cannot confirm).
     "form.personamatrix_test",
+    # Critic Findings 5+6 paired lifecycle repair (Director
+    # disposition 7180713277): malformed presence excluded by
+    # is_active AND is_participating AND selection (consumer side);
+    # malformed present lifecycle data refuses typed at restore
+    # before binding, legacy absence preserved (restore side).
+    "form.critic_lifecycle_fixture_test",
     "form.r19sib_count_door_test",
     "form.r24_operand_integrity_test",
     "form.r23_outcome_evidence_test",
