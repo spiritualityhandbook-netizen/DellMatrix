@@ -1,16 +1,16 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-26 ~16:21 CST  
-**UTC approx**: 2026-11-26T22:21:00Z  
+**Last cycle**: 2026-11-26 ~17:20 CST  
+**UTC approx**: 2026-11-26T23:20:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - Ripe gates:
-  - #544 head 046b1839f4b87e159609c1c77096e6f62e10bcf5: SCOPED CODE CONFIRM. Terminal CI ALL SUCCESS (builds + browser + smoke). Spot-check NurseryLabelError + MAX_LABEL_CHARS=200. Comment 7204616076.
-  - #546 head ead068e7e5b8ebeeab47cdcf3a582d081db38e3d: Uni package present; exact missing = terminal smoke ALL PASS. Stamp withheld. Comment 7204616608.
-  - #545 head 92b372581c2d00c7773b207975ecb95e1fb3832f: exact missing = Uni package at current head + terminal smoke ALL PASS. Stamp withheld. Comment 7204616866.
-- Merged-main proofs: none CODE-credit awaiting (#543 is records).
-- Records reviews: #543 merge SHA 8aa978662cc84999a29b6d7279a9ce44449cb89a accepted (records-only; Uni merged-main CI terminal note verified via PR checks). Comment 7204617460.
+  - #545 head 92b372581c2d00c7773b207975ecb95e1fb3832f: SCOPED CODE CONFIRM. Terminal CI ALL SUCCESS (builds + browser + smoke run 45900886641). Spot-check StaleWriterSaveError + _preserve_unseen_exchange_records. Comment 7205474233.
+  - #544 head 046b1839f4b87e159609c1c77096e6f62e10bcf5: prior SCOPED CODE CONFIRM stands (no head move). Comment 7204616076.
+  - #546 head 47d63ec15c98be75172e38b0f2dcaa87528321ea: Uni package present; exact missing = terminal smoke ALL PASS. Stamp withheld. Comment 7205474663.
+- Merged-main proofs: none CODE-credit awaiting since last watermark.
+- Records reviews: none new.
 - Trailing obligations: none remaining.
 
 ## Trailing ledger
@@ -19,6 +19,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + SCOPED CODE CONFIRM on #544. Nothing needed from Ace. Next step: Uni posts terminal CI on #546/#545 and package on #545.
+Proof of pass: this watermark advance + SCOPED CODE CONFIRM on #545. Nothing needed from Ace. Next step: Uni posts terminal smoke ALL PASS on #546 at head 47d63ec1.
 
 — KEEPER
