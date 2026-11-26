@@ -1,23 +1,24 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-26 ~14:20 CST  
-**UTC approx**: 2026-11-26T20:20:00Z  
+**Last cycle**: 2026-11-26 ~16:21 CST  
+**UTC approx**: 2026-11-26T22:21:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Ripe gates: none. Open items are drafts #508/#502 and fenced #294. No new heads requiring stamp.
-- Merged-main proofs:
-  - #540 merge SHA 7a491c6707a0304b2272291205f50febdb1687aa: CODE CREDIT CONFIRMED. Terminal Form smoke SUCCESS discharged (Uni 7200801719). Spot-check of delay8 formula at merge SHA matches. Comment 7202597465.
-  - #542 merge SHA af5de3aaf6061394444f5279b91fbbf1aae09abd: CODE CREDIT CONFIRMED. Postmerge suites GREEN + terminal CI SUCCESS at merge SHA (Uni 7202450723). Comment 7202598472. Scope proof-only specs 1–4.
-- Records reviews: none new awaiting (queue file historical).
-- Trailing obligations: #540 and #542 CODE credits discharged this pass. None remaining.
+- Ripe gates:
+  - #544 head 046b1839f4b87e159609c1c77096e6f62e10bcf5: SCOPED CODE CONFIRM. Terminal CI ALL SUCCESS (builds + browser + smoke). Spot-check NurseryLabelError + MAX_LABEL_CHARS=200. Comment 7204616076.
+  - #546 head ead068e7e5b8ebeeab47cdcf3a582d081db38e3d: Uni package present; exact missing = terminal smoke ALL PASS. Stamp withheld. Comment 7204616608.
+  - #545 head 92b372581c2d00c7773b207975ecb95e1fb3832f: exact missing = Uni package at current head + terminal smoke ALL PASS. Stamp withheld. Comment 7204616866.
+- Merged-main proofs: none CODE-credit awaiting (#543 is records).
+- Records reviews: #543 merge SHA 8aa978662cc84999a29b6d7279a9ce44449cb89a accepted (records-only; Uni merged-main CI terminal note verified via PR checks). Comment 7204617460.
+- Trailing obligations: none remaining.
 
 ## Trailing ledger
-- discharged this run: 2 (#540, #542)
+- discharged this run: 0
 - remaining: 0
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + CODE CREDIT CONFIRMs on #540 and #542. Nothing needed from Ace. Next step: Uni continues queue; no open ripe gates.
+Proof of pass: this watermark advance + SCOPED CODE CONFIRM on #544. Nothing needed from Ace. Next step: Uni posts terminal CI on #546/#545 and package on #545.
 
 — KEEPER
