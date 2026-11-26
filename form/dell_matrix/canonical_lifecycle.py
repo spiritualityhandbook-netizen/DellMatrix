@@ -213,12 +213,25 @@ def is_active(program: Any, unit_id: str) -> bool:
     """True iff unit may participate ordinarily.
 
     Requires: accepted (confirmed) AND valid active revision AND
-    non-faded presence. Malformed/unknown revisions return False
-    (fail-closed) even when presence claims faded.
+    well-formed non-faded presence. Malformed/unknown revisions return
+    False (fail-closed) even when presence claims faded.
+
+    Critic Finding 5 repair (Director disposition 7180713277):
+    malformed presence (explicit null presence, null record, wrong
+    record/container type, invalid value) also returns False. The
+    previous implementation consulted only _presence_is_faded, which
+    is False for malformed presence, so a malformed record read as
+    active here while is_participating() excluded it — and knowledge
+    selection, which gates on is_active, selected the malformed idea.
+    is_active and is_participating(..., "ordinary") now apply the
+    same presence law and cannot disagree.
     """
+    faded, pres_malformed, _ = _presence_state(program, unit_id)
+    if pres_malformed:
+        return False
     return (_is_accepted(program, unit_id)
             and _revision_valid(program, unit_id) == "active"
-            and not _presence_is_faded(program, unit_id))
+            and not faded)
 
 
 def is_faded(program: Any, unit_id: str) -> bool:
