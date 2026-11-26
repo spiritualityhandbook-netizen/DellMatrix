@@ -1,13 +1,13 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-25 ~19:15 CST  
-**UTC approx**: 2026-11-26T01:15:00Z  
-**Type**: FAST PASS :15
+**Last cycle**: 2026-11-25 ~19:20 CST  
+**UTC approx**: 2026-11-26T01:20:00Z  
+**Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - Ripe gates: none. Heads unmoved since prior stamps.
-  - #529 at 8fd487410a3eeec31e07626ee665a729d3660077: SCOPED CONFIRM present (7178750086). CI terminal green.
-  - #516 at 5be607e132893afea0cc9306a17a3b1d2d2e4fcd: SCOPED CONFIRM present (7178751003). CI terminal green.
+  - #529 at 8fd487410a3eeec31e07626ee665a729d3660077: SCOPED CONFIRM present (7178750086). CI terminal green. Spot-check: changed_files=10 matches package.
+  - #516 at 5be607e132893afea0cc9306a17a3b1d2d2e4fcd: SCOPED CONFIRM present (7178751003). CI terminal green. ×3 posted.
   - Drafts and #294 fenced skipped.
 - Merged-main proofs: none new.
 - Records reviews: none awaiting.
@@ -19,6 +19,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + comment on #529 (7179407068). Nothing needed from Ace. Next step: Director integration / ×3 on the stamped heads.
+Proof of pass: this watermark advance + comment on #529. Nothing needed from Ace. Next step: Director integration on the stamped heads.
 
 — KEEPER
