@@ -33,6 +33,17 @@ Authority / evidence trail:
     "For 7, authorize a bounded owner-isolation repair covering
     the nursery-first path and preservation of existing owners'
     data."
+  * Correction inside PR #531: Critic finding 4703303960 on
+    PR #531 (Uni verdict 7181105320, REAL) — the F7 build itself
+    regressed the empty-string owner: the writer stamps
+    {"owner": ""} (lawful at the program door; _safe_owner("")
+    maps to "operator"; pre-F7 main round-trips it) while the
+    loader demanded a non-empty owner string and
+    stored_nursery_owner() returned None for the same record, so
+    a saved empty-owner nursery was unreachable. The E-series
+    checks below pin the corrected contract: the recorded
+    identity is the exact raw owner string, validity is
+    isinstance(owner, str), and "" binds only to "".
 
 Mechanism (verified against this tree):
 
@@ -100,7 +111,8 @@ REPO = str(Path(__file__).resolve().parents[1])
 sys.path.insert(0, REPO)
 
 from form.persist import _STATE_DIR, _path, _safe_owner, save
-from form.dell_matrix.nursery import owner_nursery_path
+from form.dell_matrix.nursery import (
+    Nursery, owner_nursery_path, stored_nursery_owner)
 from form.open import open_program
 
 RESULTS = []
@@ -198,6 +210,63 @@ def main():
     k1b = not p_raised and pp2 is not None \
         and p_prop.id in pp2.nursery.proposals
     check("K1.noncolliding_nursery_first_isolated", k1a and k1b)
+
+    # --- E: the empty-string owner round-trips ---------------
+    # Critic finding 4703303960 on PR #531 (a regression #531
+    # itself introduced; Uni verdict 7181105320, REAL): the F7
+    # writer stamps {"owner": ""} for the empty owner — lawful at
+    # the program door, _safe_owner("") == "operator", and a
+    # lawful round-trip on pre-F7 main — while the F7 loader's
+    # shape check demanded a NON-EMPTY owner string and raised
+    # NurseryLoadError, and stored_nursery_owner() returned None
+    # for the same record. The saved nursery was unreachable.
+    # Contract: the recorded identity is the exact raw owner
+    # string; validity is isinstance(owner, str); "" binds only
+    # to "". The operator-named state files carry no RUN uuid,
+    # so this section snapshots them and restores them exactly.
+    op_snapshot = {}
+    for f in glob.glob(os.path.join(_STATE_DIR, "*operator*")):
+        if os.path.isfile(f):
+            with open(f, "rb") as fh:
+                op_snapshot[f] = fh.read()
+    try:
+        e_path = owner_nursery_path("")
+        check("E1.empty_owner_premise",
+              _safe_owner("") == "operator"
+              and e_path.endswith("nursery_operator.json"),
+              f"path={os.path.basename(e_path)}")
+        pe = open_program("")
+        e_prop = pe.nursery.add("empty owner idea", "empty words",
+                                detail="empty-owner detail")
+        check("E1.empty_owner_add_persists",
+              os.path.isfile(e_path),
+              "nursery durable under the operator safe name")
+        check("E2.stored_owner_is_empty_string",
+              stored_nursery_owner(e_path) == ""
+              and stored_nursery_owner(e_path) is not None,
+              f"stored={stored_nursery_owner(e_path)!r}")
+        pe2, e_raised = construct_or_none("")
+        check("E3.empty_owner_reopen_roundtrip",
+              not e_raised and pe2 is not None and pe2.owner == ""
+              and e_prop.id in pe2.nursery.proposals,
+              f"raised={e_raised}")
+        try:
+            e_ownerless = Nursery.load(e_path)
+            e4 = e_prop.id in e_ownerless.proposals
+        except Exception:
+            e4 = False
+        check("E4.ownerless_load_agrees", e4,
+              "ownerless Nursery.load reads the ''-stamped file")
+    finally:
+        for f in glob.glob(os.path.join(_STATE_DIR, "*operator*")):
+            try:
+                if f in op_snapshot:
+                    with open(f, "wb") as fh:
+                        fh.write(op_snapshot[f])
+                elif os.path.isfile(f):
+                    os.unlink(f)
+            except OSError as e:
+                _CLEANUP_ERRORS.append(f"{f}: {e}")
 
     cleanup()
     check("Z.cleanup_complete", not _CLEANUP_ERRORS,

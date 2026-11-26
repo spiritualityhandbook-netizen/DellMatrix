@@ -422,7 +422,13 @@ def stored_nursery_owner(path: Optional[str]) -> Optional[str]:
     well-formed owner record (legacy unbound file — no reliable
     identity to check against). Only a PROVEN mismatch (a stored
     owner different from the requested owner) is a collision,
-    mirroring persist.stored_program_owner."""
+    mirroring persist.stored_program_owner. The recorded identity
+    is the exact raw owner string: the empty string is a lawful
+    (degenerate) owner — the program door accepts it and
+    _safe_owner maps it to ``operator`` — so a file stamped with
+    "" returns "" here, agreeing with the loader's shape check;
+    None means the section is ABSENT (or not a string record),
+    never that the recorded owner was empty."""
     if not path:
         return None
     try:
@@ -436,7 +442,7 @@ def stored_nursery_owner(path: Optional[str]) -> Optional[str]:
     if not isinstance(section, dict):
         return None
     owner = section.get("owner")
-    return owner if isinstance(owner, str) and owner else None
+    return owner if isinstance(owner, str) else None
 
 
 def _disk_sig(path: str) -> Optional[str]:
@@ -2129,13 +2135,20 @@ class Nursery:
                 # an identity record that cannot be read cannot be
                 # trusted to bind the file or to clear it.
                 if k == OWNER_SECTION_KEY:
+                    # The recorded identity is the exact raw owner
+                    # string; validity is isinstance(owner, str) —
+                    # the empty string is a lawful (degenerate)
+                    # owner the program door already accepts, so
+                    # only a NON-STRING owner value (number, list,
+                    # dict, null) is malformed here. The collision
+                    # judgment below stays exact-match: "" binds
+                    # only to "".
                     if not isinstance(v, dict) \
-                            or not isinstance(v.get("owner"), str) \
-                            or not v.get("owner"):
+                            or not isinstance(v.get("owner"), str):
                         raise NurseryLoadError(
                             f"nursery file {os.path.basename(path)} has a malformed "
                             f"{OWNER_SECTION_KEY} section (not an object carrying "
-                            f"a non-empty owner string)"
+                            f"an owner string)"
                         )
                     staged_owner = v["owner"]
                     continue
