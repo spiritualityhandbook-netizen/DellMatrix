@@ -47,6 +47,17 @@ class BindingLossSaveError(Exception):
     No bytes were written."""
 
 
+class StaleWriterSaveError(Exception):
+    """Q1 / C-B §6.2: a canonical save detected durable exchange
+    records bound to a live proposal that the saving instance
+    never saw, and preservation could not be established (the
+    durable state could not be read or verified under the owner
+    lock). The save is refused BEFORE any byte changes — the
+    fail-closed fallback of the stale-writer rule, whose primary
+    form is preservation (see _preserve_unseen_exchange_records).
+    Silent overwrite is the forbidden outcome (case X4)."""
+
+
 def _persisted_bindings(target: str) -> dict:
     """{unit_id: idea_id} for bindings readable in the canonical
     file. Absent or unparseable state yields {} — unreadable
@@ -116,6 +127,100 @@ def _refuse_if_binding_loss(program: Program, target: str) -> None:
             f"carried, then save)")
 
 
+def _preserve_unseen_exchange_records(program: Program,
+                                      target: str) -> None:
+    """Q1 / C-B §6.2 — the stale-writer check at the ordinary
+    save boundary (Director ruling 7136749722; Keeper challenge
+    PASS 7202299383; build clearance 7203152620). Runs inside
+    the owner lock, before the canonical write.
+
+    The harm (case X4): a Program loaded BEFORE another writer's
+    exchange import completed later saves its older in-memory
+    exchange sections over the completed import — proposal
+    present, seed record and receipts gone, a durable hybrid no
+    journal remains to recover. An owner lock around the import
+    alone cannot stop it; the check lives where the loss occurs.
+
+    Comparison: the exchange sections (seed + receipt records)
+    of the canonical durable files — read through the same
+    durable read path recovery uses — against this instance's
+    in-memory exchange sets. A durable record bound to a LIVE
+    proposal (present in the nursery file, not disposed — the
+    §6.1 live leg) that this instance does not carry is, by
+    definition, one it never saw:
+
+    * PRESERVATION (primary): the record is carried forward
+      into the outgoing state — valid records into the entries,
+      records that fail validation into the malformed channel
+      the loader itself uses — so the save lands WITH the
+      completed import's provenance intact.
+    * TYPED REFUSAL (fallback): when preservation cannot be
+      established (the durable state cannot be read), the save
+      raises StaleWriterSaveError before any byte changes.
+
+    Scoping, mirroring the R2 binding-loss contract beside it:
+    a CURRENT instance (its version stamp matches the canonical
+    file) is authoritative — the program file cannot hold
+    exchange records it never saw, because every completed
+    import rewrites that file (its stamp would have moved).
+    Records the instance itself removed are not resurrected:
+    import compensation removes the proposal from the nursery
+    file BEFORE its program save, so compensated records are
+    not live-bound at this boundary; bounded evictions choose
+    only non-live proposals' records, which are likewise out of
+    scope. Nothing is exempted by name."""
+    stamp = getattr(program, "_td_state_fingerprint", None)
+    if stamp is not None \
+            and _current_fingerprint(target) == stamp:
+        return
+    from form.dell_matrix import exchange as _exchange
+    owner = program.owner
+    try:
+        nursery_raw, program_raw = _exchange._raw_state_files(
+            owner)
+    except Exception as e:
+        raise StaleWriterSaveError(
+            f"save for owner {owner!r} cannot verify the "
+            f"durable exchange state ({type(e).__name__}: {e}); "
+            "refusing before any byte changes") from e
+    live = _exchange._live_proposal_ids(nursery_raw)
+    if not live:
+        return
+    for section, attr, malformed_attr, validator in (
+            ("exchange_seeds", "exchange_seeds",
+             "exchange_seeds_malformed",
+             _exchange._validate_seed_entry),
+            ("exchange_receipts", "exchange_receipts",
+             "exchange_receipts_malformed",
+             _exchange._validate_receipt_entry)):
+        durable = _exchange._section_entries(program_raw, section)
+        if not durable:
+            continue
+        entries = getattr(program, attr, None)
+        entries = dict(entries) if isinstance(entries, dict) \
+            else {}
+        malformed = getattr(program, malformed_attr, None)
+        malformed = dict(malformed) \
+            if isinstance(malformed, dict) else {}
+        seen = set(entries) | set(malformed)
+        changed = False
+        for key, entry in durable.items():
+            if key in seen or not isinstance(entry, dict):
+                continue
+            if entry.get("pid") not in live:
+                continue
+            ok, _why = validator(entry, owner)
+            if ok and entry.get("entry_id") == key:
+                entries[key] = dict(entry)
+            else:
+                malformed[key] = entry
+            changed = True
+        if changed:
+            setattr(program, attr, entries)
+            setattr(program, malformed_attr,
+                    malformed if malformed else None)
+
+
 def _write_program_file(program: Program, target: str,
                         _fail_at: Optional[str]) -> str:
     from form.dell_matrix.atomic_write import atomic_write_json
@@ -155,7 +260,12 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
     transaction — and under that lock a save that would silently
     drop or re-point a persisted unit binding is refused with
     BindingLossSaveError (see _refuse_if_binding_loss for the
-    contract and its regression-driven scoping). Saves to
+    contract and its regression-driven scoping), and a save that
+    would silently drop durable exchange records bound to a live
+    proposal is made to preserve them — or refused with
+    StaleWriterSaveError when preservation cannot be established
+    (Q1 / C-B §6.2; see _preserve_unseen_exchange_records).
+    Saves to
     non-canonical paths (explicit temp or checkpoint files) are
     outside the transaction: they are not the canonical state.
     Journaled recovery/import writes that bypass this funnel
@@ -178,6 +288,7 @@ def save(program: Program, path: Optional[str] = None, *, _fail_at: Optional[str
         assert_program_owner_access(program.owner, target,
                                     "persist_rest.save")
         _refuse_if_binding_loss(program, target)
+        _preserve_unseen_exchange_records(program, target)
         return _write_program_file(program, target, _fail_at)
 
 

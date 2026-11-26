@@ -508,6 +508,83 @@ def _durable_import_state(owner: str, pid: str) -> Dict[str, Any]:
             "receipts_count": len(receipts)}
 
 
+def _live_proposal_ids(nursery_raw: Dict[str, Any]) -> set:
+    """Proposal ids the canonical nursery file currently holds
+    as LIVE: present and not disposed. A rejected proposal is
+    disposed (its seed + receipt records stay durable — case
+    M3 — but witness nothing); every other present status is
+    live. This is the live-proposal leg of the durable identity
+    composition (PROOF_SPEC §2/§6.1), shared by the import
+    witness and the save-boundary stale-writer check."""
+    from form.dell_matrix.nursery import (
+        DISPOSITION_SECTION_KEY, EDIT_RECEIPT_SECTION_KEY,
+        GRANT_USE_RECEIPT_SECTION_KEY, OWNER_SECTION_KEY)
+    return {k for k, v in nursery_raw.items()
+            if k != DISPOSITION_SECTION_KEY
+            and k != EDIT_RECEIPT_SECTION_KEY
+            and k != GRANT_USE_RECEIPT_SECTION_KEY
+            and k != OWNER_SECTION_KEY
+            and isinstance(v, dict)
+            and v.get("status") != "rejected"}
+
+
+def _durable_witness(owner: str, packet: Dict[str, Any]) -> Any:
+    """The Q1 durable witness (PROOF_SPEC §2/§6.1): return the
+    pid of the ALREADY-LANDED import this packet duplicates, or
+    None. A replay verdict requires the full three-leg durable
+    identity composition, established from the canonical files
+    (never from a saver's memory — case M3):
+
+    1. a durable seed entry whose fields equal the packet's
+       identity tuple (label, chain, keep, author_origin,
+       created, registry, requirements, receipts_expected,
+       receipts_hash) — the same tuple the import journal
+       records and recover_exchange_import verifies;
+    2. the entry's pid names a proposal currently LIVE in the
+       nursery file (present, not disposed);
+    3. the durable receipts for that pid count receipts_expected
+       and digest to receipts_hash (recovery's completeness
+       test, applied verbatim).
+
+    Anything incomplete, orphaned, mismatched, ambiguous (more
+    than one live pid), disposed, or unreadable is NOT a
+    witness: the caller follows the fresh-import path or fails
+    closed. No verdict is ever fabricated."""
+    seed, man = packet["seed"], packet["manifest"]
+    receipts_expected = len(packet["receipts"])
+    receipts_hash = _receipts_digest(packet["receipts"])
+    nursery_raw, program_raw = _raw_state_files(owner)
+    live = _live_proposal_ids(nursery_raw)
+    candidates = set()
+    for e in _section_entries(program_raw,
+                              "exchange_seeds").values():
+        if not isinstance(e, dict):
+            continue
+        if all(e.get(k) == seed[k]
+               for k in ("label", "chain", "keep")) \
+                and all(e.get(k) == man[k] for k in
+                        ("author_origin", "created", "registry")) \
+                and list(e.get("requirements") or []) \
+                == list(man["requirements"]) \
+                and e.get("receipts_expected") \
+                == receipts_expected \
+                and e.get("receipts_hash") == receipts_hash:
+            candidates.add(e.get("pid"))
+    hits = []
+    for pid in candidates:
+        if pid not in live:
+            continue
+        receipts = [{k: e[k] for k in RECEIPT_KEYS}
+                    for e in _section_entries(
+                        program_raw, "exchange_receipts").values()
+                    if isinstance(e, dict) and e.get("pid") == pid
+                    and all(k in e for k in RECEIPT_KEYS)]
+        if len(receipts) == receipts_expected \
+                and _receipts_digest(receipts) == receipts_hash:
+            hits.append(pid)
+    return hits[0] if len(hits) == 1 else None
+
+
 def _compensate_import(program: Any, pid: str) -> Tuple[bool, List[str]]:
     """Roll a landed import back and PROVE the rollback durable.
 
@@ -699,7 +776,14 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     """Land a foreign packet as a PENDING proposal in the
     receiver's nursery. Never confirms, never makes eligible.
     Packet text is screened against the receiver's protected
-    values first (the dock's import discipline)."""
+    values first (the dock's import discipline).
+
+    Q1 (PROOF_SPEC §6.3): every call names its outcome — a
+    packet whose full durable identity already landed returns
+    the original witness with replay=True and zero writes; a
+    genuinely new packet lands fresh with replay=False. The
+    transaction runs serialized under owner_state_lock (see
+    _import_packet_locked for the fence order)."""
     packet = validate_packet(packet)
     from form.dell_matrix import inference_dock as _dock
     protected = _dock.protected_values(program)
@@ -710,10 +794,6 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
                 return {"ok": False, "reason": "protected_material",
                         "detail": "Packet text carries receiver-"
                                   "protected material; refused."}
-    # DAF-04/DAF-06 preflight: capacity and provenance capacity
-    # across every owner the landing will touch, BEFORE the
-    # durable nursery landing. A refusal here mutates nothing.
-    _preflight_import(program, packet)
     lint = lint_packet(packet)
     seed, man = packet["seed"], packet["manifest"]
     origin = f"exchange:{man['author_origin']}"[:120]
@@ -744,12 +824,55 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     # resolves the evidence).
     detail_text = "\n".join(detail_lines)[:2000]
     owner = program.owner
+    # Q1 (PROOF_SPEC §3/§4): the import transaction is serialized
+    # per owner — journal gate, durable witness, landing and the
+    # final save form one owner-scoped transaction under the
+    # existing owner_state_lock primitive (no new lock is
+    # introduced). The canonical save inside re-enters the same
+    # lock on this thread (the primitive is thread-reentrant).
+    from form.owner_state_lock import owner_state_lock
+    with owner_state_lock(owner):
+        return _import_packet_locked(
+            program, packet, lint=lint, origin=origin,
+            reason=reason, detail_text=detail_text)
+
+
+def _import_packet_locked(program: Any, packet: Dict[str, Any],
+                          *, lint: Dict[str, Any], origin: str,
+                          reason: str, detail_text: str
+                          ) -> Dict[str, Any]:
+    """The import transaction proper, run under owner_state_lock
+    (see import_packet). Fence order (PROOF_SPEC §3): journal /
+    recovery gate -> DURABLE identity witness -> capacity
+    preflight (new landings only) -> journal write -> land ->
+    records -> final save -> journal clear."""
+    seed, man = packet["seed"], packet["manifest"]
+    owner = program.owner
     if _read_import_journal(owner) is not None:
         raise ExchangeError(
             "unresolved exchange import recovery evidence for "
             f"{owner}; load/restart recovery must resolve it "
             "before another import",
             details={"stage": "journal", "journal_retained": True})
+    # Q1 durable witness (PROOF_SPEC §2): a verified live hit
+    # returns the original witness unchanged with ZERO writes —
+    # before capacity terms, so a replay at seed cap is never
+    # refused for capacity (case E14a). Non-capacity refusals
+    # (packet validity, protected material) already ran in
+    # import_packet, before the lock, and bind both paths alike.
+    witness = _durable_witness(owner, packet)
+    if witness is not None:
+        return {"ok": True, "pid": witness, "replay": True,
+                "receipts_hash": _receipts_digest(
+                    packet["receipts"]),
+                "lint": lint, "origin": origin,
+                "journal_retained": False}
+    # DAF-04/DAF-06 preflight: capacity and provenance capacity
+    # across every owner the landing will touch, BEFORE the
+    # durable nursery landing. A refusal here mutates nothing.
+    # Q1: the capacity terms apply to NEW landings only — a
+    # verified replay returned above and never reaches here.
+    _preflight_import(program, packet)
     journal: Dict[str, Any] = {
         "version": _IMPORT_JOURNAL_VERSION,
         "kind": "exchange_import",
@@ -855,8 +978,10 @@ def import_packet(program: Any, packet: Dict[str, Any]) -> Dict[str, Any]:
     # but it is a separate fact and is reported as such; the
     # retained journal is resolved by load-boundary recovery.
     cleared = _clear_import_journal(owner)
-    return {"ok": True, "pid": prop.id, "lint": lint,
-            "origin": origin, "journal_retained": not cleared}
+    return {"ok": True, "pid": prop.id, "replay": False,
+            "receipts_hash": journal["receipts_hash"],
+            "lint": lint, "origin": origin,
+            "journal_retained": not cleared}
 
 
 # --------------------------------------- recorded receipts section
