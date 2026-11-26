@@ -61,6 +61,22 @@ still disposes of the live file — the correction's first cut broke
 r63_amend_proof's r63a_repeated_prepared_replay deterministically
 (21/22) until this evidence clause was added.
 
+Director ruling 7194085921 (PR #532, 2026-11-26), legs (h):
+clause (b) is accepted in principle — a later verified sealed copy
+may justify disposal — but the evidence branch read a globbed
+manifest and its named ideas member directly and compared PARSED
+data, without verifying the member against its recorded integrity
+fingerprint. A damaged generation cannot establish
+recoverability. Legs (h1) pin that a sealed member whose bytes no
+longer match its recorded fingerprint (parsed content identical)
+establishes NOTHING: the live file is preserved and the restore
+refuses. Legs (h3) pin the owner half of the ruling: a generation
+sealed for a DIFFERENT owner, planted under this owner's
+namespace, cannot justify disposal either. The valid-seal probe
+(h_valid_seal_evidence_recognized) and leg (g4) are the positive
+controls: an intact, fingerprint-verified sealed copy still
+justifies disposal.
+
 Contract asserted here:
   (a) An unreadable/truncated idea file is SURFACED by the
       inventory path — named in the snapshot's skipped manifest
@@ -102,6 +118,9 @@ NEW = "SealFixtureNew"
 EMP = "SealFixtureEmpty"
 ACC = "SealFixtureAcct"
 GEN = "SealFixtureGen"
+TAM = "SealFixtureTam"
+FOR = "SealFixtureForge"
+DONOR = "SealFixtureDonor"
 
 
 def _cleanup(owner):
@@ -499,6 +518,116 @@ def run_all():
               "restore failed to converge to generation 1 although "
               "generation 2 sealed the extra idea's exact content")
 
+        # -------- (h) Director ruling 7194085921 -------------------
+        # The sealed-generation evidence branch must VERIFY the
+        # generation it relies on: the manifest passes the checkpoint
+        # system's own validation and the ideas member's actual bytes
+        # match the sha256 fingerprint the manifest records for it,
+        # with owner and identity confirmed. Parsed comparison alone
+        # is not verification: a damaged generation cannot establish
+        # recoverability.
+        import hashlib as _hashlib
+        from form.mandell.idea_checkpoint import (
+            _sealed_checkpoint_evidence)
+
+        # (h1) mismatched seal: generation 2 sealed the late idea,
+        # then its ideas member is rewritten with the SAME parsed
+        # content in different bytes — the recorded fingerprint no
+        # longer matches the member's actual bytes.
+        open_program(TAM)
+        tam_first = _make_ideas(TAM, count=1)[0]
+        tam_g1 = cg.commit_checkpoint(open_program(TAM)).get("generation_id")
+        tam_late = _make_ideas(TAM, count=1)[0]
+        tam_g2 = cg.commit_checkpoint(open_program(TAM)).get("generation_id")
+        tam_late_path = _idea_path(tam_late, TAM)
+        tam_late_fn = os.path.basename(tam_late_path)
+        with open(tam_late_path, "rb") as f:
+            tam_late_bytes = f.read()
+        # Positive control at the branch level: the INTACT sealed
+        # generation registers as disposal evidence (pre- and
+        # post-fix); leg (g4) pins the same shape end-to-end.
+        check("h_valid_seal_evidence_recognized",
+              bool(tam_g1) and bool(tam_g2) and tam_g1 != tam_g2
+              and _sealed_checkpoint_evidence(
+                  TAM, tam_late_fn, tam_late, tam_late_path),
+              "an intact sealed generation did not register as "
+              "disposal evidence")
+        tam_member = cg._member_path(TAM, "ideas", tam_g2)
+        with open(tam_member, encoding="utf-8") as f:
+            tam_member_data = json.load(f)
+        with open(tam_member, "w", encoding="utf-8") as f:
+            f.write(json.dumps(tam_member_data, indent=2, sort_keys=True))
+        with open(cg._manifest_path(TAM, tam_g2), encoding="utf-8") as f:
+            tam_recorded_fp = json.load(f)["members"]["ideas"]["sha256"]
+        with open(tam_member, "rb") as f:
+            tam_actual_fp = _hashlib.sha256(f.read()).hexdigest()
+        with open(tam_member, encoding="utf-8") as f:
+            tam_reread = json.load(f)
+        check("h_tamper_changes_bytes_not_content",
+              tam_actual_fp != tam_recorded_fp
+              and tam_reread == tam_member_data
+              and tam_reread["ideas"].get(tam_late)
+                  == json.loads(tam_late_bytes.decode("utf-8")),
+              "tamper setup failed: member bytes still match the "
+              "recorded fingerprint, or the parsed content drifted")
+        check("h_mismatched_seal_evidence_refused",
+              not _sealed_checkpoint_evidence(
+                  TAM, tam_late_fn, tam_late, tam_late_path),
+              "a fingerprint-mismatched sealed member still "
+              "justified disposal")
+        h1_refused = False
+        try:
+            restore_ideas_from_snapshot(
+                TAM, cg._member_path(TAM, "ideas", tam_g1))
+        except Exception:
+            h1_refused = True
+        check("h_mismatched_seal_restore_refused", h1_refused,
+              "restore silently converged on a mismatched seal")
+        check("h_mismatched_seal_live_file_preserved",
+              os.path.isfile(tam_late_path)
+              and open(tam_late_path, "rb").read() == tam_late_bytes,
+              "restore deleted or altered a live file on the word "
+              "of a fingerprint-mismatched sealed member")
+
+        # (h3) foreign-owner seal: the donor's generation, planted
+        # under FOR's namespace, names the DONOR as its owner. It
+        # accounts for the very idea file FOR holds (identical
+        # bytes), yet it is not FOR's generation and cannot justify
+        # disposal of FOR's copy.
+        open_program(DONOR)
+        donor_idea = _make_ideas(DONOR, count=1)[0]
+        donor_g = cg.commit_checkpoint(
+            open_program(DONOR)).get("generation_id")
+        donor_path = _idea_path(donor_idea, DONOR)
+        with open(donor_path, "rb") as f:
+            donor_bytes = f.read()
+        open_program(FOR)
+        for_snap_path = snapshot_ideas(FOR)  # empty store: accounts nothing
+        for_path = _idea_path(donor_idea, FOR)
+        with open(for_path, "wb") as f:
+            f.write(donor_bytes)
+        with open(cg._manifest_path(DONOR, donor_g), "rb") as f:
+            donor_manifest_bytes = f.read()
+        with open(cg._manifest_path(FOR, donor_g), "wb") as f:
+            f.write(donor_manifest_bytes)
+        check("h_foreign_seal_evidence_refused",
+              bool(donor_g)
+              and not _sealed_checkpoint_evidence(
+                  FOR, os.path.basename(for_path), donor_idea, for_path),
+              "another owner's sealed generation justified disposal "
+              "under this owner's namespace")
+        h3_refused = False
+        try:
+            restore_ideas_from_snapshot(FOR, for_snap_path)
+        except Exception:
+            h3_refused = True
+        check("h_foreign_seal_restore_refused", h3_refused,
+              "restore silently converged on a foreign-owner seal")
+        check("h_foreign_seal_live_file_preserved",
+              os.path.isfile(for_path)
+              and open(for_path, "rb").read() == donor_bytes,
+              "restore deleted a live file on another owner's seal")
+
         passed = sum(1 for _, c in RESULTS if c)
         print(f"CRITIC CHECKPOINT SEAL FIXTURE: {passed}/{len(RESULTS)} GREEN")
     finally:
@@ -511,6 +640,9 @@ def run_all():
         _cleanup(EMP)
         _cleanup(ACC)
         _cleanup(GEN)
+        _cleanup(TAM)
+        _cleanup(FOR)
+        _cleanup(DONOR)
 
 
 def smoke() -> bool:

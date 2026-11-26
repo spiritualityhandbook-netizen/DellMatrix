@@ -197,16 +197,30 @@ def _sealed_checkpoint_evidence(owner: str, fn: str, idea_id: str,
                                 path: str) -> bool:
     """Explicit disposal evidence from the checkpoint system itself.
 
-    True only when some sealed checkpoint generation for this owner
-    holds this exact idea content: that generation's accounted-files
-    manifest records ``fn`` as "included" under ``idea_id`` AND its
-    ideas member carries data equal to the file's current parsed
-    content. Deleting the live file then loses nothing — the content
-    survives sealed (the rollback shape: the target generation
-    predates the idea, but a later generation captured it, so
-    convergence to the target may dispose of the live file). Any
-    doubt — unreadable member, malformed manifest, content drift
-    since that capture — returns False: preserve.
+    True only when some VERIFIED sealed checkpoint generation for
+    this owner holds this exact idea content:
+
+    - the generation's manifest passes the checkpoint system's own
+      manifest validation (``checkpoint_generation._read_manifest``:
+      protocol version, generation identity, committed flag, exact
+      owner, member identity and fingerprint shape);
+    - the ideas member's ACTUAL bytes match the sha256 fingerprint
+      the manifest records for it — the same member verification
+      ``_load_generation`` applies to every member it loads;
+    - the snapshot inside the verified member names this owner, its
+      accounted-files manifest records ``fn`` as "included" under
+      ``idea_id``, AND its ideas data equals the file's current
+      parsed content.
+
+    Deleting the live file then loses nothing — the content survives
+    sealed AND verified recoverable (the rollback shape: the target
+    generation predates the idea, but a later generation captured
+    it, so convergence to the target may dispose of the live file).
+    Any doubt — unverifiable or foreign manifest, fingerprint
+    mismatch, malformed accounting, content drift since that
+    capture — returns False: preserve. (Director ruling 7194085921:
+    a damaged generation cannot establish recoverability; comparing
+    parsed data from an unverified member is not verification.)
     """
     import glob as _glob
 
@@ -220,22 +234,23 @@ def _sealed_checkpoint_evidence(owner: str, fn: str, idea_id: str,
         ns = _cg._owner_ns(owner)
     except Exception:
         return False
-    pattern = os.path.join(_STATE_DIR, f"gen_{ns}_*.json")
+    prefix = f"gen_{ns}_"
+    pattern = os.path.join(_STATE_DIR, prefix + "*.json")
     for mpath in sorted(_glob.glob(pattern)):
+        generation_id = os.path.basename(mpath)[len(prefix):-len(".json")]
         try:
-            with open(mpath, encoding="utf-8") as f:
-                gen_manifest = json.load(f)
-            members = gen_manifest.get("members") or {}
-            ideas_spec = members.get("ideas") or {}
-            member_file = ideas_spec.get("file")
-            if not member_file:
+            manifest = _cg._read_manifest(owner, generation_id)
+            ideas_spec = manifest["members"]["ideas"]
+            member_path = os.path.join(_STATE_DIR, ideas_spec["file"])
+            if _cg._sha256_file(member_path) != ideas_spec["sha256"]:
                 continue
-            with open(os.path.join(_STATE_DIR, member_file),
-                      encoding="utf-8") as f:
+            with open(member_path, encoding="utf-8") as f:
                 snap = json.load(f)
         except Exception:
             continue
         if not isinstance(snap, dict):
+            continue
+        if snap.get("owner") != owner:
             continue
         files = snap.get("files")
         if not isinstance(files, dict):
@@ -277,11 +292,14 @@ def restore_ideas_from_snapshot(owner: str, snapshot_path: str) -> None:
       any snapshot, a file the snapshot's accounted-files manifest
       explicitly records as "included" under the same ID its
       current bytes validate to (its content survives inside the
-      snapshot); or a file some sealed checkpoint generation
-      accounted as "included" under the same ID with member content
-      equal to the file's current content (explicit disposal
-      evidence from the checkpoint system — rollback convergence
-      loses nothing, the content survives sealed). A manifest
+      snapshot); or a file some VERIFIED sealed checkpoint
+      generation accounted as "included" under the same ID with
+      member content equal to the file's current content (explicit
+      disposal evidence from the checkpoint system: the generation's
+      manifest validates, the member's bytes match its recorded
+      fingerprint, and the snapshot names this owner — rollback
+      convergence loses nothing, the content survives sealed and
+      recoverable). A manifest
       entry of "refused", a damaged file, or
       a file no accounting covers is PRESERVED. Absence from a
       capture-time manifest never by itself proves a later addition
@@ -375,11 +393,12 @@ def restore_ideas_from_snapshot(owner: str, snapshot_path: str) -> None:
         elif (manifest is not None
                 and _sealed_checkpoint_evidence(owner, fn, cur_id, path)):
             # Explicit disposal evidence from the checkpoint system:
-            # a sealed generation's manifest accounted this file as
-            # "included" under this ID and that generation's ideas
-            # member holds this exact content, so disposal loses
-            # nothing (rollback convergence to an earlier generation
-            # whose own manifest predates the idea).
+            # a VERIFIED sealed generation's manifest accounted this
+            # file as "included" under this ID and that generation's
+            # fingerprint-verified ideas member holds this exact
+            # content, so disposal loses nothing (rollback
+            # convergence to an earlier generation whose own manifest
+            # predates the idea).
             deletable.append(fn)
         elif manifest is not None and fn not in manifest:
             preserved.append(
