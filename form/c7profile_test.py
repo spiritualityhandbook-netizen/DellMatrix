@@ -398,11 +398,40 @@ def smoke() -> bool:
         pb = _board_mod()
         orig_place = pb.STAGE_FUNCS["place"]
 
+        # Calibrate-then-dominate (Director ruling 7194090761,
+        # option A of the t8 hunt verdict 7191607505). The old
+        # fixed 1.5s sleep raced the whole field: share is taken
+        # over the benchmark's TOTAL wall time, and under CPU
+        # load the CPU-bound stages inflate while a wall-clock
+        # sleep does not, so place's share fell below 0.5 with
+        # the board naming stages correctly throughout — a
+        # fixture defect, not a product defect. The delay is
+        # now sized from the field itself: one unpatched
+        # benchmark through this same path measures it, and
+        # delay = 2 x (calibration total - calibration place
+        # seconds) — twice everything that is not place (the
+        # other stages plus construction, setup and disposal).
+        # In the patched run, share > 0.5 is equivalent to
+        # delay + real place > that run's own non-place total,
+        # so dominance holds by construction unless the field
+        # more than doubles between the two adjacent runs. The
+        # assertion below is unchanged: it still fails whenever
+        # the board names any stage other than place.
+        p_cal = _program("C7ProfileT8Cal")
+        res_cal = execute_seed(p_cal, "49[Profile]")
+        rep_cal = res_cal.get("profile_report") or {}
+        place_cal = _stages(rep_cal).get("place") or {}
+        total_cal = rep_cal.get("total_seconds")
+        place_secs_cal = place_cal.get("seconds")
+        if total_cal is None or place_secs_cal is None:
+            raise ValueError(
+                "t8 calibration run produced no place timing "
+                f"(verdict={rep_cal.get('verdict')})")
+        delay8 = 2.0 * (total_cal - place_secs_cal)
+
         def _slow_place(prog, ctx):
             import time as _t
-            # Decisive dominance: growth — the heaviest real
-            # stage — runs ~0.3s here; 1.5s cannot lose to it.
-            _t.sleep(1.5)
+            _t.sleep(delay8)
             return orig_place(prog, ctx)
 
         pb.STAGE_FUNCS["place"] = _slow_place
