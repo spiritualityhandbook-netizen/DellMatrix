@@ -1245,8 +1245,11 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     # loaded program's OWN layer (owner-scoped, Director 7069171691 —
     # never the module default layer, so loading owner B cannot clear
     # or expose owner A's personas). Absent section = legacy (no user
-    # personas). FAIL CLOSED, like the spatial / agent-local sections
-    # above (except-pass finding 7075379118): a present-but-malformed
+    # personas) — but the replaced surfaces are STILL re-bound to the
+    # program's own layer in that case (the else branch below; Critic
+    # Finding 1, Director ruling 7180708590). FAIL CLOSED, like the
+    # spatial / agent-local sections above (except-pass finding
+    # 7075379118): a present-but-malformed
     # section (not a list) or any activation / re-bind failure refuses
     # the load with PersonaLoadError — never a silent empty layer.
     # Scope A admission (_admit_custom_personas, Director 7079370876)
@@ -1285,6 +1288,20 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
             "skipped": list(_report.get("skipped", [])),
         }
         p.user_personas = _player.all()
+    else:
+        # Critic Finding 1 (Director ruling 7180708590): a legacy save
+        # with NO custom_personas section still had its BIMO / matrix
+        # surfaces replaced unconditionally above, and the re-bind to
+        # the program's OWN layer used to run only inside the presence
+        # block — so a legacy restore's surfaces fell back to the
+        # process-default layer and could resolve (even dock) personas
+        # that exist only there, while the program's own layer stayed
+        # clean. The re-bind is part of surface replacement, not of
+        # section admission: run it for every successful restore.
+        try:
+            p._bind_persona_layer()
+        except Exception as exc:
+            raise PersonaLoadError(f"user persona restore failed: {exc}")
     hist = data.get("history") or []
     if isinstance(hist, list):
         p.history = [str(h)[:120] for h in hist][-24:]
