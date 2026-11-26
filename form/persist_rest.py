@@ -1127,6 +1127,128 @@ def _validate_lifecycle_section(raw: Any) -> Dict[str, Dict[str, Any]]:
     return staged
 
 
+def _validate_agent_audit_section(raw: Any) -> None:
+    """Stage-validate a PRESENT agent_audit section (P0-S).
+
+    Raises ProgramLoadError before the R6.4 restore block runs. That
+    block casts the section counter and each shape-valid record's
+    audit_seq through int() guarded by (TypeError, ValueError); a
+    non-finite float — the JSON tokens 1e309 / -1e309 / Infinity,
+    which json parses to float('inf') / float('-inf') — makes int()
+    raise OverflowError, which escapes both guards and hits the
+    block's exception-agnostic outer reset: the load SUCCEEDED with
+    every valid record dropped, the counter reset to 0, and any
+    previously preserved malformed originals erased (defect
+    evidence 7079514919; fixtures form/p0s_restore_refusal_test.py,
+    Keeper SCOPED FIXTURE CONFIRM 7194519289 on PR #537).
+
+    The census behind the fixtures proved that, within
+    JSON-representable values, this escaping family is EXACTLY the
+    non-finite floats at those two cast sites. Values the guards
+    already catch (a bad string, a dict, the NaN token — int(NaN)
+    raises ValueError) keep their designed normalization, pinned
+    by the fixtures' boundary controls: refusal scope is the
+    values that would otherwise clear the section, not every
+    malformed value. Absent, null, and non-dict sections are NOT
+    refused here — they carry the restore block's own designed
+    quarantine notes, unchanged.
+    """
+    if not isinstance(raw, dict):
+        return
+    seq = raw.get("audit_seq", 0)
+    if isinstance(seq, float) and math.isinf(seq):
+        raise ProgramLoadError(
+            "program file 'agent_audit' counter 'audit_seq' is a "
+            "non-finite number: refusing load")
+    records = raw.get("records")
+    if isinstance(records, dict):
+        for aid, rec in records.items():
+            # Mirror the restore's shape check exactly: only records
+            # that pass it ever reach the int() cast, so only their
+            # audit_seq values are refusal scope. A shape-failing
+            # record is quarantined whole by the restore; its fields
+            # are never cast.
+            if not (isinstance(aid, str) and isinstance(rec, dict)
+                    and rec.get("audit_id") == aid):
+                continue
+            rseq = rec.get("audit_seq", 0)
+            if isinstance(rseq, float) and math.isinf(rseq):
+                raise ProgramLoadError(
+                    f"program file 'agent_audit' record {aid!r} has "
+                    f"a non-finite 'audit_seq': refusing load")
+
+
+def _validate_inspire_section(raw: Any) -> None:
+    """Stage-validate a PRESENT inspire section (P0-S).
+
+    Raises ProgramLoadError before any state is touched. The former
+    restore wrapped InspireState.from_dict in a blanket except/pass,
+    so one wrong-typed scalar (prefs.confirms = "bad") raised
+    inside from_dict and the restore silently substituted a whole
+    fresh section — valid weights and rejects lost with it (defect
+    evidence 7079514919). The decided boundary (Director
+    7136855959; Keeper SCOPED FIXTURE CONFIRM 7194519289) is typed
+    refusal for malformed present values that would otherwise
+    clear a section: the section's own from_dict is the authority
+    on what clears it, so staging runs that same parse over a
+    private copy and converts any failure into a typed refusal.
+    Every shape from_dict tolerates today (filtered weights,
+    skipped non-dict samples) keeps its exact designed
+    normalization — this validator cannot refuse a section that
+    loads whole today. A present non-object section refuses
+    outright: the writer (InspireState.to_dict) always emits an
+    object, and a present null is not absence (Director
+    CORRECTION_REQUIRED 7136700328).
+    """
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'inspire' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    import copy as _copy
+    from form.dell_matrix.inspire_pack import InspireState
+    try:
+        InspireState.from_dict(_copy.deepcopy(raw))
+    except Exception as exc:
+        raise ProgramLoadError(
+            f"program file 'inspire' section is malformed ({exc}): "
+            f"refusing load")
+
+
+def _validate_forces_section(raw: Any) -> None:
+    """Stage-validate a PRESENT forces section (P0-S).
+
+    Raises ProgramLoadError before any state is touched. The former
+    restore wrapped ForceField.from_dict in a blanket except/pass,
+    so one wrong-typed scalar (water.intensity = "bad") raised
+    inside from_dict and the restore silently substituted the
+    default field — a valid evolution_level 2.0 fell back to 1.0
+    with it (defect evidence 7079514919). The decided boundary
+    (Director 7136855959; Keeper SCOPED FIXTURE CONFIRM
+    7194519289) is typed refusal for malformed present values that
+    would otherwise clear a section: staging runs the section's
+    own from_dict over a private copy and converts any failure
+    into a typed refusal, so every shape from_dict tolerates
+    today (skipped malformed stream/plant records, legacy
+    count-only payloads) keeps its exact designed normalization.
+    A present non-object section refuses outright: the writer
+    (ForceField.to_dict) always emits an object, and a present
+    null is not absence (Director CORRECTION_REQUIRED
+    7136700328).
+    """
+    if not isinstance(raw, dict):
+        raise ProgramLoadError(
+            f"program file 'forces' section is not an object "
+            f"(got {type(raw).__name__}): refusing load")
+    import copy as _copy
+    from form.dell_matrix.forces import ForceField
+    try:
+        ForceField.from_dict(_copy.deepcopy(raw))
+    except Exception as exc:
+        raise ProgramLoadError(
+            f"program file 'forces' section is malformed ({exc}): "
+            f"refusing load")
+
+
 def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program:
     """PREPARE a private Program from validated data. Touches no process language state.
 
@@ -1223,11 +1345,17 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
         p.companion = AICompanion.from_dict(data["companion"])
     else:
         p.companion = AICompanion.from_dict({})
-    try:
-        from form.dell_matrix.inspire_pack import InspireState
-        p.inspire = InspireState.from_dict(data.get("inspire") or {})
-    except Exception:
-        pass
+    # P0-S: a PRESENT inspire section is stage-validated whole
+    # (_validate_inspire_section) and refuses typed before the swap;
+    # the former blanket except/pass silently substituted a whole
+    # fresh section when a single bad scalar made from_dict raise.
+    # An ABSENT section keeps the documented constructor default.
+    from form.dell_matrix.inspire_pack import InspireState
+    if "inspire" in data:
+        _validate_inspire_section(data["inspire"])
+        p.inspire = InspireState.from_dict(data["inspire"])
+    else:
+        p.inspire = InspireState.from_dict({})
     # MEDIUM-four C: a PRESENT self_knowledge section is stage-validated
     # whole (_validate_self_knowledge_section) and refuses typed before
     # the swap; the former blanket except/pass silently blanked the
@@ -1268,11 +1396,18 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
                 p.undo_depth = _ud
         except (TypeError, ValueError):
             pass
-    try:
-        from form.dell_matrix.forces import ForceField
-        p.forces = ForceField.from_dict(data.get("forces") or {})
-    except Exception:
-        pass
+    # P0-S: a PRESENT forces section is stage-validated whole
+    # (_validate_forces_section) and refuses typed before the swap;
+    # the former blanket except/pass silently substituted the
+    # default field when a single bad scalar (water.intensity)
+    # made from_dict raise, resetting evolution_level with it.
+    # An ABSENT section keeps the documented constructor default.
+    from form.dell_matrix.forces import ForceField
+    if "forces" in data:
+        _validate_forces_section(data["forces"])
+        p.forces = ForceField.from_dict(data["forces"])
+    else:
+        p.forces = ForceField.from_dict({})
     # Phase 4: spatial authority state. Missing member -> fresh (declared,
     # pre-Phase-4 generations). Malformed member -> FAIL CLOSED (never
     # silent defaults that change meaning).
@@ -1689,6 +1824,15 @@ def _prepare_program(owner: str, data: Dict[str, Any], _nursery=None) -> Program
     # (through the existing agent_audit payload section — no parallel
     # store), so a subsequent save cannot silently overwrite the evidence.
     # A note is not a backup.
+    # P0-S: stage-validate BEFORE this block runs — a non-finite
+    # sequence value escapes the block's (TypeError, ValueError)
+    # cast guards as OverflowError and would hit the outer reset
+    # below, silently clearing the whole section (and, on the
+    # active path, swapping the live binding to the cleared
+    # program). The typed refusal raises here, before binding,
+    # leaving the file's bytes and any live binding untouched.
+    if "agent_audit" in data:
+        _validate_agent_audit_section(data["agent_audit"])
     try:
         import copy as _copy
         _ABSENT2 = object()

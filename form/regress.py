@@ -211,6 +211,13 @@ LIST = [
     # malformed present lifecycle data refuses typed at restore
     # before binding, legacy absence preserved (restore side).
     "form.critic_lifecycle_fixture_test",
+    # P0-S corrupted-save repair (Director 7136855959 + conditional
+    # clearance 7170786903; Keeper SCOPED FIXTURE CONFIRM 7194519289
+    # on PR #537): malformed present values that would otherwise
+    # clear the agent_audit / inspire / forces restore sections
+    # refuse typed before binding; source bytes, the prior live
+    # binding, other owners, and lawful legacy loads preserved.
+    "form.p0s_restore_refusal_test",
     "form.r19sib_count_door_test",
     "form.r24_operand_integrity_test",
     "form.r23_outcome_evidence_test",
