@@ -1084,10 +1084,16 @@ def _validate_lifecycle_section(raw: Any) -> Dict[str, Dict[str, Any]]:
     - an entry that is null or not a dict (the previous restore
       silently DROPPED such entries via an isinstance filter, which
       flipped the unit to participating via the legacy-absence
-      fallback and let the next re-save erase the record entirely);
-    - an entry whose "presence" key is present but null / not a
-      string / not "active"|"faded" (the consumer-side malformed
-      family in canonical_lifecycle._presence_state).
+      fallback and let the next re-save erase the record entirely).
+
+    Presence VALUES are deliberately NOT policed here: the settled
+    absence-matrix contract (form/mandell/absence_matrix_test.py,
+    test_restart_real_shapes) persists presence=None through the
+    real writer and requires the record to LOAD, be preserved, and
+    be excluded by the consumer verdicts in
+    canonical_lifecycle._presence_state (malformed presence). Shape
+    malformation refuses at this door; value malformation is the
+    consumer layer's family.
 
     Entry keys are normalized with str(k), exactly as the previous
     restore did for well-formed entries.
@@ -1112,13 +1118,6 @@ def _validate_lifecycle_section(raw: Any) -> Dict[str, Dict[str, Any]]:
             raise ProgramLoadError(
                 f"program file 'lifecycle' entry {k!r} is not an "
                 f"object (got {type(v).__name__}): refusing load")
-        if "presence" in v:
-            presence = v["presence"]
-            if presence is None or not isinstance(presence, str) \
-                    or presence not in ("active", "faded"):
-                raise ProgramLoadError(
-                    f"program file 'lifecycle' entry {k!r} has "
-                    f"malformed 'presence' {presence!r}: refusing load")
         staged[str(k)] = dict(v)
     return staged
 

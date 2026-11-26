@@ -20,10 +20,13 @@ This fixture pins both defects and the controls:
 - lawful legacy ABSENCE (no lifecycle section / no entry) keeps its
   existing treatment before AND after the repair;
 - lawful present records round-trip unchanged;
-- malformed PRESENT data (null entry, non-dict entry, null/wrong-type
-  section, null presence) refuses typed (ProgramLoadError) BEFORE
-  binding on restore, and is never active/participating/selected on
-  the consumer side.
+- malformed PRESENT data of entry/section SHAPE (null entry,
+  non-dict entry, null/wrong-type section) refuses typed
+  (ProgramLoadError) BEFORE binding on restore;
+- malformed presence VALUES (null/invalid) follow the settled
+  absence-matrix contract: the record loads, is preserved, and is
+  excluded by both consumer verdicts — never active, never
+  participating, never selected.
 
 Evidence class: INTEGRATION (real Program, real persist_rest
 save/load, real knowledge selector; isolated owners).
@@ -204,18 +207,41 @@ def test_f6_restore_side():
     check("f6_wrongtype_section_refuses_typed",
           err is not None and "lifecycle" in str(err), str(err))
 
-    # Entry with explicit null presence: typed refusal.
+    # Presence VALUES are the consumer layer's malformed family, per
+    # the settled absence-matrix contract (absence_matrix_test
+    # test_restart_real_shapes persists presence=None through the
+    # real writer): the record LOADS, is PRESERVED (never silently
+    # dropped or erased), and is excluded by both consumer verdicts.
     mutated(lambda d: d["lifecycle"][pid].__setitem__("presence", None))
-    err = _load_refusal(OWNER6)
-    check("f6_null_presence_refuses_typed",
-          err is not None and "lifecycle" in str(err), str(err))
+    try:
+        p4 = persist_rest.load(OWNER6, activate=False)
+        err = None
+    except persist_rest.ProgramLoadError as e:
+        p4, err = None, e
+    check("f6_null_presence_loads", err is None and p4 is not None,
+          str(err))
+    check("f6_null_presence_record_preserved",
+          p4 is not None and pid in p4.lifecycle
+          and p4.lifecycle[pid].get("presence") is None)
+    check("f6_null_presence_excluded_both_verdicts",
+          p4 is not None and not cl.is_active(p4, pid)
+          and not cl.is_participating(p4, pid, "ordinary")
+          and "malformed" in cl.participation_reason(p4, pid))
 
-    # Entry with an invalid presence value: typed refusal.
+    # Invalid presence value: same load-preserve-exclude law.
     mutated(lambda d: d["lifecycle"][pid].__setitem__(
         "presence", "vaporized"))
-    err = _load_refusal(OWNER6)
-    check("f6_invalid_presence_refuses_typed",
-          err is not None and "lifecycle" in str(err), str(err))
+    try:
+        p5 = persist_rest.load(OWNER6, activate=False)
+        err = None
+    except persist_rest.ProgramLoadError as e:
+        p5, err = None, e
+    check("f6_invalid_presence_loads_and_excluded",
+          err is None and p5 is not None
+          and pid in p5.lifecycle
+          and not cl.is_active(p5, pid)
+          and not cl.is_participating(p5, pid, "ordinary"),
+          str(err))
 
     # Lawful legacy ABSENCE control: section deleted entirely -> the
     # existing legacy treatment, unchanged. Loads; the confirmed idea
