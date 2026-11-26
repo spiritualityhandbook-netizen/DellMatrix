@@ -1,28 +1,27 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-26 ~07:30 CST  
-**UTC approx**: 2026-11-26T13:30:00Z  
+**Last cycle**: 2026-11-26 ~08:45 CST  
+**UTC approx**: 2026-11-26T14:45:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - Ripe gates:
-  - #536 at 1efe1d99005e6e8fa88fb1f9702178808b255163: prior SCOPED CONFIRM (7190627854) at exact current head stands. Terminal CI ALL SUCCESS (check-runs verified). Mergeable CLEAN. No new stamp.
-  - #532 at 402445eecc9592f147a6c3b1c7d7fa83849880be: prior SCOPED CONFIRM (7190626816) at exact current head stands. Terminal CI ALL SUCCESS (smoke re-run verified). Mergeable CLEAN. No new stamp.
-  - Drafts #508/#505/#502 and fenced #294 skipped.
+  - #541 at 34a49960fb657bff4aa5767b0e2ee8d2557378fa: Uni §45 package in body. Spot-check persist_rest.py finite guard present. Terminal CI: builds+browser SUCCESS, smoke IN PROGRESS. Exact missing: terminal Form smoke SUCCESS at exact head. Comment 7195349262. No stamp.
+  - #540 at 9be2ab8e77453cbfac8e3576202f8cd521dd459b: Uni §45 package in body. Terminal CI: builds+browser SUCCESS, smoke IN PROGRESS. Exact missing: terminal Form smoke SUCCESS at exact head. Comment 7195349764. No stamp.
+  - #532 at 69ee0ca3590f7433f3c14fdb9743681dca88dff2: head moved; prior stamps void. Terminal CI: builds+browser SUCCESS, smoke IN PROGRESS. Exact missing: terminal Form smoke SUCCESS at exact head. Comment 7195350294. No stamp.
+  - #536 at 1efe1d99005e6e8fa88fb1f9702178808b255163: prior SCOPED CONFIRM at exact current head stands. No new stamp.
+  - Drafts #508/#505/#502/#539/#538/#537 and fenced #294 skipped.
 - Merged-main proofs:
-  - #533 merged 2026-11-26T08:15:22Z, merge SHA 0126bd33: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193493479). Package complete: postmerge 19/19 + terminal CI on merge.
-  - #534 merged 2026-11-26T10:03:47Z, merge SHA 903c4520: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193494034). Package complete: postmerge 12/12 + terminal CI on merge.
-  - #535 merged 2026-11-26T11:23:23Z, merge SHA b6e431bf: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193494816). Package complete: postmerge 17/17 + terminal CI on merge.
-  - #531 merged 2026-11-26T13:10:48Z, merge SHA c13a8b02: named missing terminal Form smoke SUCCESS on merge commit (receipt 7193255301 showed IN PROGRESS; no terminal receipt yet). Behavioral proof 19/19 posted. Prior SCOPED CONFIRM at head stands. Comment 7193495682.
-- Records reviews: none awaiting.
-- Trailing obligations: discharged merged-main credits for #533/#534/#535. #531 remaining pending terminal smoke.
+  - #531 merge SHA c13a8b0258b05ebbb3e86437c8d6948980a9ca7f: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7195350855). Form smoke on merge commit completed SUCCESS (run 45826633214). Trailing discharged.
+- Records reviews: #539/#538 already scoped earlier this hour; no new awaiting.
+- Trailing obligations: #531 discharged this pass.
 
 ## Trailing ledger
-- discharged this run: 3 (merged-main credits #533/#534/#535)
-- remaining: 1 (#531 terminal smoke on merge)
-- gaps: terminal Form smoke SUCCESS at c13a8b02 for #531
+- discharged this run: 1 (#531 merged-main credit)
+- remaining: 0
+- gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + CODE CREDIT CONFIRMs on #533/#534/#535 + missing named on #531. Nothing needed from Ace. Next step: Uni terminal smoke receipt on #531 merge commit if credit sought.
+Proof of pass: this watermark advance + missing named on #541/#540/#532 + CODE CREDIT CONFIRM on #531. Nothing needed from Ace. Next step: Uni terminal smoke receipts on the three open heads.
 
 — KEEPER
