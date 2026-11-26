@@ -143,6 +143,53 @@ narrowed wording, because the narrowed claim is independent
 of what recovery did earlier in the load; such a fixture
 would only have served the withdrawn blanket claim.
 
+INSTRUMENT REPAIR ROUND 3 (2026-11-26, PR #546 carrier —
+the suite itself, not the product): hosted smoke run
+45903204739 at ead068e7 failed pass 1 at 28/29 with pass 2
+fully green (355/355). The DD-31 capture names no
+assertion, but the count, the pass asymmetry, and the
+suite's local greens identify the sighting-miss signature
+this header documents for j12_kill_midwrite_landed: the
+2026-11-24 marathon leg-1 red was the first occurrence on
+the round-2 instrument (noted then under the
+single-failure doctrine); this second occurrence reopens
+it as a pattern. Classification: TEST-INSTRUMENT DEFECT,
+same family, one level deeper again — the round-2 fd
+watcher's cycle (~0.1ms scan + 0.2ms wait, under GIL
+contention with the main thread's directory poll) can
+still exceed the temp's whole life on the hosted runner,
+whose write+fsync window for this small save collapses
+below the sampling cycle, so no sample falls inside the
+temp's life and the kill is never sent (the save completes
+cleanly; the old-or-new check behind it passes).
+Repair (this suite only): wait_for_tmp gains a third
+sighting source that is not a poll at all — a kernel
+inotify watch on the state directory (IN_CREATE |
+IN_MOVED_TO). The kernel queues the creation event at the
+temp's birth, so the sighting survives however short the
+temp lives; a watcher thread consumes the events and the
+source is unioned with the existing two, which remain as
+fallbacks where inotify is unavailable. The check's
+assertions are unchanged: sighting AND kill delivery
+(exit -SIGKILL) are still both pinned. Proof, filed with
+the #546 circuit evidence (honest, with its limit stated):
+the inotify source itself is proven end to end — a
+standalone kernel test reads the creation event, and the
+repaired wait_for_tmp sights 10/10 synthetic
+sub-millisecond temps, unslowed and under CPU load, while
+watches are grantable. The A/B numbers that were supposed
+to compare polling-only against the repaired instrument
+are VOID, not a verdict: mid-proof this machine's
+per-user inotify watch budget exhausted (add_watch fails
+ENOSPC, errno 28, on every path, measured first-hand;
+_inotify_open returns None and the fixture degrades to
+its polling fallback, which is why both arms scored
+identically low). The hosted runner is a normal Ubuntu
+VM that grants one watch, so hosted CI is the deciding
+evidence for this repair — a pass there is the proof;
+a repeat red on the same check reopens the hunt, and
+the fallback's own sampling weakness is the next lead.
+
 INSTRUMENT REPAIR ROUND 2 (post-CI, 2026-11-21 — the suite
 itself, not the product): CI run 44962227931 at the round-1
 head (32336f8) ran this suite to its full count on both
@@ -245,9 +292,12 @@ Run: python3 -m form.journey_crash_test
 """
 
 import copy
+import ctypes
 import os
+import select
 import shutil
 import signal
+import struct
 import subprocess
 import sys
 import threading
@@ -351,15 +401,44 @@ def _fd_tmp_name(fd_dir, safe):
     return None
 
 
+def _inotify_open(dirpath):
+    """Open a kernel inotify watch on dirpath for file
+    creation events; returns the inotify fd, or None where
+    inotify is unavailable (non-Linux, no libc, watch
+    refused). Round-3 sighting source: the kernel queues
+    IN_CREATE at the temp's creation, so the event survives
+    however short the temp's life — no sampling cycle can
+    miss it. This is the only non-polling source; the two
+    polling sources remain as fallbacks."""
+    try:
+        libc = ctypes.CDLL("libc.so.6", use_errno=True)
+        # IN_NONBLOCK (0o4000) | IN_CLOEXEC (0o2000000)
+        fd = libc.inotify_init1(0o0004000 | 0o2000000)
+        if fd < 0:
+            return None
+        # IN_CREATE (0x100) | IN_MOVED_TO (0x80)
+        wd = libc.inotify_add_watch(fd, os.fsencode(dirpath),
+                                    0x100 | 0x80)
+        if wd < 0:
+            os.close(fd)
+            return None
+        return fd
+    except Exception:
+        return None
+
+
 def wait_for_tmp(owner, timeout=30.0, proc=None):
     """Poll until a `.dmtmp.` temp for this owner appears (a
     write is in flight) — the deterministic crash trigger.
 
-    Two sighting sources, unioned (round-2 repair): the
-    shared-directory poll (tmp_files) and — when the writer
-    process is given and /proc is available — a watcher
-    thread polling the writer's fd table for the temp it
-    holds open. The directory poll alone missed
+    Three sighting sources, unioned: the shared-directory
+    poll (tmp_files); when the writer process is given and
+    /proc is available, a watcher thread polling the
+    writer's fd table for the temp it holds open (round-2
+    repair); and a kernel inotify watch on the state
+    directory, whose creation event is queued by the kernel
+    at the temp's birth and so cannot be outrun by a short
+    temp life (round-3 repair). The directory poll alone missed
     systematically in CI (run 44962227931, both passes,
     24/25 with only j12_kill_midwrite_landed failing): its
     cycle grows with the thousands of files the preceding
@@ -390,6 +469,37 @@ def wait_for_tmp(owner, timeout=30.0, proc=None):
     if fd_dir:
         watcher = threading.Thread(target=watch, daemon=True)
         watcher.start()
+
+    def watch_inotify():
+        while not stop.is_set():
+            try:
+                r, _, _ = select.select([ifd], [], [], 0.05)
+            except (OSError, ValueError):
+                return
+            if not r:
+                continue
+            try:
+                data = os.read(ifd, 65536)
+            except OSError:
+                return
+            off = 0
+            while off + 16 <= len(data):
+                _wd, _mask, _cookie, nlen = struct.unpack_from(
+                    "iIII", data, off)
+                raw = data[off + 16: off + 16 + nlen]
+                name = raw.split(b"\0", 1)[0].decode(
+                    "utf-8", "replace")
+                if ".dmtmp." in name and safe in name:
+                    found.append(name)
+                    return
+                off += 16 + nlen
+
+    ifd = _inotify_open(_STATE_DIR)
+    inotify_watcher = None
+    if ifd is not None:
+        inotify_watcher = threading.Thread(target=watch_inotify,
+                                           daemon=True)
+        inotify_watcher.start()
     try:
         deadline = time.time() + timeout
         while time.time() < deadline:
@@ -404,6 +514,10 @@ def wait_for_tmp(owner, timeout=30.0, proc=None):
         stop.set()
         if watcher is not None:
             watcher.join(timeout=2)
+        if inotify_watcher is not None:
+            inotify_watcher.join(timeout=2)
+        if ifd is not None:
+            os.close(ifd)
 
 
 def write_line(proc, line):
