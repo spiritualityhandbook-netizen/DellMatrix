@@ -290,6 +290,29 @@ EDIT_RECEIPT_SECTION_KEY = "__organization_edit_receipts__"
 # files stay byte-compatible with pre-A7 readers.
 GRANT_USE_RECEIPT_SECTION_KEY = "__grant_use_receipts__"
 
+# Critic F7 (PR #530 finding 4702349097; Uni verdict 7178450928;
+# Director authorization 7180713277): reserved nursery-file key
+# for the file's OWNER IDENTITY record — the raw owner this
+# nursery file belongs to. _safe_owner is many-to-one
+# ("Fresh/Owner" and "Fresh_Owner" share one safe name, hence
+# one nursery file), and before this circuit the nursery payload
+# recorded no owner anywhere, so the nursery door had no identity
+# to check: in the nursery-first order (Nursery.add persists
+# before any program file exists) a colliding second owner
+# silently adopted the first owner's proposals, private detail
+# included, and the first owner was locked out once the second
+# saved. The writer stamps the raw owner under this key;
+# Nursery.load(path, owner=...) refuses with the existing
+# OwnerCollisionError on a PROVEN mismatch, extending the program
+# file's 72-34/DD-12 identity doctrine to the nursery surface.
+# Can never collide with a proposal ID for the same _slug()
+# reason as the sections above. Emitted on save whenever an
+# owner is known (the writer's own, or the binding already on
+# disk — ownerless writers carry a binding through, never drop
+# it). Legacy files without the record are adopted only under
+# the proof rules in Nursery.load; see there.
+OWNER_SECTION_KEY = "__owner__"
+
 # FI-011 A9 (Director 7085151190 item 1; packet A9.1): the lawful
 # proposal status set. The complete production writer census
 # produces exactly these values (confirm_lineage writes
@@ -388,6 +411,32 @@ def owner_nursery_path(owner: str) -> str:
     """Per-owner nursery file: nursery_<_safe_owner(owner)>.json (existing persist._safe_owner, no new sanitizer)."""
     from form.persist import _safe_owner
     return os.path.join(_STATE_DIR, f"nursery_{_safe_owner(owner)}.json")
+
+
+def stored_nursery_owner(path: Optional[str]) -> Optional[str]:
+    """Raw owner recorded in the nursery file at ``path``.
+
+    Returns the stored owner string when the file exists and
+    carries a well-formed OWNER_SECTION_KEY record; None when the
+    file is absent, unreadable, not a JSON object, or carries no
+    well-formed owner record (legacy unbound file — no reliable
+    identity to check against). Only a PROVEN mismatch (a stored
+    owner different from the requested owner) is a collision,
+    mirroring persist.stored_program_owner."""
+    if not path:
+        return None
+    try:
+        with open(path, "rb") as f:
+            data = json.loads(f.read().decode("utf-8"))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    section = data.get(OWNER_SECTION_KEY)
+    if not isinstance(section, dict):
+        return None
+    owner = section.get("owner")
+    return owner if isinstance(owner, str) and owner else None
 
 
 def _disk_sig(path: str) -> Optional[str]:
@@ -681,6 +730,16 @@ class Nursery:
     # _lens_present). Never serialized.
     _present_fields: Dict[str, set] = field(
         default_factory=dict, repr=False, compare=False)
+    # Critic F7: the raw owner this nursery is bound to — staged
+    # from the file's OWNER_SECTION_KEY record at load, or the
+    # owner a load was performed for; stamped back on every save
+    # and enforced at the load/add/save doors (see
+    # OWNER_SECTION_KEY). None = ownerless (the pre-F7 default for
+    # in-memory and checkpoint-member nurseries); an ownerless
+    # writer never drops an existing on-disk binding (save()
+    # carries it through).
+    owner: Optional[str] = field(
+        default=None, repr=False, compare=False)
 
     def _suppression_fresh(self) -> bool:
         """True when this instance provably sees the current owner
@@ -765,6 +824,23 @@ class Nursery:
         creation receipt's returned form (including the canonical
         post-save digest) is exposed as last_organization_receipt.
         """
+        # Critic F7: the add door refuses BEFORE any mutation when
+        # this instance's bound owner is proven different from the
+        # owner recorded in the file on disk — a second distinct
+        # raw owner whose safe name collides must never append into
+        # the first owner's file. (The load door is the primary
+        # gate; this re-check keeps add() honest for instances
+        # whose binding was established any other way.)
+        if self.path and self.owner is not None:
+            _disk_owner = stored_nursery_owner(self.path)
+            if _disk_owner is not None and _disk_owner != self.owner:
+                from form.persist import OwnerCollisionError
+                raise OwnerCollisionError(
+                    f"Nursery add: owner namespace collision — the "
+                    f"nursery file {os.path.basename(self.path)} "
+                    f"belongs to owner {_disk_owner!r}, not "
+                    f"{self.owner!r}. Refusing to append another "
+                    f"owner's proposal; no bytes written.")
         if isinstance(label, str) and len(label) > MAX_LABEL_CHARS:
             raise NurseryLabelError(
                 f"label length {len(label)} exceeds the admitted bound "
@@ -1852,6 +1928,15 @@ class Nursery:
             raise NurseryConflictError(
                 f"nursery file changed on disk since load: {os.path.basename(self.path)} (lost update refused)"
             )
+        # Critic F7: resolve the owner binding this write carries.
+        # A writer that knows its owner stamps it (below); an
+        # ownerless writer (restores, recovery, tools) carries the
+        # on-disk binding through — a save must never silently
+        # UNBIND a bound file. A proven mismatch cannot reach this
+        # point through the load/add doors; both refuse earlier.
+        effective_owner = self.owner
+        if effective_owner is None:
+            effective_owner = stored_nursery_owner(self.path)
         payload = {}
         for k, v in self.proposals.items():
             d = v.to_dict()
@@ -1900,6 +1985,14 @@ class Nursery:
                 rid: dict(rec)
                 for rid, rec in self.grant_use_receipts.items()
             }
+        # Critic F7: the owner-identity record rides the same
+        # atomic write whenever an owner is known — always emitted
+        # (like the disposition section, unlike grant receipts:
+        # identity is not evidentiary-optional), so a bound file
+        # stays bound across every writer. Files with no known
+        # owner and none on disk keep the pre-F7 shape exactly.
+        if effective_owner is not None:
+            payload[OWNER_SECTION_KEY] = {"owner": effective_owner}
         blob = atomic_write_json(self.path, payload, _fail_at=_fail_at)
         self._seen = hashlib.sha256(blob).hexdigest()
         # C5R.3 (Resolution 3): the canonical post-save digest is
@@ -1908,7 +2001,8 @@ class Nursery:
         return self._seen
 
     @classmethod
-    def load(cls, path: Optional[str] = None) -> "Nursery":
+    def load(cls, path: Optional[str] = None,
+             *, owner: Optional[str] = None) -> "Nursery":
         """Load the nursery owned by ``path``. No path -> empty ownerless in-memory nursery (save refuses).
         The legacy ownerless NURSERY_PATH is never read implicitly.
 
@@ -1918,8 +2012,26 @@ class Nursery:
         canonical file raises NurseryLoadError explicitly -- it is never
         silently replaced with an empty nursery and a failed load never
         leaves a partially mutated nursery behind.
+
+        Critic F7 owner binding: when ``owner`` is given (the
+        Program construction door), the file's OWNER_SECTION_KEY
+        identity record is enforced inside the same private
+        staging, before anything is applied: a PROVEN mismatch
+        refuses with OwnerCollisionError and exposes nothing. A
+        legacy file with NO identity record is adopted only when
+        adoption cannot hand one owner's data to another — the
+        sibling program file proves this requester is the owner,
+        or the file holds no proposals at all; an unbound legacy
+        file WITH proposals and no proof refuses fail-closed
+        (bytes preserved; resolution is the authorized
+        adoption/migration the 72-34 doctrine reserves, never a
+        silent first-come claim). Ownerless loads (checkpoint
+        members, tools, tests) stage the recorded owner without
+        judging it.
         """
         n = cls(path=path)
+        if owner is not None:
+            n.owner = owner
         # R6.3: record restoration epoch; pre-restoration instances
         # are stale for save purposes (checked by check_save_allowed).
         # Uses canonical (_safe_owner) key from path (already sanitized).
@@ -1953,6 +2065,7 @@ class Nursery:
         staged_dispositions: Dict[str, Dict[str, Any]] = {}
         staged_edit_receipts: Dict[str, Dict[str, Any]] = {}
         staged_grant_use_receipts: Dict[str, Dict[str, Any]] = {}
+        staged_owner: Optional[str] = None
         try:
             for k, v in raw.items():
                 # DCC-XIX: the reserved disposition section is staged
@@ -2009,6 +2122,23 @@ class Nursery:
                     staged_grant_use_receipts = {
                         rid: dict(rec) for rid, rec in v.items()}
                     continue
+                # Critic F7: the reserved owner-identity section is
+                # staged separately under the same arrangement; it
+                # is never mistaken for a proposal. A MALFORMED
+                # identity record refuses the whole load typed —
+                # an identity record that cannot be read cannot be
+                # trusted to bind the file or to clear it.
+                if k == OWNER_SECTION_KEY:
+                    if not isinstance(v, dict) \
+                            or not isinstance(v.get("owner"), str) \
+                            or not v.get("owner"):
+                        raise NurseryLoadError(
+                            f"nursery file {os.path.basename(path)} has a malformed "
+                            f"{OWNER_SECTION_KEY} section (not an object carrying "
+                            f"a non-empty owner string)"
+                        )
+                    staged_owner = v["owner"]
+                    continue
                 if not isinstance(v, dict):
                     raise NurseryLoadError(
                         f"nursery file {os.path.basename(path)} has an invalid proposal record for {k!r}"
@@ -2040,6 +2170,70 @@ class Nursery:
             raise NurseryLoadError(
                 f"nursery file {os.path.basename(path)} has an invalid proposal record: {exc}"
             ) from exc
+        # Critic F7: owner binding, decided entirely inside private
+        # staging — on refusal nothing is applied, nothing is
+        # exposed, and no byte of the file is touched. Only a
+        # caller that NAMES its owner (the Program construction
+        # door) is judged; ownerless loads keep the recorded owner
+        # as staged state.
+        if owner is not None:
+            if staged_owner is not None and staged_owner != owner:
+                from form.persist import OwnerCollisionError
+                raise OwnerCollisionError(
+                    f"Nursery load: owner namespace collision — "
+                    f"the nursery file {os.path.basename(path)} "
+                    f"belongs to owner {staged_owner!r}, not "
+                    f"{owner!r} (both normalize to the same safe "
+                    f"name). Refusing to expose or adopt another "
+                    f"owner's nursery; the stored bytes are "
+                    f"preserved unchanged. Resolve by using the "
+                    f"stored owner's exact name, or by an "
+                    f"authorized namespace migration (72-34/DD-12).")
+            if staged_owner is None:
+                # Legacy unbound file (pre-F7: no identity
+                # record). Adoption is permitted only when it
+                # cannot hand one owner's data to another: the
+                # sibling program file PROVES this requester is
+                # the owner, or the file holds no proposals at
+                # all. Anything else refuses fail-closed.
+                import re as _re_f7
+                from form.persist import stored_program_owner
+                _proof = None
+                _m_f7 = _re_f7.search(r"nursery_(.+)\.json$", path)
+                if _m_f7:
+                    _proof = stored_program_owner(os.path.join(
+                        os.path.dirname(path),
+                        f"program_{_m_f7.group(1)}.json"))
+                if _proof is not None and _proof != owner:
+                    from form.persist import OwnerCollisionError
+                    raise OwnerCollisionError(
+                        f"Nursery load: owner namespace collision "
+                        f"— the program file for this safe name "
+                        f"belongs to owner {_proof!r}, not "
+                        f"{owner!r}, and the unbound legacy nursery "
+                        f"file {os.path.basename(path)} follows the "
+                        f"program file's proven identity. Refusing "
+                        f"to expose another owner's nursery; the "
+                        f"stored bytes are preserved unchanged "
+                        f"(72-34/DD-12).")
+                if _proof is None and staged:
+                    from form.persist import OwnerCollisionError
+                    raise OwnerCollisionError(
+                        f"Nursery load: the legacy nursery file "
+                        f"{os.path.basename(path)} predates owner "
+                        f"binding, holds {len(staged)} proposal(s), "
+                        f"and no program file proves whether it "
+                        f"belongs to {owner!r}. Refusing to serve "
+                        f"or adopt an unbound nursery whose owner "
+                        f"cannot be proven — a first-come claim "
+                        f"could hand one owner's pending ideas to "
+                        f"a colliding namesake. The stored bytes "
+                        f"are preserved unchanged; resolution is "
+                        f"an authorized adoption/migration "
+                        f"(72-34/DD-12).")
+            n.owner = owner
+        elif staged_owner is not None:
+            n.owner = staged_owner
         # Only now apply: nothing partial can escape.
         n.proposals = staged
         n._present_fields = staged_present

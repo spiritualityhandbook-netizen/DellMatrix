@@ -1045,7 +1045,7 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
     from form.dell_matrix.atomic_write import atomic_write_json
     from form.dell_matrix.nursery import (
         DISPOSITION_SECTION_KEY, EDIT_RECEIPT_SECTION_KEY,
-        GRANT_USE_RECEIPT_SECTION_KEY, _disk_sig,
+        GRANT_USE_RECEIPT_SECTION_KEY, OWNER_SECTION_KEY, _disk_sig,
         NurseryConflictError, owner_nursery_path,
     )
 
@@ -1075,6 +1075,11 @@ def _eager_converge_live(program, owner: str, _fail_at: Optional[str] = None,
             rid: dict(rec)
             for rid, rec in nursery.grant_use_receipts.items()
         }
+    # Critic F7: the owner-identity record rides the same
+    # reconstruction when the staged nursery knows its owner — a
+    # rollback must not silently UNBIND the live nursery file.
+    if getattr(nursery, "owner", None):
+        nursery_payload[OWNER_SECTION_KEY] = {"owner": nursery.owner}
     # R2: Ideas payload. The ideas_snapshot_path_for_rollback is passed
     # explicitly to avoid guessing. It points to the sealed generation's
     # ideas member file.
