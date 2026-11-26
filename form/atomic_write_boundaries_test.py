@@ -40,7 +40,12 @@ This suite pins the bounds those suites do not:
      does not parse is scanned but NEVER removed; a temp
      naming a live-but-unrelated pid is kept (the safe
      direction: never sweep a possibly-live writer); a missing
-     directory reports zeros without raising.
+     directory reports zeros without raising; a hand-planted
+     exact-shaped dead-pid temp is KEPT byte-identical with
+     typed reason NOT_PROVEN_OWNED — filename shape is not
+     provenance (Director SUPERSESSION 7088845962 replaced the
+     old E1 removal expectation; genuine helper-minted orphans
+     are swept under D).
   F. aborted generation commit file accounting: a commit
      aborted mid-seal leaves exactly the already-sealed member
      files as orphans (no manifest, pointer unmoved, previous
@@ -338,9 +343,20 @@ def section_e(d):
     for pth in (dead, live, foreign):
         with open(pth, "wb") as f:
             f.write(b"partial")
-    res = sweep_stale_tmps(d)
-    check("E1.sweep.removes_dead_pid", not os.path.exists(dead),
+    # SUPERSEDED ORACLE (Director 7088845962): this hand-planted
+    # exact-shaped dead-pid file has no writer-minted provenance,
+    # so the provenance law KEEPS it; the pre-supersession
+    # expectation E1.sweep.removes_dead_pid asserted the deletion
+    # that ruling 7088554768 forbids.
+    report = []
+    res = sweep_stale_tmps(d, report=report)
+    check("E1.sweep.keeps_dead_pid_unprovenanced",
+          os.path.exists(dead) and _read(dead) == b"partial",
           str(res))
+    check("E1.sweep.unprovenanced_reason_typed",
+          {e["name"]: e.get("reason") for e in report}.get(
+              os.path.basename(dead)) == "NOT_PROVEN_OWNED",
+          str(report))
     check("E1.sweep.keeps_live_pid", os.path.exists(live))
     check("E1.sweep.keeps_foreign", os.path.exists(foreign))
     check("E1.sweep.keeps_canonical", _read(canon) == b"{}")

@@ -60,15 +60,25 @@ about the observed bare contract, never a completion claim for
 operand-bearing operation.
 
 Isolation: one unique owner per address (GPE07Audit<n>), files
-cleaned before and after via the D1 cleanup; the audit leaves
-form/state byte-identical (proven by gpe07_audit_test).
+cleaned before and after via the D1 cleanup; and the public
+entry point run_audit() itself executes the sweep in a child
+process rooted at a private disposable copy of the tree, so
+the audit leaves the real form/state byte-identical for EVERY
+caller — suite, CLI, or direct import (proven by
+gpe07_audit_test; Director rulings 7176510943 + 7177000122).
 """
 from __future__ import annotations
 
 import glob
 import importlib
+import json
 import os
 import re
+import secrets
+import shutil
+import subprocess
+import sys
+import tempfile
 from typing import Any, Dict, List, Optional
 
 from .registry import DELLS, execution_standing, get_dell
@@ -440,7 +450,14 @@ def _cleanup_thorough(owner: str, state_dir: str) -> None:
             pass
 
 
-def run_audit(owner_prefix: str = "GPE07Audit") -> List[Dict[str, Any]]:
+def _run_audit_inplace(owner_prefix: str) -> List[Dict[str, Any]]:
+    """The sweep itself, against THIS process's state directory.
+
+    Only ever runs inside the private disposable tree that
+    run_audit() prepares (the child entry below); a caller in
+    the real tree must go through run_audit(), which is the
+    boundary the isolation law binds (Director correction
+    7177000122)."""
     from .dell_cards import DEEP_NOTES, english_named_dells
     from form.persist import _STATE_DIR
 
@@ -455,6 +472,130 @@ def run_audit(owner_prefix: str = "GPE07Audit") -> List[Dict[str, Any]]:
         finally:
             _cleanup_thorough(owner, _STATE_DIR)
     return records
+
+
+_TICKET_NAME = ".gpe07-audit-ticket"
+
+
+def _tree_root() -> str:
+    return os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+
+
+def run_audit(owner_prefix: str = "GPE07Audit") -> List[Dict[str, Any]]:
+    """Public entry point — the isolation boundary.
+
+    The sweep's real Program operations (nursery writes and
+    .dmtmp-ledger.jsonl creation included) run in a child
+    process whose tree is a private disposable copy of this
+    one, so the real form/state directory is never written by
+    an audit, whoever the caller is: the regression suite, the
+    module CLI, or a direct import-and-call (Director contract
+    ruling 7176510943; correction 7177000122 moved the
+    isolation behind this boundary from the regression suite,
+    whose test-side wrapper left a direct caller with the old
+    shared-state behavior identified in 7175094313).
+
+    State paths across form/persist and form/dell_matrix are
+    derived from file locations (process-global), so a copied
+    tree is the lawful isolation seam: the child resolves
+    every state path inside the copy, which starts with NO
+    state directory and is deleted whole afterwards. The
+    shared ledger is never truncated, filtered or restored —
+    it is simply never the audit's directory. The signature
+    and the returned records are exactly the pre-isolation
+    ones (the records round-trip through JSON, as they did
+    under the suite's former wrapper).
+
+    CORRECTION (Director ruling 7180705379): the first
+    entry-point repair authorized the child through an
+    inherited environment flag — but a flag any caller can
+    inherit or set is not a boundary: a public run_audit()
+    call in a process that happened to carry the flag ran
+    the sweep in place against the caller's real state, and
+    the module CLI exposed the worker dispatcher in the real
+    checkout. The flag is gone. This entry point ALWAYS
+    isolates, whatever the inherited environment says, and
+    the worker dispatch is confined to the disposable tree
+    by a per-invocation random ticket: the parent writes the
+    ticket into the copied tree and passes its token as an
+    argument; the child sweeps only when the token it was
+    handed matches the ticket inside its OWN tree. A bare
+    --audit-sweep invocation in a real checkout holds no
+    ticket and is refused."""
+    root = _tree_root()
+    tmp = tempfile.mkdtemp(prefix="gpe07_audit_")
+    try:
+        def ignore(d, names):
+            skip = {n for n in names
+                    if n == "__pycache__" or n.endswith((".pyc", ".pyo"))}
+            if os.path.abspath(d) == os.path.abspath(root):
+                skip |= {".git"} & set(names)
+            if os.path.abspath(d) == os.path.join(root, "form"):
+                # The private copy starts with no state directory
+                # at all: the state dir is created fresh inside
+                # the copy by the code under audit.
+                skip |= {"state"} & set(names)
+            return skip
+
+        work = os.path.join(tmp, "src")
+        shutil.copytree(root, work, ignore=ignore, symlinks=True)
+        out_path = os.path.join(tmp, "records.json")
+        token = secrets.token_hex(16)
+        with open(os.path.join(work, _TICKET_NAME), "w",
+                  encoding="utf-8") as f:
+            f.write(token)
+        env = dict(os.environ)
+        env["PYTHONPATH"] = work
+        proc = subprocess.run(
+            [sys.executable, "-m", "form.mandell.dell_audit",
+             "--audit-sweep", owner_prefix, out_path, token],
+            cwd=work, env=env, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise RuntimeError(
+                "isolated audit child failed "
+                f"(rc={proc.returncode}): {(proc.stderr or '')[-800:]}")
+        with open(out_path, encoding="utf-8") as f:
+            return json.load(f)["records"]
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _audit_sweep_child_main(argv) -> int:
+    """Child-process entry (private disposable tree ONLY):
+    run the sweep in place — this process's state paths
+    already resolve inside the copy — and write the records
+    as JSON.
+
+    Confinement (Director ruling 7180705379): the dispatch
+    is lawful only inside the disposable tree run_audit()
+    prepared, proven by the per-invocation ticket that tree
+    carries: the token handed in as an argument must match
+    the ticket file inside THIS process's own tree root.
+    Any other invocation — a bare --audit-sweep in a real
+    checkout, a missing or wrong token — is refused before
+    anything is swept or written. An inherited environment
+    variable authorizes nothing."""
+    i = argv.index("--audit-sweep")
+    args = argv[i + 1:]
+    token = args[2] if len(args) > 2 else ""
+    expected = ""
+    try:
+        with open(os.path.join(_tree_root(), _TICKET_NAME),
+                  encoding="utf-8") as f:
+            expected = f.read().strip()
+    except OSError:
+        expected = ""
+    if not token or not expected or token != expected:
+        print("audit-sweep refused: no valid dispatch ticket "
+              "in this tree (worker dispatch is confined to "
+              "the disposable tree prepared by run_audit())",
+              file=sys.stderr)
+        return 2
+    records = _run_audit_inplace(args[0])
+    with open(args[1], "w", encoding="utf-8") as f:
+        json.dump({"records": records}, f)
+    return 0
 
 
 def render_ledger_md(records: List[Dict[str, Any]]) -> str:
@@ -549,6 +690,8 @@ def render_ledger_md(records: List[Dict[str, Any]]) -> str:
 
 
 if __name__ == "__main__":
+    if "--audit-sweep" in sys.argv:
+        sys.exit(_audit_sweep_child_main(sys.argv))
     recs = run_audit()
     from collections import Counter
     print(Counter(r["verdict"] for r in recs))

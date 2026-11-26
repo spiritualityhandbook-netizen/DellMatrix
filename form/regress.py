@@ -466,6 +466,10 @@ LIST = [
     # change that lands form/muse_space_snapshot.py and
     # form/muse_space_views.py (build record 2026-11-20 section 5).
     "form.muse_space_test:smoke",
+    # Q-35.1 (Director ruling 7085151190 item 7): sweep_stale_tmps
+    # manual-only safety repair — exact mint-shape ownership, lstat
+    # no-symlink, identity revalidation, typed refusals/reasons.
+    "form.sweep_stale_tmps_safety_test:smoke",
     # FI-011 corrections (Director 7085151190 item 1): A7 bound
     # single-use grant presentment + atomic grant-use receipts,
     # A8 raw Nursery.confirm retirement, A12 grow_auto origin

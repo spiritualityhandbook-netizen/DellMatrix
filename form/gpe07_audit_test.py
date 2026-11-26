@@ -30,6 +30,70 @@ sha256) before and after and requires byte-identical state —
 a fresh Program() is never assumed empty, and the sweep must
 leave no residue in the real state directory.
 
+REPAIR NOTE — AUDIT BOUNDARY (2026-11-25, Director contract
+ruling 7176510943 on classification 7175094313): two product
+contracts collided on any tree carrying both. Q-35.1's
+atomic_write appends a mint/tombstone record to the written
+directory's .dmtmp-ledger.jsonl on EVERY save (append-only
+provenance ledger), and ordinary Program construction during
+the sweep saves each audit owner's nursery file through it —
+so the sweep deterministically grew a ledger file in the real
+state directory that is not owner-named and that cleanup may
+never touch, and the byte-identical fingerprint could never
+match. Neither contract moves: GP-E07's byte-identical
+real-state guarantee and Q-35.1's append-only ledger both
+stand at full strength. The repair moves the AUDIT BOUNDARY
+instead, exactly as the ruling directs: the sweep's real
+Program operations — nursery writes and ledger creation
+included — run through the normal dell_audit.run_audit entry
+point in a child process whose tree is a private disposable
+copy of this one (state paths are file-location-relative
+across form/persist and form/dell_matrix, i.e. process-global,
+so process isolation is the lawful seam). The fingerprint over
+the ENTIRE real state directory is kept unchanged and now
+passes by construction: the audit never writes to the real
+directory at all. The shared ledger is never truncated,
+filtered or restored by audit cleanup — it is simply never
+the audit's directory. Demonstrated at the repair head: a
+pre-existing real ledger and unrelated owner bytes survive
+repeated audits byte-identically, and the 100-Dell report
+still returns.
+
+CORRECTION (2026-11-25, Director ruling 7177000122): the
+repair above briefly placed the isolation wrapper in THIS
+suite (_run_audit_isolated). That proved only that the test
+could isolate itself — a caller invoking
+form.mandell.dell_audit.run_audit() directly still entered
+the original loop over the shared form.persist._STATE_DIR,
+cleanup included, and kept the shared-state behavior
+identified in 7175094313. The wrapper is removed from this
+suite; the isolation now lives behind the public
+run_audit(owner_prefix) boundary itself, which re-executes
+the sweep in a child process rooted at a private disposable
+tree copy. This suite invokes that public entry directly,
+exactly as any caller does, and audit_isolation keeps its
+full-strength fingerprint over the ENTIRE real state
+directory.
+
+CORRECTION 2 (2026-11-25, Director ruling 7180705379):
+source review found a remaining route into the in-place
+sweep at the correction head: run_audit() trusted a
+nonempty inherited DELLMATRIX_GPE07_AUDIT_CHILD flag and
+invoked the in-place worker in the caller's tree, and the
+module CLI exposed the worker dispatcher in the real
+checkout. The flag branch is deleted — the public entry
+always isolates — and the worker dispatch is confined to
+the disposable tree by a per-invocation random ticket the
+parent writes into the copy and passes as an argument;
+the child sweeps only when the token matches the ticket
+inside its own tree. Two checks pin the closure:
+audit_isolation_inherited_env_flag (a public call with
+the flag set in-process leaves the real fingerprint
+byte-identical) and audit_bare_dispatcher_refused (a bare
+--audit-sweep invocation in the real checkout is refused
+and writes nothing). Both fail at the pre-correction head
+and pass at this one.
+
 FAILING-FIRST RECORD (at Part head 53368fb1, before the build):
 this suite failed on import — form.mandell.dell_audit did not
 exist (the whole-address execution audit had never been run as
@@ -125,7 +189,9 @@ from __future__ import annotations
 
 import hashlib
 import os
+import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -155,7 +221,12 @@ def run_all():
         NAMED, active_core_count, execution_standing)
 
     fp_before = _state_fingerprint()
+    # The public entry point, invoked directly — the isolation
+    # is inside run_audit() itself (Director correction
+    # 7177000122), so this suite gets exactly what any direct
+    # caller gets.
     records = dell_audit.run_audit()
+    records2 = dell_audit.run_audit()
     by_dell = {r["dell"]: r for r in records}
 
     check("audit_coverage_exactly_100",
@@ -235,7 +306,6 @@ def run_all():
           all(r["english_named"] == (r["dell"] in named) for r in records),
           f"english_named={sum(1 for r in records if r['english_named'])}")
 
-    records2 = dell_audit.run_audit()
     seq1 = [(r["dell"], r["verdict"], r["basis"], r["reason"])
             for r in records]
     seq2 = [(r["dell"], r["verdict"], r["basis"], r["reason"])
@@ -275,6 +345,54 @@ def run_all():
     fp_after = _state_fingerprint()
     check("audit_isolation", fp_before == fp_after,
           f"state files before={len(fp_before)} after={len(fp_after)}")
+
+    # CORRECTION checks (Director ruling 7180705379): the
+    # entry-point repair at 5be607e1 authorized the child
+    # through an inherited environment flag, so a public
+    # run_audit() call in a process carrying the flag ran
+    # the sweep in place, and the module CLI exposed the
+    # worker dispatcher in the real checkout. Both routes
+    # are now closed: the public entry isolates regardless
+    # of inherited environment, and the dispatcher refuses
+    # without the per-invocation ticket only the disposable
+    # tree carries.
+    flag = "DELLMATRIX_GPE07_AUDIT_CHILD"
+    fp_flag_before = _state_fingerprint()
+    saved_flag = os.environ.get(flag)
+    os.environ[flag] = "1"
+    try:
+        flagged_records = dell_audit.run_audit()
+    finally:
+        if saved_flag is None:
+            os.environ.pop(flag, None)
+        else:
+            os.environ[flag] = saved_flag
+    fp_flag_after = _state_fingerprint()
+    check("audit_isolation_inherited_env_flag",
+          len(flagged_records) == 100 and fp_flag_before == fp_flag_after,
+          f"records={len(flagged_records)} "
+          f"state files before={len(fp_flag_before)} "
+          f"after={len(fp_flag_after)}")
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    fp_disp_before = _state_fingerprint()
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "records.json")
+        env = dict(os.environ)
+        env.pop(flag, None)
+        env["PYTHONPATH"] = root
+        proc = subprocess.run(
+            [sys.executable, "-m", "form.mandell.dell_audit",
+             "--audit-sweep", "GPE07Audit", out_path],
+            cwd=root, env=env, capture_output=True, text=True)
+        disp_refused = (proc.returncode != 0
+                        and not os.path.exists(out_path))
+    fp_disp_after = _state_fingerprint()
+    check("audit_bare_dispatcher_refused",
+          disp_refused and fp_disp_before == fp_disp_after,
+          f"dispatcher refused={disp_refused} "
+          f"state files before={len(fp_disp_before)} "
+          f"after={len(fp_disp_after)}")
 
 
 def smoke() -> bool:
