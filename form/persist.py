@@ -152,7 +152,12 @@ def stored_program_owner(path: str) -> Optional[str]:
     if not isinstance(data, dict):
         return None
     owner = data.get("owner")
-    return owner if isinstance(owner, str) and owner else None
+    # Critic F7 (Director 7185483691): the recorded identity is
+    # the exact raw owner string — the empty string is a lawful
+    # owner (the program door accepts it), so only a NON-STRING
+    # owner value is "no reliable identity"; a "" record proves
+    # owner "" exactly as stored_nursery_owner treats it.
+    return owner if isinstance(owner, str) else None
 
 
 def assert_program_owner_access(owner: str, path: str,

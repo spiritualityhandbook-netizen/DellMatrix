@@ -248,6 +248,7 @@ LIST = [
     "form.supersession_lineage_restart_test",
     "form.precuts_caller_words_test",
     "form.owner_namespace_collision_test",
+    "form.critic_owner_collision_fixture_test",
     "form.resonance_lifecycle_gate_test",
     "form.four_way_equivalence_test",
     "form.mandell.d1_dell84_copy_test",

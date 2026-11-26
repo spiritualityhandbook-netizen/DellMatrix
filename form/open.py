@@ -353,7 +353,14 @@ class Program:
             recover_checkpoint_intent(self.owner)
             recover_confirmation_intent(self.owner)
             recover_supersede_intent(self.owner)
-        self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
+        # Critic F7: the live nursery load names its owner, so the
+        # nursery file's identity record is enforced at this door
+        # exactly as the program file's is above (72-34/DD-12) —
+        # a colliding owner is refused before any foreign proposal
+        # is exposed. The injected generation-member path stays
+        # exempt: it is bound to a sealed member, never the live
+        # file.
+        self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner), owner=self.owner)
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)
         if not hasattr(self, "keys") or self.keys is None:
