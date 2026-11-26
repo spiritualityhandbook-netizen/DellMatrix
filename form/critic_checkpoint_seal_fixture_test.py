@@ -61,6 +61,17 @@ still disposes of the live file — the correction's first cut broke
 r63_amend_proof's r63a_repeated_prepared_replay deterministically
 (21/22) until this evidence clause was added.
 
+Director ruling 7194394329 (PR #532, 2026-11-26), leg (h4):
+the fingerprint correction above verified the member by hashing
+one read and then RE-OPENING the member for parse, so the parsed
+bytes could in principle differ from the hashed bytes. The member
+is now read ONCE as bytes: the sha256 digest is verified against
+those bytes and the snapshot is parsed from those same bytes.
+Leg (h4) pins the single-read property with an opener stub: the
+member's bytes change between a first and a second read, and the
+evidence verdict must be the verdict of the hashed (first) bytes —
+one open, parse of the hashed bytes.
+
 Director ruling 7194085921 (PR #532, 2026-11-26), legs (h):
 clause (b) is accepted in principle — a later verified sealed copy
 may justify disposal — but the evidence branch read a globbed
@@ -121,6 +132,7 @@ GEN = "SealFixtureGen"
 TAM = "SealFixtureTam"
 FOR = "SealFixtureForge"
 DONOR = "SealFixtureDonor"
+SWP = "SealFixtureSwap"
 
 
 def _cleanup(owner):
@@ -628,6 +640,63 @@ def run_all():
               and open(for_path, "rb").read() == donor_bytes,
               "restore deleted a live file on another owner's seal")
 
+        # (h4) Director ruling 7194394329: the member is read ONCE.
+        # The fingerprint is verified against the very bytes that are
+        # then parsed — never a hash of one read and a parse of a
+        # second. An opener stub simulates the member changing
+        # between reads: the first open of the member path yields the
+        # real (fingerprint-matching, disposal-justifying) bytes; a
+        # second open would yield a drifted snapshot whose accounted
+        # content no longer equals the live file. The verdict must be
+        # the verdict of the hashed bytes, reached with ONE open.
+        import builtins as _builtins
+        import io as _io
+        open_program(SWP)
+        swp_first = _make_ideas(SWP, count=1)[0]
+        swp_g1 = cg.commit_checkpoint(open_program(SWP)).get("generation_id")
+        swp_late = _make_ideas(SWP, count=1)[0]
+        swp_g2 = cg.commit_checkpoint(open_program(SWP)).get("generation_id")
+        swp_late_path = _idea_path(swp_late, SWP)
+        swp_late_fn = os.path.basename(swp_late_path)
+        swp_member = cg._member_path(SWP, "ideas", swp_g2)
+        with open(swp_member, encoding="utf-8") as f:
+            swp_member_data = json.load(f)
+        swp_drifted = json.loads(json.dumps(swp_member_data))
+        swp_drifted["ideas"][swp_late] = {"id": swp_late,
+                                          "drifted_between_reads": True}
+        swp_drifted_text = json.dumps(swp_drifted, sort_keys=True)
+        swp_member_abs = os.path.abspath(swp_member)
+        swp_opens = []
+        _real_open = _builtins.open
+
+        def _swap_open(file, mode="r", *args, **kwargs):
+            try:
+                is_member = os.path.abspath(os.fspath(file)) == swp_member_abs
+            except Exception:
+                is_member = False
+            if is_member:
+                swp_opens.append(mode)
+                if len(swp_opens) > 1:
+                    if "b" in mode:
+                        return _io.BytesIO(
+                            swp_drifted_text.encode("utf-8"))
+                    return _io.StringIO(swp_drifted_text)
+            return _real_open(file, mode, *args, **kwargs)
+
+        swp_verdict = None
+        _builtins.open = _swap_open
+        try:
+            swp_verdict = _sealed_checkpoint_evidence(
+                SWP, swp_late_fn, swp_late, swp_late_path)
+        finally:
+            _builtins.open = _real_open
+        check("h_single_read_parses_hashed_bytes",
+              bool(swp_g1) and bool(swp_g2) and swp_g1 != swp_g2
+              and swp_verdict is True and len(swp_opens) == 1,
+              "evidence was not decided by a single read of the "
+              f"hashed bytes (verdict={swp_verdict}, "
+              f"member opens={len(swp_opens)})")
+
         passed = sum(1 for _, c in RESULTS if c)
         print(f"CRITIC CHECKPOINT SEAL FIXTURE: {passed}/{len(RESULTS)} GREEN")
     finally:
@@ -643,6 +712,7 @@ def run_all():
         _cleanup(TAM)
         _cleanup(FOR)
         _cleanup(DONOR)
+        _cleanup(SWP)
 
 
 def smoke() -> bool:

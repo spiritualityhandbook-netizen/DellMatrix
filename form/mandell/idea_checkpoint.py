@@ -20,6 +20,7 @@ This preserves:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from typing import Dict, List
@@ -206,7 +207,10 @@ def _sealed_checkpoint_evidence(owner: str, fn: str, idea_id: str,
       owner, member identity and fingerprint shape);
     - the ideas member's ACTUAL bytes match the sha256 fingerprint
       the manifest records for it — the same member verification
-      ``_load_generation`` applies to every member it loads;
+      ``_load_generation`` applies to every member it loads; the
+      member is read ONCE, and the snapshot below is parsed from
+      the very bytes whose digest was verified (Director ruling
+      7194394329);
     - the snapshot inside the verified member names this owner, its
       accounted-files manifest records ``fn`` as "included" under
       ``idea_id``, AND its ideas data equals the file's current
@@ -242,10 +246,16 @@ def _sealed_checkpoint_evidence(owner: str, fn: str, idea_id: str,
             manifest = _cg._read_manifest(owner, generation_id)
             ideas_spec = manifest["members"]["ideas"]
             member_path = os.path.join(_STATE_DIR, ideas_spec["file"])
-            if _cg._sha256_file(member_path) != ideas_spec["sha256"]:
+            # Single read (Director ruling 7194394329): the member's
+            # bytes are read ONCE — the recorded fingerprint is
+            # verified against those bytes and the snapshot is parsed
+            # from those same bytes, never a hash of one read and a
+            # parse of a second, possibly different, read.
+            with open(member_path, "rb") as f:
+                member_bytes = f.read()
+            if hashlib.sha256(member_bytes).hexdigest() != ideas_spec["sha256"]:
                 continue
-            with open(member_path, encoding="utf-8") as f:
-                snap = json.load(f)
+            snap = json.loads(member_bytes.decode("utf-8"))
         except Exception:
             continue
         if not isinstance(snap, dict):
