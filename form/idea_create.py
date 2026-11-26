@@ -47,8 +47,15 @@ def parse_create_line(raw: str) -> Dict[str, Any]:
         # Nursery Q-S2.1) is enforced as a typed refusal BEFORE
         # mutation in needs.parse_and_place, never by slicing here.
         "label": label,
-        "detail": detail[:2000],
-        "goals": goals[:12],
+        # J-04 (GP-E27): detail and goals are stored WHOLE. The
+        # former detail[:2000] / goals[:12] silently cut admitted
+        # content at this door (a 5,000-word detail stored exactly
+        # 2,000 chars, tail and end marker lost; a 13th goal
+        # dropped) with no provenance or refusal — the SYS-C29
+        # family defect (byte-exact or typed refusal, never
+        # silent truncation).
+        "detail": detail,
+        "goals": goals,
         "words": words[:500],
         "complete": len(missing) == 0,
         "missing": missing,

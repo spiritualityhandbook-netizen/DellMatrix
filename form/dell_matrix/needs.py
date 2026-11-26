@@ -154,7 +154,12 @@ def set_detail(program, ref: str, detail: str) -> Dict[str, Any]:
     if not u:
         return {"ok": False, "reason": f"idea not found: {ref}"}
     old = getattr(u, "detail", "") or ""
-    u.detail = (detail or "").strip()[:2000]
+    # J-04/J-17 (GP-E27): the edited detail is stored WHOLE. The
+    # former [:2000] cut silently truncated admitted edits at this
+    # door (a >2,000-char edit lost its tail with no provenance or
+    # refusal) — the SYS-C29 family defect, sibling of the create
+    # door's cut removed in idea_create.parse_create_line.
+    u.detail = (detail or "").strip()
     if not (u.words or "").strip() and u.detail:
         u.words = u.detail[:120]
     push_action(program, {"kind": "edit_detail", "id": uid, "old": old, "new": u.detail, "ts": time.time()})

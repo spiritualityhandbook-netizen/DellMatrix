@@ -539,6 +539,26 @@ def t20_plain_seed_claim_still_admission_refused():
           f"state {before} -> {_snap(p)}")
 
 
+def t30_nested_bracket_aggregate_claim_admission_refused():
+    # Part VII staging reconciliation (2026-11-26): the nested-
+    # bracket aggregate form is a malformed whole-line seed claim —
+    # the canonical parser refuses it by name (aggregate Dell
+    # conflict; pinned at parser level by the 72-10 grammar stress
+    # battery). The claim scan formerly misread the outer close as
+    # prose residue, so the line escaped the gate into the English
+    # door and declined as unresolved language instead of receiving
+    # the gate's typed refusal. The scan now consumes the stray
+    # close as part of the malformed atom; the gate refuses it.
+    p = _fresh("GPE08GateT30")
+    before = _snap(p)
+    p, out = _drive(p, "08[A[B]] :: x")
+    check("T30_nested_bracket_aggregate_claim_admission_refused",
+          GATE_REFUSAL in out and "seed_parse_refusal" in out
+          and "aggregate Dell conflict" in out
+          and NOT_EXECUTED in out and _snap(p) == before,
+          f"state {before} -> {_snap(p)}")
+
+
 def t21_known_dell_flow_line_flows_normally():
     # Control (g31 T-1's line): a FlowOver chain over known Dells
     # is a valid canonical seed — it executes under the chain
@@ -675,6 +695,7 @@ def run_all():
     t27_earlier_nonexecutable_operator_gate_owned()
     t28_quoted_data_then_genuine_operator_gate_owned()
     t29_embedded_label_colons_gate_owned()
+    t30_nested_bracket_aggregate_claim_admission_refused()
     passed = sum(1 for _, ok in CHECKS if ok)
     print(f"GP-E08 admission gate: {passed}/{len(CHECKS)} checks passed")
     if passed != len(CHECKS):
