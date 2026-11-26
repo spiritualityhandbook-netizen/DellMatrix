@@ -608,6 +608,7 @@ def serialize(program: Program) -> Dict[str, Any]:
             getattr(program, "bimo_configurations", None),
             getattr(program, "bimo_configurations_malformed", None),
             program.owner,
+            layer=getattr(program, "persona_layer", None),
         ),
         # R7.6: Connected World session evidence. Same strict schema
         # contract: closed records only, provenance steps (host, status,

@@ -74,8 +74,16 @@ def normalize_config_name(name: Any) -> Optional[str]:
 # Named configurations
 # ---------------------------------------------------------------------------
 
-def validate_configuration(raw: Any, owner: str) -> Tuple[bool, str]:
-    """Strict shape check for one named BIMO configuration record."""
+def validate_configuration(raw: Any, owner: str,
+                           layer: Any = None) -> Tuple[bool, str]:
+    """Strict shape check for one named BIMO configuration record.
+
+    ``layer`` is the owner's user persona layer: persona ids are
+    known relative to it, so a configuration holding the owner's own
+    custom personas is valid exactly as a canonical one is. Callers
+    that validate on an owner's behalf pass the owner's layer;
+    layer=None keeps the canonical-only reading.
+    """
     from form.dell_matrix.personas import BIMO_SLOTS, normalize_persona_id
     if not isinstance(raw, dict):
         return False, "configuration must be an object"
@@ -93,7 +101,8 @@ def validate_configuration(raw: Any, owner: str) -> Tuple[bool, str]:
     if not isinstance(saved, str) or not saved or len(saved) > 128:
         return False, "configuration.saved must be a non-empty string"
     pilot = raw.get("pilot")
-    if not isinstance(pilot, str) or normalize_persona_id(pilot) != pilot:
+    if not isinstance(pilot, str) or \
+            normalize_persona_id(pilot, layer=layer) != pilot:
         return False, "configuration.pilot must be a known persona id"
     slots = raw.get("slots")
     if not isinstance(slots, dict):
@@ -103,7 +112,7 @@ def validate_configuration(raw: Any, owner: str) -> Tuple[bool, str]:
             return False, f"configuration.slots has unknown slot {slot!r}"
         if pid is not None and (
                 not isinstance(pid, str)
-                or normalize_persona_id(pid) != pid):
+                or normalize_persona_id(pid, layer=layer) != pid):
             return False, "configuration.slots values must be null or known persona ids"
     return True, ""
 
@@ -144,10 +153,14 @@ class ForgeSession:
     staged_slots: Dict[str, Optional[str]] = field(
         default_factory=dict, repr=False)
     staged_pilot: str = field(default="mathelody", repr=False)
+    # The owner's user persona layer, carried so the staged body
+    # resolves the owner's custom personas exactly as the live body
+    # does (Critic Finding 3). Runtime binding only, never persisted.
+    staged_layer: Any = field(default=None, repr=False)
 
     @classmethod
     def open(cls, owner: str, live_slots: Dict[str, Any],
-             live_pilot: str) -> "ForgeSession":
+             live_pilot: str, layer: Any = None) -> "ForgeSession":
         from form.dell_matrix.personas import BIMO_SLOTS
         return cls(
             session_id=str(uuid.uuid4()),
@@ -155,17 +168,21 @@ class ForgeSession:
             started=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             staged_slots={s: live_slots.get(s) for s in BIMO_SLOTS},
             staged_pilot=live_pilot,
+            staged_layer=layer,
         )
 
     def staged_body(self):
         """A detached BIMOBody holding the staged arrangement.
 
         All staging operations go through BIMOBody's own methods, so
-        slot/persona validation has exactly one authority.
+        slot/persona validation has exactly one authority. The body
+        carries the session's persona layer, so an owner's custom
+        personas resolve in staging exactly as they do live.
         """
         from form.dell_matrix.personas import BIMOBody
         body = BIMOBody(slots=dict(self.staged_slots),
-                        pilot=self.staged_pilot)
+                        pilot=self.staged_pilot,
+                        layer=self.staged_layer)
         return body
 
     def adopt(self, body) -> None:
@@ -251,13 +268,21 @@ def serialize_sessions_section(sessions: Any, malformed: Any,
         mismatch="not serialized as valid: key/ID mismatch")
 
 
-def validate_configurations_section(raw: Any, owner: str
+def validate_configurations_section(raw: Any, owner: str,
+                                    layer: Any = None
                                     ) -> Tuple[Dict[str, Dict[str, Any]],
                                                Optional[Dict[str, Any]]]:
-    """Validate a persisted bimo_configurations section. Never raises."""
+    """Validate a persisted bimo_configurations section. Never raises.
+
+    ``layer`` is the owner's user persona layer (see
+    validate_configuration); persistence callers pass the restoring
+    program's layer so the owner's own custom-persona configurations
+    validate as written.
+    """
     return validate_records_section(
         raw, version=FORGE_SECTION_VERSION, kind="configurations",
-        validate_rec=lambda rec: validate_configuration(rec, owner),
+        validate_rec=lambda rec: validate_configuration(
+            rec, owner, layer=layer),
         id_field="name", max_keep=_MAX_CONFIGURATIONS,
         sort_field="saved",
         key_not_string="configuration key not a string",
@@ -265,12 +290,14 @@ def validate_configurations_section(raw: Any, owner: str
 
 
 def serialize_configurations_section(configs: Any, malformed: Any,
-                                     owner: str) -> Dict[str, Any]:
+                                     owner: str,
+                                     layer: Any = None) -> Dict[str, Any]:
     """Serialize named configurations with the strict schema."""
     return serialize_records_section(
         configs, malformed, version=FORGE_SECTION_VERSION,
         kind="configurations",
-        validate_rec=lambda rec: validate_configuration(rec, owner),
+        validate_rec=lambda rec: validate_configuration(
+            rec, owner, layer=layer),
         id_field="name", max_keep=_MAX_CONFIGURATIONS,
         sort_field="saved",
         key_not_string="configuration key not a string",
