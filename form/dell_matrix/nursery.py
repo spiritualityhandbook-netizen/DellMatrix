@@ -1001,8 +1001,9 @@ class Nursery:
                 duplicate_of = existing
                 break
         pid = base_pid
-        # Avoid exact id collision: the first candidate keeps the
-        # historical count suffix, but the key MUST be unused —
+        # avoid exact id collision
+        # The first candidate keeps the historical count suffix,
+        # but the key MUST be unused —
         # after a lawful rejection + clear_rejected removal the
         # count can point at a still-live later suffix, and writing
         # that key would silently replace a live proposal and
