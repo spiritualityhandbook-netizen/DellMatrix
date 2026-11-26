@@ -373,10 +373,103 @@ def smoke() -> bool:
           f"(6 = the pairs among the 4 unboxed units; stale_a's 4 "
           f"cross-wall pairs excluded, stale_b refused outright)")
 
-    total = 19
+    # --- RUN G: Part I extension — MWL #185 GS-4 residual -----------
+    # The GS-4 growth wall (RUN A-F) is repaired. Register #185's
+    # reproduction (U-PROBE, PR #410) charged the CONFIRM side of
+    # the wall as wall-blind: both-parents-boxed offspring placed
+    # UNBOXED, and the opt-in auto-confirm sweep confirming
+    # cross-wall proposals LIVE unboxed. Re-verified on current
+    # main while building this extension: the sweep now skips
+    # mixed-wall proposals as non-eligible (Q-U.5 treatment is in
+    # grow_ideas) and confirm placement DOES inherit box membership
+    # for boxed-parent offspring. G1/G2/G3 are therefore regression
+    # guards over verified current behavior, not failing-first
+    # checks. What remains open in #185: the Q-U.2 dock-landing
+    # circuit (authorized, bounded), Q-U.3 confirm-placement
+    # inheritance as a general contract, and Q-U.4 manual-confirm
+    # cross-wall semantics — held for an Ace sovereignty ruling,
+    # deliberately not encoded as a test verdict here.
+    # G1 — confirm-placement inheritance, sweep path. A direct
+    # manual confirm_proposal in this harness is denied by the
+    # acceptance policy (producer 'unknown'), so the landing path
+    # exercised here is the opt-in auto-confirm sweep — the same
+    # confirm_proposal -> confirm_lineage.place path, with the
+    # policy-eligible 'grow_auto' producer. On current main the
+    # both-parents-boxed offspring DOES inherit vault membership
+    # (verified while building this extension; the register's
+    # older wall-blind reproduction does not reproduce on this
+    # path). This check is the regression guard for that fact.
+    g1 = _build(f"{OWNER_TAG}G1", box_inside=True)
+    g1.grow_ideas(1)
+    both_boxed = [pr for pr in _snapshot(g1)
+                  if set(pr["parents"] or []) == set(INSIDE)]
+    g1.set_auto_confirm_grow(True)
+    g1.grow_ideas(1)
+    vault = g1.cube.session.plane.sandboxes.get("vault1")
+    members = set(getattr(vault, "member_ids", []) or [])
+    landed = [pr["pid"] for pr in both_boxed if pr["pid"] in members]
+    check("G1 #185 confirm placement inherits the wall: "
+          "both-parents-boxed offspring lands INSIDE the box",
+          bool(both_boxed) and len(landed) == len(both_boxed),
+          f"both_boxed={len(both_boxed)} landed_in_vault={landed} "
+          f"vault_members={sorted(members)}")
+
+    # G3 — the drift class of the same inheritance: a
+    # single-parent offspring of a boxed unit (seeded by growing
+    # with no wall up, then boxing, then sweeping) must also land
+    # inside the wall, never staged outside it.
+    g3 = _build(f"{OWNER_TAG}G3", box_inside=False)
+    g3.grow_ideas(1)
+    drift = [pr["pid"] for pr in _snapshot(g3)
+             if set(pr["parents"] or []) and set(pr["parents"] or [])
+             <= set(INSIDE)]
+    g3.cube.session.plane.box(list(INSIDE), "vault1", label="gs4 vault")
+    g3.set_auto_confirm_grow(True)
+    g3.grow_ideas(1)
+    vault3 = g3.cube.session.plane.sandboxes.get("vault1")
+    members3 = set(getattr(vault3, "member_ids", []) or [])
+    landed3 = [pid for pid in drift if pid in members3]
+    check("G3 #185 confirm placement inherits the wall: "
+          "single-parent boxed drift offspring lands INSIDE the box",
+          bool(drift) and len(landed3) == len(drift),
+          f"boxed_drift_seeded={len(drift)} landed_in_vault={landed3} "
+          f"vault_members={sorted(members3)}")
+
+    # G2 — the sweep half of #185 (Q-U.5): seed a cross-wall
+    # proposal by growing with NO wall up (proposals form freely),
+    # then raise the wall, enable the opt-in sweep, and grow again.
+    # The sweep iterates ALL pending proposals; a cross-wall one
+    # must end the run still pending or receipted as skipped
+    # non-eligible — never confirmed live. (Current main carries a
+    # Q-U.5 skip treatment in grow_ideas; this check verifies it
+    # end-to-end instead of trusting the register's older
+    # reproduction.)
+    g2 = _build(f"{OWNER_TAG}G2", box_inside=False)
+    g2.grow_ideas(1)
+    cross = [pr["pid"] for pr in _snapshot(g2)
+             if len(set(pr["parents"] or []) & set(INSIDE)) == 1
+             and len(set(pr["parents"] or []) & set(OUTSIDE)) == 1]
+    g2.cube.session.plane.box(list(INSIDE), "vault1", label="gs4 vault")
+    g2.set_auto_confirm_grow(True)
+    res2 = g2.grow_ideas(1)
+    ac = res2.get("auto_confirm") or {}
+    pending_ids = {pr["id"] for pr in g2.list_proposals()}
+    skipped_ids = set(ac.get("skipped_ids") or [])
+    unaccounted = [pid for pid in cross
+                   if pid not in pending_ids and pid not in skipped_ids]
+    check("G2 #185 auto-confirm sweep never confirms a cross-wall "
+          "proposal live (pending or skipped-noneligible only)",
+          bool(cross) and not unaccounted,
+          f"cross_wall_seeded={len(cross)} "
+          f"skipped_noneligible={ac.get('skipped_noneligible')} "
+          f"confirmed={ac.get('confirmed')} "
+          f"unaccounted_cross={unaccounted}")
+
+    total = 22
     print(f"GS-4 SANDBOX: {total - len(fails)}/{total} checks passed"
           + (f"; FAILING: {fails}" if fails else ""))
-    for owner in ("A", "B", "C", "D", "E", "F1", "F3", "F4"):
+    for owner in ("A", "B", "C", "D", "E", "F1", "F3", "F4",
+                  "G1", "G2", "G3"):
         _cleanup(f"{OWNER_TAG}{owner}")
     return not fails
 
