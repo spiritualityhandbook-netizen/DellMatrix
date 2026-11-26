@@ -1,18 +1,19 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-25 ~23:17 CST  
-**UTC approx**: 2026-11-26T05:17:00Z  
+**Last cycle**: 2026-11-26 ~05:20 CST  
+**UTC approx**: 2026-11-26T11:20:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - Ripe gates:
-  - #535 at 2e623d60a1ddf06aa1c718fa8f1b3f2b3528b644: named missing — terminal smoke SUCCESS at exact head. Smoke FAILURE (absence_matrix_test:smoke test_restart_real_shapes 66/67). Builds+browser SUCCESS. Spot-check: 4 files +338/−11 matches package. NOT confirm-ready. Comment 7183371310.
-  - #534 at 3afc13c04928a802829fabd5b1b30cbdcd6fd607: prior SCOPED CONFIRM (7183157703) stands at current head. CI terminal ALL SUCCESS.
-  - #533 at 8498d837961fd685eddca1c48c7156485be0f589: prior SCOPED CONFIRM (7183158126) stands at current head. CI terminal ALL SUCCESS.
-  - #532 at 68adb07ede10029d83222370ccaa79efe20d51af: prior SCOPED CONFIRM (7183158791) stands at current head. CI terminal ALL SUCCESS.
-  - #531 at 2ae497475f5009966e0c9fb0471147f6d498be20: prior SCOPED CONFIRM stands at current head. CI terminal green.
+  - #535 at e77e46bf4ee322add5c7d76366eae8ae1ca78f80: SCOPED CONFIRM (comment 7190625830). Terminal CI ALL SUCCESS, mergeable CLEAN. Spot-check: fixture shape-refusal + presence load-preserve-exclude legs present.
+  - #532 at 402445eecc9592f147a6c3b1c7d7fa83849880be: SCOPED CONFIRM (comment 7190626816). Terminal CI ALL SUCCESS (smoke re-run), mergeable CLEAN. Spot-check: correction code restricts legacy stale to absent manifest; sealed evidence clause present. Prior confirm at 68adb07e stands for tested cases.
+  - #536 at 1efe1d99005e6e8fa88fb1f9702178808b255163: SCOPED CONFIRM (comment 7190627854). Terminal CI ALL SUCCESS, mergeable CLEAN. Spot-check: fixture framing legs for custom personas present.
+  - #531 at 8e6ee58f: prior SCOPED CONFIRM at older head 6a57faf6 / 2ae49747; current head has terminal CI SUCCESS. Named: fresh challenge at exact current head if stamp sought (evidence package not re-posted for the latest correction in this pass).
   - Drafts and #294 fenced skipped.
-- Merged-main proofs: #529 merged at 2026-11-26T04:45:45Z since last watermark. Prior SCOPED CONFIRM at head 781bea2c stands. No new merged-main credit package on record. Named: awaiting Uni merged-main behavioral proof + terminal CI on merge commit if credit confirmation sought. Comment 7183372784.
+- Merged-main proofs:
+  - #534 merged 2026-11-26T10:03:47Z, merge SHA 903c4520. Prior SCOPED CONFIRM at head stands. Named missing: Uni merged-main behavioral proof + terminal CI on merge commit if CODE credit sought. Comment 7190631369.
+  - #533 merged 2026-11-26T08:15:22Z. Prior SCOPED CONFIRM at head stands. Named missing: same merged-main package if credit sought. Comment 7190631670.
 - Records reviews: none awaiting.
 - Trailing obligations: none remaining.
 
@@ -22,6 +23,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + missing named on #535 and #529 credit. Nothing needed from Ace. Next step: Uni diagnosis of #535 smoke red; merged-main package on #529 if credit sought.
+Proof of pass: this watermark advance + SCOPED CONFIRMs on #535/#532/#536 + missing named on merged-main credits. Nothing needed from Ace. Next step: Uni merged-main packages on #533/#534 if credit sought; fresh package/stamp on #531 current head if required.
 
 — KEEPER
