@@ -193,6 +193,31 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
     except Exception as exc:
         raise CheckpointCommitError(f"idea snapshot failed; commit aborted: {exc}") from exc
 
+    # Critic F4 (Director ruling 7181902882): fail-closed seal. The
+    # snapshot's skip manifest accounts for every idea file that is
+    # not healthy — by filename, since a damaged file's id is
+    # unknowable. A non-empty manifest means the inventory is
+    # incomplete: refuse the commit BEFORE any member is sealed and
+    # before CURRENT advances, so the previous committed generation
+    # remains authoritative. Repair or removal of the named files is
+    # an operator act (named follow-on); the commit path never
+    # silently seals over damage.
+    try:
+        with open(ideas_snapshot_path(owner), encoding="utf-8") as f:
+            _snap = json.load(f)
+        _skipped = _snap.get("skipped") or []
+    except (OSError, ValueError) as exc:
+        raise CheckpointCommitError(
+            f"idea snapshot unreadable after write; commit aborted: {exc}") from exc
+    if _skipped:
+        _names = ", ".join(
+            str(e.get("file") or e.get("id") or "?")
+            for e in _skipped if isinstance(e, dict))
+        raise CheckpointCommitError(
+            f"idea inventory incomplete: {len(_skipped)} idea file(s) "
+            f"not accounted as healthy ({_names}); commit refused, "
+            "previous generation remains authoritative")
+
     # Phase 2: the canonical semantic graph is the fourth member. Ensure
     # the live graph file exists (an empty log is valid graph state) so
     # the member loop below can seal it like every other member.
