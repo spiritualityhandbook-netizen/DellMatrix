@@ -87,6 +87,13 @@ Contract under test:
   repaired on #514/#508.) Absence and valid empty values ({} /
   []) load with the documented defaults, and the standalone
   activation contract keeps its permissive coercions.
+- S10: legacy restore binding (Critic Finding 1, Director ruling
+  7180708590) — a save with NO custom_personas section is a lawful
+  legacy file and must still load with its BIMO / matrix surfaces
+  bound to the program's OWN persona layer: a persona that exists
+  only on the process-default layer is invisible to the restored
+  program and cannot be docked through it. Present-malformed
+  refusal and present-section binding are unchanged.
 
 Labels: INTEGRATION (Program state is isolated per test owner via
 the canonical state-dir cleanup pattern; the module-level default
@@ -113,6 +120,7 @@ ISO_B = "pmx155isob"
 R_OWNER = "pmx155restore"
 S8_A = "pmx155scopea"
 S8_B = "pmx155scopeb"
+L_OWNER = "pmx155legacy"
 STATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state")
 
 
@@ -786,6 +794,76 @@ def run_all():
         check("pm_persisted_valid_empty_skins_loads", s9["s"])
         check("pm_persisted_absent_fields_default", s9["t"])
         check("pm_standalone_wrong_shape_still_permissive", s9["w"])
+
+        # ---------------- S10: legacy restore binds own layer -----
+        # Critic Finding 1 (Director ruling 7180708590): a legacy save
+        # with NO custom_personas section still has its BIMO / matrix
+        # surfaces replaced on load; the re-bind to the program's OWN
+        # layer must run for that case too, or the surfaces fall back
+        # to the process-default layer and can resolve / dock personas
+        # that exist only there, while the program's own layer stays
+        # clean. Witness: a persona created ONLY on the default layer
+        # must be invisible to the legacy-restored program, exactly as
+        # it already is for a present-section restore.
+        import json as _json10
+        activate_custom_personas([])
+        ghost = create_custom_persona(
+            name="Legacy Ghost", category="EvoLog", role="probe role",
+            focus="probe focus", directives=["probe directive"],
+            abilities=["probe ability"], limits=["probe only"],
+            prefer_skins=["sphere", "core"], bimo_slot="watch",
+            matrix={"h": 0, "v": 1, "shell": 2})
+        check("pm_legacy_ghost_on_default_layer",
+              ghost.get("ok") is True
+              and get_persona("legacy_ghost") is not None)
+        _cleanup(L_OWNER)
+        pl = open_program(L_OWNER)
+        legacy_saved = pl.save()
+        with open(legacy_saved, "r", encoding="utf-8") as fh:
+            legacy_data = _json10.load(fh)
+        check("pm_legacy_fixture_save_has_section",
+              "custom_personas" in legacy_data)
+        legacy_data.pop("custom_personas", None)
+        legacy_path = os.path.join(
+            os.path.dirname(legacy_saved), f"legacy_{L_OWNER}.json")
+        with open(legacy_path, "w", encoding="utf-8") as fh:
+            _json10.dump(legacy_data, fh)
+        p_leg = persist_rest.load(L_OWNER, legacy_path, activate=False)
+        check("pm_legacy_restore_binds_own_layer",
+              p_leg.persona_layer is not None
+              and p_leg.bimo.layer is p_leg.persona_layer
+              and p_leg.persona_matrix.layer is p_leg.persona_layer)
+        check("pm_legacy_restore_default_persona_invisible",
+              get_persona("legacy_ghost", layer=p_leg.persona_layer)
+              is None
+              and all(c["id"] != "legacy_ghost"
+                      for c in p_leg.persona_matrix.cells())
+              and not p_leg.bimo.dock("watch", "legacy_ghost").get("ok"))
+        # Present-but-malformed still refuses typed (S7 contract,
+        # re-pinned here so S10 is self-contained).
+        bad_data = dict(legacy_data)
+        bad_data["custom_personas"] = {"bogus": 1}
+        bad_path = os.path.join(
+            os.path.dirname(legacy_saved), f"badsect_{L_OWNER}.json")
+        with open(bad_path, "w", encoding="utf-8") as fh:
+            _json10.dump(bad_data, fh)
+        refused = False
+        try:
+            persist_rest.load(L_OWNER, bad_path, activate=False)
+        except personas.PersonaLoadError:
+            refused = True
+        check("pm_legacy_present_malformed_still_refused", refused)
+        # Present-section control unchanged: the original save (section
+        # present) binds its own layer and the default-layer ghost
+        # stays invisible, exactly as before this correction.
+        p_ctl = persist_rest.load(L_OWNER, legacy_saved, activate=False)
+        check("pm_present_section_control_unchanged",
+              p_ctl.bimo.layer is p_ctl.persona_layer
+              and p_ctl.persona_matrix.layer is p_ctl.persona_layer
+              and all(c["id"] != "legacy_ghost"
+                      for c in p_ctl.persona_matrix.cells())
+              and not p_ctl.bimo.dock("watch", "legacy_ghost").get("ok"))
+        activate_custom_personas([])
     finally:
         activate_custom_personas([])
         _cleanup(OWNER)
@@ -794,6 +872,7 @@ def run_all():
         _cleanup(R_OWNER)
         _cleanup(S8_A)
         _cleanup(S8_B)
+        _cleanup(L_OWNER)
 
     passed = sum(1 for _, ok in CHECKS if ok)
     print(f"Personamatrix: {passed}/{len(CHECKS)} checks passed")

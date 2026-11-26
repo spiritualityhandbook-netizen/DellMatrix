@@ -58,15 +58,28 @@ OWNER = "OwnerSM32"
 ALL_LINKS = ("grant_root", "grant_child", "grant_grandchild", "plain",
              "plain2", "derived_appr", "derived_optin", "optin_direct")
 
+# FI-011 A7 SUPERSESSION (Director 7085151190 item 1; remediation
+# packet A7.1): a grant presented for a nursery.confirm check must be
+# bound to its target and its live content — an unbound presentment
+# now denies via="unbound_grant_presentment". This suite's subject is
+# revocation-chain invalidation, not presentment, so the grant chain
+# is issued BOUND (the root binds target + content at issuance;
+# attenuation inherits both) and presented with the bound content's
+# canonical hash. Every expectation in the phase matrices is
+# unchanged — the r61_oracle treatment for a superseded precondition.
+GRANT_TARGET = "pid-target"
+GRANT_CONTENT = {"label": "SM32 target", "words": "sm32 target words"}
+
 
 def _check_all(p, art):
     """Present every session-A artifact to policy p; return verdicts."""
-    from form.dell_matrix.acceptance_policy import canonical_hash  # noqa: F401
+    from form.dell_matrix.acceptance_policy import canonical_hash
     v = {}
     for link in ("root", "child", "grandchild"):
         r = p.check("probe", "pid-target",
                     review_context={"grant_id": art["grants"][link]},
-                    proposal_version=None, operation="confirm",
+                    proposal_version=canonical_hash(GRANT_CONTENT),
+                    operation="confirm",
                     subject="agent-a", owner=OWNER)
         v[f"grant_{link}"] = bool(r.get("allowed"))
     r = p.check("probe", "pid-plain", review_context=art["plain_ctx"],
@@ -90,7 +103,9 @@ def _check_all(p, art):
 def _issue_all(p):
     from form.dell_matrix.acceptance_policy import canonical_hash
     root = p.issue_grant(issuer="human", subject="agent-a", owner=OWNER,
-                         operation="nursery.confirm", max_depth=3)
+                         operation="nursery.confirm",
+                         target=GRANT_TARGET, content=GRANT_CONTENT,
+                         max_depth=3)
     child = p.attenuate_grant(parent_id=root["grant_id"])
     grandchild = p.attenuate_grant(parent_id=child["grant_id"])
     succ_hash = canonical_hash({"label": "V2", "words": "v2 words"})
@@ -192,10 +207,12 @@ def run_all():
     # still deny in B (no cross-session contamination either way).
     new_root = b.issue_grant(issuer="human", subject="agent-a",
                              owner=OWNER, operation="nursery.confirm",
+                             target=GRANT_TARGET, content=GRANT_CONTENT,
                              max_depth=1)
     r = b.check("probe", "pid-target",
                 review_context={"grant_id": new_root["grant_id"]},
-                proposal_version=None, operation="confirm",
+                proposal_version=canonical_hash(GRANT_CONTENT),
+                operation="confirm",
                 subject="agent-a", owner=OWNER)
     check("B-new-grant allows", r.get("allowed") is True, str(r))
     new_plain_data = {"k": "new"}

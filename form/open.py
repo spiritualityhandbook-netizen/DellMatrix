@@ -353,7 +353,14 @@ class Program:
             recover_checkpoint_intent(self.owner)
             recover_confirmation_intent(self.owner)
             recover_supersede_intent(self.owner)
-        self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner))
+        # Critic F7: the live nursery load names its owner, so the
+        # nursery file's identity record is enforced at this door
+        # exactly as the program file's is above (72-34/DD-12) —
+        # a colliding owner is refused before any foreign proposal
+        # is exposed. The injected generation-member path stays
+        # exempt: it is bound to a sealed member, never the live
+        # file.
+        self.nursery = _injected if _injected is not None else Nursery.load(owner_nursery_path(self.owner), owner=self.owner)
         self.growth = RingedGrowth(nursery=self.nursery)
         self.lattice = HarmonicLattice(size=SIZE_CHROMATIC)
         if not hasattr(self, "keys") or self.keys is None:
@@ -1606,10 +1613,19 @@ class Program:
             fail_n = 0
             labels: List[str] = []
             skipped_ids: List[str] = []
+            skipped_origin_ids: List[str] = []
+            bred_n = 0
             for prop in pending:
                 res = self.confirm_proposal(prop["id"], _producer="grow_auto")
                 if res.get("ok"):
                     ok_n += 1
+                    # FI-011 A12: confirmations of growth-bred
+                    # children are visible as such (sub-count),
+                    # never indistinguishable from confirmations of
+                    # pre-existing pending proposals.
+                    _fam = str(prop.get("origin") or "").split(":", 1)[0]
+                    if _fam == "growth":
+                        bred_n += 1
                     labels.append(res.get("label") or prop.get("label") or prop.get("id"))
                 elif res.get("reason") == "auto_mixed_wall_noneligible":
                     # Q-U.5: mixed-wall proposals are NON-ELIGIBLE
@@ -1617,6 +1633,13 @@ class Program:
                     # never a failure; the proposal stays pending
                     # for a manual (choice-carrying) confirm.
                     skipped_ids.append(prop["id"])
+                elif res.get("reason") == "auto_origin_noneligible":
+                    # FI-011 A12: origin-ineligible proposals are a
+                    # SKIP in their own named bucket (never folded
+                    # into failed); they stay pending and are
+                    # re-listed on each cycle's report while the
+                    # sweep is on.
+                    skipped_origin_ids.append(prop["id"])
                 else:
                     fail_n += 1
             result["auto_confirm"] = {
@@ -1626,6 +1649,9 @@ class Program:
                 "labels": labels[:20],
                 "skipped_noneligible": len(skipped_ids),
                 "skipped_ids": skipped_ids,
+                "skipped_origin_noneligible": len(skipped_origin_ids),
+                "skipped_origin_ids": skipped_origin_ids,
+                "confirmed_bred": bred_n,
             }
             result["nursery_pending"] = len(self.list_proposals())
             result["ideas_now"] = len(self.cube.session.plane.units)
@@ -2080,6 +2106,12 @@ class Program:
         if not live.get("allowed"):
             # No mutation has occurred; proposal remains pending and
             # retryable. Staged work (none yet) needs no recovery.
+            # FI-011 A7: the entry check may have reserved a grant
+            # for this act - a denial consumes nothing, so the
+            # reservation is released here.
+            if isinstance(_review_context, dict):
+                policy.release_grant_reservation(
+                    _review_context.get("grant_id"), pid)
             return {
                 "ok": False,
                 "reason": "acceptance_policy_denied",
@@ -2105,7 +2137,22 @@ class Program:
             "subject": _subject,
             "placement": _placement,
         }
-        return _confirm_proposal(self, pid, _auth=_auth)
+        # FI-011 A7: try/finally backstop - any non-commit exit of
+        # a grant-riding confirmation (a non-ok writer receipt or a
+        # propagating exception) releases the grant reservation, so
+        # a denied or aborted write never consumes the grant. On
+        # success the writer has already converted the reservation
+        # into consumption, and release is a no-op for consumed
+        # grants by construction.
+        _result = None
+        try:
+            _result = _confirm_proposal(self, pid, _auth=_auth)
+            return _result
+        finally:
+            if not (isinstance(_result, dict) and _result.get("ok")):
+                if isinstance(_review_context, dict):
+                    policy.release_grant_reservation(
+                        _review_context.get("grant_id"), pid)
 
     def confirm_rollback(self, generation_id=None,
                          _review_context: dict = None,

@@ -205,6 +205,12 @@ LIST = [
     # persistence round-trip, fusion guidance/limits union, and the
     # no-authority fence (a docked persona cannot confirm).
     "form.personamatrix_test",
+    # Critic Findings 5+6 paired lifecycle repair (Director
+    # disposition 7180713277): malformed presence excluded by
+    # is_active AND is_participating AND selection (consumer side);
+    # malformed present lifecycle data refuses typed at restore
+    # before binding, legacy absence preserved (restore side).
+    "form.critic_lifecycle_fixture_test",
     "form.r19sib_count_door_test",
     "form.r24_operand_integrity_test",
     "form.r23_outcome_evidence_test",
@@ -242,6 +248,7 @@ LIST = [
     "form.supersession_lineage_restart_test",
     "form.precuts_caller_words_test",
     "form.owner_namespace_collision_test",
+    "form.critic_owner_collision_fixture_test",
     "form.resonance_lifecycle_gate_test",
     "form.four_way_equivalence_test",
     "form.mandell.d1_dell84_copy_test",
@@ -309,6 +316,7 @@ LIST = [
     "form.mandell.resonance_command_test:smoke",
     "form.mandell.duobeta_cross_session_test:smoke",
     "form.duobeta_detail_whole_test:smoke",
+    "form.critic_duobeta_distinct_fixture_test:smoke",
     "form.r17_compose_bound_test:smoke",
     "form.r19_cycle_receipt_test:smoke",
     "form.mandell.polyglot_user_path_test:smoke",
@@ -473,6 +481,20 @@ LIST = [
     # change that lands form/muse_space_snapshot.py and
     # form/muse_space_views.py (build record 2026-11-20 section 5).
     "form.muse_space_test:smoke",
+    # Q-35.1 (Director ruling 7085151190 item 7): sweep_stale_tmps
+    # manual-only safety repair — exact mint-shape ownership, lstat
+    # no-symlink, identity revalidation, typed refusals/reasons.
+    "form.sweep_stale_tmps_safety_test:smoke",
+    # FI-011 corrections (Director 7085151190 item 1): A7 bound
+    # single-use grant presentment + atomic grant-use receipts,
+    # A8 raw Nursery.confirm retirement, A12 grow_auto origin
+    # allowlist, A9 staged typed status refusal.
+    "form.fi011_corrections_test:smoke",
+    # Critic Finding 9 (Director disposition 7180713277): browser
+    # confirm routes the authenticated human review context (single
+    # + batch) through live_visual; anonymous/forged confirms stay
+    # refused. Verified via the real HTTP entry point.
+    "form.critic_livevisual_confirm_fixture_test:smoke",
     # SOUND S0 (Director ruling 7085160720 on PR #505): pure read-only
     # sonification projection (form/dell_matrix/sonification.py) --
     # pitch from the harmonic_lattice chromatic law, set harmony only

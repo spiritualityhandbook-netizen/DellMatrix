@@ -1,25 +1,28 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-25 ~15:05 CST  
-**UTC approx**: 2026-11-25T21:05:00Z  
-**Type**: FAST PASS :15
+**Last cycle**: 2026-11-26 ~07:30 CST  
+**UTC approx**: 2026-11-26T13:30:00Z  
+**Type**: DEEP PASS :45
 
 ## Items ruled this cycle
-- Ripe gates: none.
-  - #528 at 71af89f03b936eb7f6d0f4d3a07fe1c445020a9e: Uni package + Director accept. Exact missing: terminal CI ALL PASS (smoke in_progress). No stamp.
-  - #520 at 55d2da239a346ceed3a9c8329c8078412198b049: Uni package + Director HOLD. Exact missing: terminal CI ALL PASS (smoke in_progress). No new stamp.
-  - #516 at 114b4e59ef476a45d8ddb6f9051e28b9211b5760: package + Director review. Exact missing: terminal CI ALL PASS (smoke in_progress). Prior PRE-STAMP stands. No new stamp.
-  - Drafts and #294 fenced skipped.
-- Merged-main proofs: none new this pass (trailing discharged at Deep Pass).
-- Records reviews: none awaiting new disposition.
-- Trailing obligations: none remaining.
+- Ripe gates:
+  - #536 at 1efe1d99005e6e8fa88fb1f9702178808b255163: prior SCOPED CONFIRM (7190627854) at exact current head stands. Terminal CI ALL SUCCESS (check-runs verified). Mergeable CLEAN. No new stamp.
+  - #532 at 402445eecc9592f147a6c3b1c7d7fa83849880be: prior SCOPED CONFIRM (7190626816) at exact current head stands. Terminal CI ALL SUCCESS (smoke re-run verified). Mergeable CLEAN. No new stamp.
+  - Drafts #508/#505/#502 and fenced #294 skipped.
+- Merged-main proofs:
+  - #533 merged 2026-11-26T08:15:22Z, merge SHA 0126bd33: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193493479). Package complete: postmerge 19/19 + terminal CI on merge.
+  - #534 merged 2026-11-26T10:03:47Z, merge SHA 903c4520: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193494034). Package complete: postmerge 12/12 + terminal CI on merge.
+  - #535 merged 2026-11-26T11:23:23Z, merge SHA b6e431bf: SCOPED MERGED-MAIN CODE CREDIT CONFIRM (comment 7193494816). Package complete: postmerge 17/17 + terminal CI on merge.
+  - #531 merged 2026-11-26T13:10:48Z, merge SHA c13a8b02: named missing terminal Form smoke SUCCESS on merge commit (receipt 7193255301 showed IN PROGRESS; no terminal receipt yet). Behavioral proof 19/19 posted. Prior SCOPED CONFIRM at head stands. Comment 7193495682.
+- Records reviews: none awaiting.
+- Trailing obligations: discharged merged-main credits for #533/#534/#535. #531 remaining pending terminal smoke.
 
 ## Trailing ledger
-- discharged this run: 0
-- remaining: 0
-- gaps: none
+- discharged this run: 3 (merged-main credits #533/#534/#535)
+- remaining: 1 (#531 terminal smoke on merge)
+- gaps: terminal Form smoke SUCCESS at c13a8b02 for #531
 
 ## Silence flag
-Proof of pass: this watermark advance + comment on #528. Nothing needed from Ace. Next step: Uni terminal smoke on #528/#520/#516.
+Proof of pass: this watermark advance + CODE CREDIT CONFIRMs on #533/#534/#535 + missing named on #531. Nothing needed from Ace. Next step: Uni terminal smoke receipt on #531 merge commit if credit sought.
 
 — KEEPER
