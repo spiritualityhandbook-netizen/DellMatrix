@@ -2027,13 +2027,15 @@ class Nursery:
         legacy file with NO identity record is adopted only when
         adoption cannot hand one owner's data to another — the
         sibling program file proves this requester is the owner,
-        or the file holds no proposals at all; an unbound legacy
-        file WITH proposals and no proof refuses fail-closed
-        (bytes preserved; resolution is the authorized
-        adoption/migration the 72-34 doctrine reserves, never a
-        silent first-come claim). Ownerless loads (checkpoint
-        members, tools, tests) stage the recorded owner without
-        judging it.
+        or the file holds no owner-scoped content at all (no
+        proposals, conflict dispositions, organization edit
+        receipts, or grant-use receipts; Director 7181859606);
+        an unbound legacy file holding ANY such content with no
+        proof refuses fail-closed (bytes preserved; resolution
+        is the authorized adoption/migration the 72-34 doctrine
+        reserves, never a silent first-come claim). Ownerless
+        loads (checkpoint members, tools, tests) stage the
+        recorded owner without judging it.
         """
         n = cls(path=path)
         if owner is not None:
@@ -2207,8 +2209,10 @@ class Nursery:
                 # record). Adoption is permitted only when it
                 # cannot hand one owner's data to another: the
                 # sibling program file PROVES this requester is
-                # the owner, or the file holds no proposals at
-                # all. Anything else refuses fail-closed.
+                # the owner, or the file holds no owner-scoped
+                # content at all — no proposals, dispositions,
+                # edit receipts, or grant-use receipts (Director
+                # 7181859606). Anything else refuses fail-closed.
                 import re as _re_f7
                 from form.persist import stored_program_owner
                 _proof = None
@@ -2229,12 +2233,37 @@ class Nursery:
                         f"to expose another owner's nursery; the "
                         f"stored bytes are preserved unchanged "
                         f"(72-34/DD-12).")
-                if _proof is None and staged:
+                # Director 7181859606: the no-proof test covers
+                # EVERY owner-scoped section the loader applies —
+                # proposals, conflict dispositions, organization
+                # edit receipts and grant-use receipts. Zero
+                # proposals alone never proved "nothing exists to
+                # hand over": a records-only legacy file was
+                # silently adopted by a colliding namesake, who
+                # read the first owner's records and whose next
+                # save restamped the file as his own.
+                _holdings = []
+                if staged:
+                    _holdings.append(f"{len(staged)} proposal(s)")
+                if staged_dispositions:
+                    _holdings.append(
+                        f"{len(staged_dispositions)} conflict "
+                        f"disposition(s)")
+                if staged_edit_receipts:
+                    _holdings.append(
+                        f"{len(staged_edit_receipts)} organization "
+                        f"edit receipt(s)")
+                if staged_grant_use_receipts:
+                    _holdings.append(
+                        f"{len(staged_grant_use_receipts)} grant-use "
+                        f"receipt(s)")
+                if _proof is None and _holdings:
                     from form.persist import OwnerCollisionError
                     raise OwnerCollisionError(
                         f"Nursery load: the legacy nursery file "
                         f"{os.path.basename(path)} predates owner "
-                        f"binding, holds {len(staged)} proposal(s), "
+                        f"binding, holds "
+                        f"{', '.join(_holdings)}, "
                         f"and no program file proves whether it "
                         f"belongs to {owner!r}. Refusing to serve "
                         f"or adopt an unbound nursery whose owner "

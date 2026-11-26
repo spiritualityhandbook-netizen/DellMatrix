@@ -44,6 +44,25 @@ Authority / evidence trail:
     checks below pin the corrected contract: the recorded
     identity is the exact raw owner string, validity is
     isinstance(owner, str), and "" binds only to "".
+  * Director scope ruling 7181859606 on PR #531 (2026-11-25):
+    scope CONFIRM at 6a57faf6 stands, release HELD on one
+    distinction — the no-proof legacy adoption guard checked
+    `staged` (proposals) only, while the loader separately
+    applies staged dispositions, organization edit receipts and
+    grant-use receipts to the adopted nursery, so zero proposals
+    did not prove "nothing exists to hand over." Uni first-hand
+    probe (hidden_files/critic_fixes_2026-11-25/
+    legacy_adoption_probe.py, output saved alongside): CONFIRMED
+    on all three sections — a records-only legacy file was
+    silently adopted by the colliding namesake, who read the
+    first owner's records and whose next save restamped the file
+    as his own with the records intact. The L-series checks below
+    pin the repaired rule: no-proof adoption requires EVERY
+    owner-scoped section the loader applies to be empty/absent;
+    the genuinely empty and proven-owner controls still adopt.
+    The L legs ran EXPECTED RED against the unrepaired loader
+    (the six refusal/crossing checks failing, controls green)
+    before the repair turned them green.
 
 Mechanism (verified against this tree):
 
@@ -92,6 +111,14 @@ adoption satisfies neither):
 - K1 control: two NON-colliding owners stay fully isolated
   through the same nursery-first flow (A adds only; B constructs
   empty; B saves; A still constructs with its proposal intact).
+- L records-only legacy adoption (Director 7181859606): a legacy
+  file (no __owner__ section, no sibling program-file proof)
+  holding ZERO proposals but a nonempty dispositions, edit-
+  receipt, or grant-use-receipt section must REFUSE the colliding
+  namesake's named load (bytes preserved) — no owner-scoped
+  section may cross without proof. Controls: a genuinely empty
+  legacy file still adopts; a records-bearing legacy file whose
+  sibling program file PROVES the requester still adopts.
 
 Labels: INTEGRATION in-process.
 Hygiene: uuid-unique owners; exact-pattern cleanup (files + the
@@ -101,6 +128,8 @@ check, never swallowed.
 from __future__ import annotations
 
 import glob
+import hashlib
+import json
 import os
 import shutil
 import sys
@@ -124,6 +153,8 @@ B = f"CF{RUN}_A"   # distinct raw owner, same safe name
 P = f"CF{RUN}P"    # non-colliding control pair
 Q = f"CF{RUN}Q"
 SECRET = "alpha private detail — must never cross owners"
+LA = f"LG{RUN}/A"  # legacy records-only pair (Director 7181859606)
+LB = f"LG{RUN}_A"  # distinct raw owner, same safe name as LA
 
 
 def check(name, cond, detail=""):
@@ -210,6 +241,97 @@ def main():
     k1b = not p_raised and pp2 is not None \
         and p_prop.id in pp2.nursery.proposals
     check("K1.noncolliding_nursery_first_isolated", k1a and k1b)
+
+    cleanup()
+
+    # --- L: records-only legacy adoption (Director 7181859606) -
+    # A legacy file (no __owner__ section) with ZERO proposals but
+    # a nonempty owner-scoped section must not cross to the
+    # colliding namesake without proof. The named load exercised
+    # here is Nursery.load(path, owner=...) — the exact call
+    # form/open.py makes at Program construction.
+    l_path = owner_nursery_path(LA)
+    check("L0.legacy_pair_premise",
+          LA != LB and owner_nursery_path(LA) == owner_nursery_path(LB)
+          and not os.path.isfile(_path(LA)),
+          f"safe={_safe_owner(LA)}")
+
+    def write_legacy(payload):
+        with open(l_path, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh)
+        with open(l_path, "rb") as fh:
+            return hashlib.sha256(fh.read()).hexdigest()
+
+    def named_load_or_none(owner):
+        try:
+            return Nursery.load(l_path, owner=owner), False
+        except Exception:
+            return None, True
+
+    def file_sha():
+        with open(l_path, "rb") as fh:
+            return hashlib.sha256(fh.read()).hexdigest()
+
+    L_DISP = f"legacy-{RUN}-disposition-note"
+    L_EDIT = f"legacy-{RUN}-edit-topic"
+    L_GRANT = f"legacy-{RUN}-grant-note"
+    l_sections = [
+        ("dispositions",
+         {"__conflict_dispositions__": {"conflict-1": {
+             "decision": "keep_mine", "decided_by": LA,
+             "note": L_DISP, "at": "2026-11-20T00:00:00Z"}}},
+         "conflict_dispositions", L_DISP),
+        ("edit_receipts",
+         {"__organization_edit_receipts__": {"op-1": {
+             "operation_id": "op-1", "actor": LA,
+             "proposal_id": "p-x",
+             "before": {"topic": L_EDIT, "tags": [], "cluster": None},
+             "after": {"topic": "renamed", "tags": [], "cluster": None},
+             "kind": "human_organization_edit",
+             "created": "2026-11-20T00:00:00Z"}}},
+         "organization_edit_receipts", L_EDIT),
+        ("grant_receipts",
+         {"__grant_use_receipts__": {"rcpt-1": {
+             "receipt_id": "rcpt-1", "grant_id": "grant-1",
+             "actor": LA, "proposal_id": "p-x", "note": L_GRANT,
+             "used_at": "2026-11-20T00:00:00Z"}}},
+         "grant_use_receipts", L_GRANT),
+    ]
+    for sname, payload, attr, marker in l_sections:
+        digest = write_legacy(payload)
+        ln, l_raised = named_load_or_none(LB)
+        crossed = bool(
+            ln is not None
+            and marker in json.dumps(getattr(ln, attr)))
+        check(f"L.records_only_{sname}_refused_without_proof",
+              l_raised and file_sha() == digest,
+              f"raised={l_raised} bytes_preserved={file_sha() == digest}")
+        check(f"L.records_only_{sname}_never_crosses",
+              l_raised or not crossed,
+              f"crossed={crossed}")
+
+    # Control: a genuinely empty legacy file still adopts.
+    write_legacy({})
+    ln, l_raised = named_load_or_none(LB)
+    check("L.genuinely_empty_legacy_adopts",
+          not l_raised and ln is not None
+          and not ln.proposals and not ln.conflict_dispositions
+          and not ln.organization_edit_receipts
+          and not ln.grant_use_receipts,
+          f"raised={l_raised}")
+
+    # Control: a records-bearing legacy file whose sibling program
+    # file PROVES the requester still adopts, records included.
+    write_legacy(l_sections[0][1])
+    with open(_path(LB), "w", encoding="utf-8") as fh:
+        json.dump({"owner": LB}, fh)
+    ln, l_raised = named_load_or_none(LB)
+    check("L.proven_owner_legacy_adopts",
+          not l_raised and ln is not None
+          and L_DISP in json.dumps(ln.conflict_dispositions),
+          f"raised={l_raised}")
+
+    cleanup()
 
     # --- E: the empty-string owner round-trips ---------------
     # Critic finding 4703303960 on PR #531 (a regression #531
