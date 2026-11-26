@@ -136,7 +136,14 @@ class NurseryLabelError(ValueError):
     label is refused explicitly and nothing is stored, replacing the
     historical silent truncation at 80 chars, which destroyed admitted
     content (the inference dock admits labels up to 200 chars) with no
-    error."""
+    error.
+
+    FI-012 row 9 (Director approval 7203152996): the same typed
+    refusal covers a NON-STRING label and an EMPTY label — the
+    historical isinstance-guards let a non-string fall through to
+    _slug (an untyped AttributeError) and admitted an empty label
+    silently. Validation is label-only: other fields keep their
+    supported types."""
 
 
 # Q-S2.1: the Nursery's admitted bound for Proposal.label — the same
@@ -702,6 +709,18 @@ class Nursery:
     # so it is never serialized into the owner file.
     suppression_receipts: List[Dict[str, Any]] = field(
         default_factory=list, repr=False, compare=False)
+    # FI-012 row 9 (Director approval 7203152996): receipts for
+    # DUPLICATE intake — an add whose (label, seed, words) exactly
+    # matches a proposal already stored in this nursery. The
+    # duplicate is still STORED as its own proposal (DCC-VII:
+    # duplicates allowed, unique IDs, independently confirmable);
+    # the receipt makes the event visible instead of silent.
+    # In-memory only, same lifecycle as suppression_receipts: a
+    # receipt is evidence about THIS instance's add stream, never
+    # stored proposal state, so it is never serialized into the
+    # owner file and never survives a reload.
+    duplicate_receipts: List[Dict[str, Any]] = field(
+        default_factory=list, repr=False, compare=False)
     # C5R.3: human organization EDIT receipts (operation_id ->
     # receipt record, the storable form from
     # build_organization_receipt — no file digest inside). Serialized
@@ -806,6 +825,12 @@ class Nursery:
         labels raise NurseryLabelError BEFORE any mutation or save (the
         historical label[:80] silently destroyed admitted content).
 
+        FI-012 row 9: a non-string or empty label raises the same
+        NurseryLabelError BEFORE any mutation or save, and an add
+        whose (label, seed, words) exactly matches an already-stored
+        proposal is receipted in duplicate_receipts (in-memory only)
+        while still being stored as its own proposal (DCC-VII).
+
         SYS-C29: words are stored in full up to MAX_WORDS_CHARS; longer
         words raise NurseryWordsError BEFORE any mutation or save (the
         historical words[:240] silently destroyed admitted content).
@@ -847,7 +872,21 @@ class Nursery:
                     f"belongs to owner {_disk_owner!r}, not "
                     f"{self.owner!r}. Refusing to append another "
                     f"owner's proposal; no bytes written.")
-        if isinstance(label, str) and len(label) > MAX_LABEL_CHARS:
+        # FI-012 row 9 (Director approval 7203152996): the label is
+        # validated for TYPE and EMPTINESS, not only length — a
+        # non-string label historically fell through this block's
+        # isinstance-guard and crashed untyped inside _slug, and an
+        # empty label was admitted silently. Label-only scope: the
+        # sibling fields below keep their existing guards and their
+        # supported non-string usages (e.g. words as a token list).
+        if not isinstance(label, str):
+            raise NurseryLabelError(
+                f"label must be a string, got "
+                f"{type(label).__name__}; refused, nothing stored")
+        if not label:
+            raise NurseryLabelError(
+                "label must not be empty; refused, nothing stored")
+        if len(label) > MAX_LABEL_CHARS:
             raise NurseryLabelError(
                 f"label length {len(label)} exceeds the admitted bound "
                 f"of {MAX_LABEL_CHARS} chars; refused, nothing stored")
@@ -928,7 +967,25 @@ class Nursery:
                         "label": label,
                     })
                     return existing
-        pid = _slug(label, seed)
+        # FI-012 row 9: duplicate-intake detection, computed BEFORE
+        # the new proposal exists. A duplicate is an already-stored
+        # proposal with the same label and words whose ID is this
+        # add's base slug or a collision-suffixed descendant of it —
+        # i.e. the same (label, seed, words) intake seen again. The
+        # duplicate is still stored below (DCC-VII); its receipt is
+        # appended only after its save stands.
+        base_pid = _slug(label, seed)
+        duplicate_of = None
+        for existing in self.proposals.values():
+            if (
+                existing.label == label
+                and existing.words == words
+                and (existing.id == base_pid
+                     or existing.id.startswith(base_pid + "_"))
+            ):
+                duplicate_of = existing
+                break
+        pid = base_pid
         # avoid exact id collision
         if pid in self.proposals:
             pid = pid + "_" + str(len(self.proposals))
@@ -968,6 +1025,17 @@ class Nursery:
         except Exception:
             self.proposals.pop(pid, None)
             raise
+        # FI-012 row 9: receipt the duplicate intake now that the
+        # duplicate's own save stands (a failed save popped the
+        # proposal above, and no receipt is recorded for it).
+        if duplicate_of is not None:
+            self.duplicate_receipts.append({
+                "original_id": duplicate_of.id,
+                "duplicate_id": pid,
+                "reason": "duplicate_intake",
+                "label": label,
+                "seed": seed,
+            })
         # The creation receipt's RETURNED form (Resolution 3): the
         # canonical post-save digest is attached only now that the
         # save has succeeded, and only to this in-memory copy — the
