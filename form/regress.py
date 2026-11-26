@@ -483,6 +483,11 @@ LIST = [
     # A8 raw Nursery.confirm retirement, A12 grow_auto origin
     # allowlist, A9 staged typed status refusal.
     "form.fi011_corrections_test:smoke",
+    # Critic Finding 9 (Director disposition 7180713277): browser
+    # confirm routes the authenticated human review context (single
+    # + batch) through live_visual; anonymous/forged confirms stay
+    # refused. Verified via the real HTTP entry point.
+    "form.critic_livevisual_confirm_fixture_test:smoke",
     # SOUND S0 (Director ruling 7085160720 on PR #505): pure read-only
     # sonification projection (form/dell_matrix/sonification.py) --
     # pitch from the harmonic_lattice chromatic law, set harmony only
