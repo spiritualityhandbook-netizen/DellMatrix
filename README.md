@@ -10,13 +10,13 @@ but it works under strict rules: everything it suggests arrives as a pending pro
 only a human confirms, commits, or teaches the system anything.
 
 > **How to read this README.** Sections 1–6 explain the whole program — what it is, why it
-> exists, every major component, and worked examples. Every example in §6 was executed
-> against the code at commit `c94e223` on 2026-11-01; outputs are real, trimmed only for
-> length. Sections 7–11 give status, **the plan map from program start to the finish
-> line**, architecture, tests, and honest limitations. Status in §7 is current as of
-> 2026-11-11 against production main `610fb13`. DellMatrix is under active development:
-> it is a real, tested, working system, and it is **not** claimed to be a finished
-> consumer product.
+> exists, every major component, and worked examples. Every example in §6 was re-executed
+> against the certified release code (`7e573307`) on 2026-11-27; outputs are real, trimmed
+> only for length. Sections 7–11 give status, **the plan map from program start to the
+> finish line**, architecture, tests, and honest limitations. Status in §7 is current as
+> of 2026-11-27: the integrated release is certified by the project's Director and Keeper
+> (§7), with named exceptions carried openly. DellMatrix is a real, tested, working
+> system; it is **not** claimed to be a finished consumer product.
 
 ---
 
@@ -249,20 +249,31 @@ directions (9,900 ordered pairs) plus standalone, on a frozen baseline.
 The lifecycle of a thought in DellMatrix:
 
 1. **Create** — an idea is born with words, optional detail and goals, and a stable ID
-   derived from its label (`tidal library` → `tidal_library`).
+   derived from its label (`tidal library` → `tidal_library`). Proposal IDs are
+   allocated collision-proof: a label-derived prefix plus a unique suffix, so two
+   different ideas can never share an ID or be mistaken for duplicates of each other.
+   Labels are kept whole up to a 200-character budget; anything longer is refused
+   out loud, before any mutation — never silently cut. The same whole-or-refuse rule
+   covers idea detail and goal lists.
 2. **Grow** — the system generates related proposals into the **Nursery**. A proposal is
-   a candidate: `pending`, visible, and powerless until reviewed.
+   a candidate: `pending`, visible, and powerless until reviewed. Growth acts on a
+   selection; a bare grow with nothing selected is a lawful no-op that says so.
 3. **Review** — you list proposals, inspect them, and see their provenance (who or what
    produced them — you, the token machinery, or a docked AI, with origin stamps).
-4. **Confirm or reject** — confirmation is a deliberate human act, backed by an
-   acceptance policy: approvals are issued, recorded, checked at the commit boundary,
-   and revocable. A forged, stale, or cross-session approval is denied. Confirmed ideas
-   land on the **Plane**.
+4. **Confirm or reject** — confirmation is a deliberate human act, enforced by an
+   acceptance policy at the canonical boundary. It succeeds only with an approval
+   issued by a human review, a capability grant tied to that exact idea and its exact
+   contents (grants are single-use, with receipts), or a scoped session opt-in the
+   human switched on. Anything else — a forged, stale, anonymous, or unapproved
+   attempt — is denied with a returned verdict (`ok=False`), and the raw back-door
+   confirm path is retired. Duplicate detection is exact: a proposal is a duplicate
+   only when its seed truly matches, never because two IDs merely look alike.
+   Confirmed ideas land on the **Plane**.
 5. **Supersede** — a confirmed idea can be replaced by a newer revision; the old one is
    marked superseded and its history preserved, never silently edited.
 
-Nothing skips the gate. Auto-confirmation exists only as an explicit opt-in you switch
-on yourself; the default posture is human-controlled.
+Nothing skips the gate. No automatic path confirms anything without a grant or an
+issued approval; the default posture is human-controlled.
 
 ### 3.4 The Plane
 
@@ -280,13 +291,24 @@ into one attributed, read-only picture.
 State lives in JSON files under `form/state/` — one set per owner. `save` writes the
 program and nursery; starting with `--load` restores them. The persistence layer is
 built to **fail closed**: if a state file is truncated or corrupt, the program refuses
-to expose a half-loaded state rather than inventing one.
+to expose a half-loaded state rather than inventing one. Saves are owner-locked, and a
+malformed save is refused by staged validation *before* it can bind — a damaged save
+can no longer swap the live program for a cleared one. If a save arrives from a stale
+writer (one whose view of the world an import has already moved past), it is refused
+with a typed error and the newer records are preserved, never overwritten. One bound
+stated plainly: ordinary saves are atomic *per file*, not as a pair — only the
+checkpoint path below is pair-atomic (§7).
 
-Two mechanisms deserve plain explanation:
+Three mechanisms deserve plain explanation:
 
 - **Checkpoints and generations.** A checkpoint is a snapshot of program + nursery.
   Rollback restores a snapshot by *copying it into independent live state* — live state
-  never aliases the sealed snapshot, so later edits can't rewrite history.
+  never aliases the sealed snapshot, so later edits can't rewrite history. A checkpoint
+  commit's receipt reports the directory-sync outcome of *every* member copy, the
+  manifest, and the pointer individually — each captured from its own write operation,
+  so the receipt stays honest even when several writers work in one process, and a
+  sync that did not happen is reported as not happened, never borrowed from a
+  neighbour's success.
 - **Intent journals.** Operations like confirmation and Exchange import write a small
   journal *before* mutating. If the process crashes mid-operation, the next load reads
   the journal and converges to either the complete old state or the complete new state
@@ -316,7 +338,8 @@ truth, and observation never becomes learning on its own.
 and applies them only through its policy gate — which the human controls, across
 sessions, via explicit `save`/`load`. Learning cannot manufacture evidence, resurrect
 excluded candidates, or change accepted truth. Its ledger records proposals, gates, and
-applications so the whole lifecycle can be audited afterward.
+applications so the whole lifecycle can be audited afterward — and it counts each
+distinct outcome once: the same outcome observed twice is never double-counted.
 
 ### 3.7 The inference dock — AI as a guest
 
@@ -341,17 +364,28 @@ double. A live third-party provider session was not executed in the build enviro
 and the shipped token machinery — not a docked model — is what computes the built-in
 affinity/resonance scores.
 
+**Personas and the personamatrix.** The program ships a registry of built-in personas
+(the Psalm set), and the **personamatrix** makes that layer user-creatable: you can
+define your own persona and work through it. Each owner's personas and notebooks are
+strictly their own — one owner's persona can never see or act on another's — and the
+fence is mechanical: no persona, built-in or custom, can confirm anything in the
+Nursery. Personas shape *how* work is proposed and presented; they hold no authority.
+
 ### 3.8 Exchange — ideas that travel
 
 **Exchange** moves ideas between minds (two programs, two machines, two people) without
 moving authority:
 
-- `exchange export <id> <file>` writes a **packet**: the seed/idea plus its *receipts* —
-  the chain of guess → test → mirror → gate → outcome that produced it.
+- `exchange export <proposal-id> <file>` writes a **packet** for one of the program's
+  Nursery proposals: the seed plus its *receipts* — the chain of guess → test →
+  mirror → gate → outcome that produced it.
 - `exchange import <file>` validates the packet (authority keys smuggled in a packet are
   refused at the boundary), runs a capacity preflight, journals the import, and lands
   the idea as a **PENDING proposal under the receiver's own gate**. Replication — the
   receiver actually re-running and confirming it — is the warrant, not the sender's say-so.
+  Imports are serialized under the owner lock and witnessed durably: importing the same
+  packet a second time returns the *original* witness and writes nothing — a replay can
+  never duplicate the idea or evict the first import's proof.
 - Failed imports never report success: if a required durable save fails, the import
   fails observably, compensation is verified by re-reading the canonical files, and any
   retained journal is reported rather than hidden.
@@ -390,7 +424,7 @@ understanding, never sources of truth:
   *Current state:* the in-repo morpheme harvest and tables are on main
   (`lm_table.py`, `lm_table_v1.json`); an LM-0 census of the small-word categories
   precedes the external roots import (1,684 reconciled rows, CC BY-SA attributed),
-  which is built and in authority review (PR #393). The forced-parse integration
+  which was merged 2026-11-12 (PR #393). The forced-parse integration
   into the English translator is the LM-2+ circuit series, in progress — today
   LatinMandell *explains and deepens*; it does not yet gate translation.
 - **Mandelmoji** is the glyph layer: one character that both *references* a Dell
@@ -407,6 +441,31 @@ refers and leans, the Dells do the work. In Ace-facing and bilingual presentatio
 Mandell chains are shown **Mandell first, plain-English gloss beside each step** —
 the gloss is a ladder for the reader, never a substitute for the Dell (a Dell whose
 English does all the work is decoration, and the project treats it as a defect).
+
+### 3.11 Simulation and rehearsal — preview before you commit
+
+Dell 31 (Simulate) has a board-level surface (`form/dell_matrix/simulate_board.py`,
+also reachable as the executor's `parallel_preview`):
+
+- A simulation receipt carries an **effect inventory**: exactly what a run created,
+  removed, or changed across chains, compositions, planes, the nursery, and history —
+  measured, not guessed. If a section cannot be measured, the receipt says so
+  (`unavailable`) and reports no changes for it: a failed measurement never
+  masquerades as "nothing changed," and never invents a change either.
+- **Parallel preview** rehearses several candidate seeds side by side, each in its
+  own isolated copy of the state. You get one receipt per candidate plus the
+  cross-candidate conflicts (two candidates touching the same plane unit, nursery
+  item, or composition) — the arms are never blended into a single fictional state.
+  A malformed candidate list can never crash the preview: it returns an honest
+  empty preview instead.
+
+### 3.12 Sound — derived from state, never a second store
+
+The sonification engine (`form/dell_matrix/sonification.py`) derives sound from the
+one underlying program state: a position in the space maps to a pitch by a pure,
+deterministic function (the known position (1, 0, 0) lands exactly on G, 391.995 Hz).
+There is no separate sound state to drift out of sync, and a sonic cue is never
+proof or permission — it is a way of *hearing* the state, nothing more.
 
 ---
 
@@ -468,8 +527,8 @@ nothing. More detail: [docs/INSTALL.md](docs/INSTALL.md) ·
 
 ## 6. Worked Examples
 
-All examples executed 2026-11-01 at commit `c94e223`. Terminal banners and trace
-chatter are trimmed; the behavior shown is the behavior run.
+All examples re-executed 2026-11-27 at the certified release code `7e573307`.
+Terminal banners and trace chatter are trimmed; the behavior shown is the behavior run.
 
 ### 6.1 The English loop: create → grow → review → confirm → save
 
@@ -530,7 +589,7 @@ If no baseline exists, Diff refuses honestly (`baseline_missing`) instead of cla
 ```python
 r = execute_seed(p, "55[Set]:: a=1 > 56[Get]:: a")
 print(r["ok"], r["chain_ran"])      # True [55, 56]
-print(st.last_result["value"])      # 1 (an int — Set parses the value)
+print(st.last_result["value"])      # '1' (Set stores the literal value, as text)
 ```
 
 Each atom's result is reported individually in `r["atom_results"]`. If an atom is
@@ -566,13 +625,15 @@ p.confirm_proposal(pr.id, _producer="you", _review_context=ctx)
 print(pr.status)                              # confirmed
 ```
 
-Without a genuine human review context, `confirm_proposal` is denied — that denial is
+Without a genuine human review context (or a grant, or a scoped opt-in),
+`confirm_proposal` is denied — it returns `{"ok": False, "reason":
+"acceptance_policy_denied", ...}` and the proposal stays pending. That denial is
 the product working as designed, not an error path.
 
 ### 6.6 Exchange, in brief
 
 ```
-you> exchange export <idea-id> packet.json    ← idea + receipts to a file
+you> exchange export <proposal-id> packet.json  ← a Nursery proposal + its receipts, to a file
       (on the other machine)
 you> exchange import packet.json              ← lands PENDING in the receiver's nursery
 you> proposals                                ← review it like any other proposal
@@ -583,62 +644,65 @@ you> confirm <id>                             ← only if it earns it, under you
 
 ## 7. Status — What Is Proven, What Is Not
 
-DellMatrix is developed under a five-seat process — **Ace (Overseer) → Director
-(ChatGPT, hourly analysis and final check) + Keeper (Grok, fast-lane confirmation) →
-Uni (the only seat that touches code)**, with Gemini as a docked in-program worker —
-governed since 2026-11-10 by **Workflow v1**. The unusual rule stands: **claims may
-not exceed executed evidence**. Independent authorities review and certify work in
-bounded scopes; merged code is not the same thing as certified code, and this README
-keeps the two separate.
+DellMatrix is developed under a seated review process — **Ace (Overseer) → Director
+(ChatGPT, analysis and final check) + Keeper (Gemini, seated 2026-11-20; fast-lane
+confirmation) → Uni Δ (the only seat that touches code)** — with the ChatGPT Codex
+connector seated since 2026-11-25 as **the Critic**, a trusted read-only review lane
+that gates nothing. The process is governed by the **Grand Workflow** (in effect
+2026-11-14). The unusual rule stands: **claims may not exceed executed evidence**.
+Independent authorities review and certify work in bounded scopes; merged code is
+not the same thing as certified code, and this README keeps the two separate.
 
-**Production main:** `11933da` — the anchor recorded by the P12 closure audit
-(2026-10-30, full 100-Dell registry proof complete). Main has since advanced beyond
-that anchor (this refresh was written at main `001d887`, 2026-11-17); the anchor
-line is retained verbatim because the P12 audit's reconciliation is stated
-against it.
-
-**The scoreboard:** all remaining work is enumerated in one **Master Work List**
-([`director-reports/MASTER_WORK_LIST.md`](director-reports/MASTER_WORK_LIST.md)) —
-182 items, strict counting, no partial credit. As of the render on this main:
-**39 / 182 COMPLETE = 21.4%** (54 PARTIAL, 86 OPEN, 3 GATED) — rendered by
-`master_list.py` from `master_work_list_items.json` (data blob `8da24d34`) at
-main `001d8871`, verified 2026-11-17; the denominator is the active scope,
-185 numbered rows minus 3 SANDBOXED. The Director's hourly
-review disposes of a published queue
-([`director-reports/DIRECTOR_REVIEW_QUEUE.md`](director-reports/DIRECTOR_REVIEW_QUEUE.md)).
+**The integrated release is certified.** On 2026-11-27 the Director issued his
+final disposition (issue #512) certifying the integrated DellMatrix release at
+code `7e57330712ad66cea7e9fa252b6681d23a08a621` (current main carries only Keeper
+record files on top of that code) as **ready for the Overseer's final acceptance**,
+on the terminal evidence: three hosted full-regression passes at the exact code,
+358/358 green each; the DAF-09 timeout suite 31/31 and the crash-recovery journey
+29/29 on the hosted machines each time; both Python builds green. The Keeper
+discharged every trailing credit the same day (issue #512, 2026-11-27). One local
+full-regression run stands on record at 357/358: its single red is the
+crash-recovery journey check on a development VM whose file-watch capacity was
+measured exhausted at boot (first watch refused, errno 28, zero watches held) —
+an instrument limit of that machine, with the same check green on the hosted
+runners at the same code. Ace's final acceptance is the one remaining release act.
 
 **Verified working (executed evidence):** the full English REPL loop; create / grow /
-review / confirm / supersede; save / load across processes; the 100-Dell registry with
-per-Dell proof cards; Core II state operations, chains, and transactions; checkpoints
-and intent-journal crash recovery; DuoBeta's gated learning lifecycle across sessions;
-the inference dock against a local provider-shaped double (origin stamps, semantic
-verbs, scoped Director recommendations, the design loop); Exchange v1 including
-journaled, fail-closed import; the visual export (interactive offline HTML; the page's
-script is covered by executed DOM-logic tests); Spanish/French core loop; workshops and
-the Perspective Studio; a regression harness (`form/regress.py` — the canonical suite registry; the current suite count is the length of its LIST)
-covering all of the above, run forward, twice, and in reverse order per release cycle.
-Since the last README: **Loop's chained-body repair and explicit bounds (DD-14/DD-44),
-chain parse-refusal failing closed (DD-45), Diff rings 1+2 as the comparison authority
-(C3), Embed bound to a docked provider (C8 EmbedBind), the dock-roster eviction fix,
-LatinMandell's in-repo morpheme harvest and tables (§3.10), the 31 Workflow role seeds
-landed as pending proposals, and the Email Matrix field (1,052 idea units built from
-Ace's mail under his confirmations), Nursery organization — topic, tags, cluster
-and an automatic birth certificate on every idea, with rename/relabel under
-signed receipts (C5R.3 ORGANIZE), the growth-duplicate save fix (GROW-DUP), and
-the Lens smart-ranking as the default Nursery browse/search order, every score
-shown with its recipe and the ACE ingredient honestly labeled missing in v1
-(C5R.4)** — each merged with terminal-green regression and
-scoped authority confirmation, itemized on the Master Work List.
+review / confirm / supersede under the grant-based acceptance contract (§3.3); save /
+load across processes; the 100-Dell registry with per-Dell proof cards; Core II state
+operations, chains, and transactions; checkpoints and intent-journal crash recovery,
+with per-member directory-sync receipts (§3.5); DuoBeta's gated learning lifecycle
+across sessions, counting distinct outcomes once; the inference dock against a local
+provider-shaped double (origin stamps, semantic verbs, scoped Director
+recommendations, the design loop); the personamatrix — built-in personas plus
+user-created personas, per-owner, with the Nursery confirm fence (§3.7); simulation
+with effect inventories and parallel preview (§3.11); the pure sound-derivation
+engine (§3.12); Exchange v1 including journaled, fail-closed import and witnessed,
+replay-safe duplicate imports (§3.8); owner-locked persistence that refuses malformed
+saves and stale writers (§3.5); the visual export (interactive offline HTML; the
+page's script is covered by executed DOM-logic tests); Spanish/French core loop;
+workshops and the Perspective Studio; a regression harness (`form/regress.py` — the
+canonical suite registry; the current suite count is the length of its LIST) covering
+all of the above, run forward, twice, and in reverse order per release cycle.
 
-**Certification picture (selected, all scoped):** DIR-CERT-2026-11-02 stands for its
-named circuits with its exceptions retained; Studio security and the Core I
-unsupported-arg gate are certified in scope (Studio remains a functional **local-only**
-application; browser acceptance is still open); Workflow v1 is adopted and live;
-the LatinMandell LM-1 license boundary and import design are ruled and merged, with
-the import itself (PR #393) merged 2026-11-12 (`c6f6fb5`). Per-circuit reports
-live in [`director-reports/`](director-reports/) with `INDEX.md` as the entry point.
-Nothing in this README sums bounded certificates into a whole-program claim:
-**whole-program certification is NOT issued.**
+**Production main:** `11933da` — the anchor recorded by the P12 closure audit
+(2026-10-30, full 100-Dell registry proof complete). The anchor line is retained
+verbatim because the P12 audit's reconciliation is stated against it (and the
+closure suite pins it); the certified release code is `7e573307`, above.
+
+**Certification picture:** DIR-CERT-2026-11-02 stands for its named circuits with its
+exceptions retained; Studio security and the Core I unsupported-arg gate are certified
+in scope (Studio remains a functional **local-only** application; browser acceptance
+is still open); the LatinMandell LM-1 license boundary and import are ruled and merged
+(import PR #393, merged 2026-11-12, `c6f6fb5`). Per-circuit reports live in
+[`director-reports/`](director-reports/) with `INDEX.md` as the entry point. On top of
+those scoped certificates, the Director's 2026-11-27 final disposition grants **scoped
+certification of the shipping release** (the long-withheld register row #112), on the
+reconciled evidence bundle at the shipping code — the independent DAF-09 discrepancy
+discharged for the release on the hosted result and the deterministic classification
+control, with the historical 19/22 left on record. The grant is deliberately scoped,
+not global: the exceptions in the next list remain exactly as open, deferred, or
+unestablished as it says they are.
 
 **Explicitly not claimed:**
 - "User-ready" as a finished consumer product.
@@ -650,17 +714,32 @@ Nothing in this README sums bounded certificates into a whole-program claim:
 - Pixel-perfect rendering of the visual export in a named commercial browser
   (file generation and script behavior are tested; a named-browser render was not
   executed in the build environment).
-- The everyday save path as crash-safe *as a pair*: each file is written safely
-  alone, but an interrupted pair-save can expose a hybrid with no warning; the
-  checkpoint/sealed-snapshot path passed every crash test. The repair-or-declare
-  decision is the Director's (Master Work List, Q1 class, GATED; PR #294 held).
-- One regression-harness question — cleanup of session-escaped processes
-  (DAF-09) — is an open cross-environment investigation: local suites pass, an
-  independent environment reproduced intermittent failures, and per project law
-  the discrepancy is recorded as **UNRESOLVED** and DAF-09 certification
-  **WITHHELD** rather than argued away.
-- PRs #308 (intent-args census) and #233 (certification run) are fenced/held and
-  are not part of the working program's claims.
+- The **R5 save-path redesign** (history-retention policy for saves): the policy is
+  adopted, the implementation is **not built** — it is outside the certified release
+  and needs its own authorization. (Related, and still open: ordinary saves are
+  per-file atomic only — a crash between the Nursery save and the Program save can
+  leave a hybrid pair that a fresh load exposes as-is. The *checkpoint* path is
+  pair-atomic and never hybrid; the ordinary-path behavior is documented and
+  asserted as a bounded statement by `form/sm35_pair_atomic_test.py`, pending a
+  Director ruling on whether a repair is warranted. What the landed stack did close
+  is the neighbouring damage: staged validation refuses malformed saves before they
+  bind, stale writers are refused, and Exchange imports are witnessed and
+  replay-safe (§3.5/§3.8). PR #294 remains open as the standing Q1 *design record*,
+  never a merge candidate.)
+- **TreeView** — the family-tree lens over the one SemanticGraph (parents above,
+  children as branches, pending children shown pending) — is *defined* and
+  **not built**.
+- Carried open or unestablished in the Director's release exceptions, with no new
+  evidence claimed: fractal containment; workshop/theater closure paths; stable
+  circular systems and negative-space transmission (**unestablished**); Verita
+  (parked); Phase G, live PP6, and candidate-4 pruning (deferred); third-party
+  scanning (**evaluation unavailable** — never counted as a pass).
+- One cosmetic wart, on record: the opt-in growth banner still reads "every grow
+  accepts all nursery proposals," while the acceptance contract (§3.3) accepts
+  nothing without a grant or an issued approval. The wording correction is a
+  Director follow-up.
+- PR #233 (a CI-only certification run on a pinned base) was closed unmerged and is
+  not part of the working program's claims.
 
 ---
 
@@ -668,10 +747,11 @@ Nothing in this README sums bounded certificates into a whole-program claim:
 
 The whole arc on one page. The governing documents are **the Dell Plan**
 (Ace's plan: the Master Objective Register, the §12 Dell-by-Dell rulings, the §14
-working plan, and the vision items — mirrored in `director-reports/`) and the
-**Master Work List** (§7), which is the single scoreboard. Where the plan and the
-code disagree about what a Dell is supposed to do, **the plan stands** and the
-code is the thing that is behind (Ace ruling, 2026-11-11).
+working plan, and the vision items — mirrored in `director-reports/`) and, through
+the build, the **Master Work List**, the single scoreboard of remaining work; the
+release itself is disposed by the Director's final disposition (§7). Where the plan
+and the code disagree about what a Dell is supposed to do, **the plan stands** and
+the code is the thing that is behind (Ace ruling, 2026-11-11).
 
 | Phase | What happened | State |
 |-------|---------------|-------|
@@ -679,16 +759,15 @@ code is the thing that is behind (Ace ruling, 2026-11-11).
 | **1 — Form** | The Python runtime in `form/` becomes the live program: REPL, `Program`, persistence, Nursery/Plane, Exchange, DuoBeta, the dock. `src/` freezes. | Built |
 | **2 — Proof** | Per-Dell deepening circuits (D1) and the P-series drive the registry to a full 100-Dell proof (anchor `11933da`, 2026-10-30); DIR-CERT-2026-11-02 certifies its named circuits in scope. | Closed, with exceptions on record |
 | **3 — The completion drives** | SUS Ω-64, then SUSX100,000: a nonstop push at the whole queue. Ω-64 closed honestly (10 complete/verified, the rest partial, investigated, or deferred) and was **accepted with noted exceptions** — the project learned to count strictly or not at all. | Closed honestly |
-| **4 — The Dell Plan + Workflow v1** | Ace's Dell-by-Dell tour rewrites what many Dells are *supposed* to do (§12 rulings DD-43…DD-54+: Parallel must mean parallel, Loop bounds explicit, Diff the one comparison authority, Trace covers the whole process…). Workflow v1 seats the five roles; the Director Review Queue and the Master Work List (182 items) replace every older scoreboard. | Governing now |
-| **5 — NOW (2026-11-11)** | Foundation-order circuits closing one by one — Loop, Bounds, ParseRefusal, Diff rings 1+2, EmbedBind, the roster fix — plus the LatinMandell program (LM-0 census → LM-1 import in review → LM-2 splitter). **Board: 36/179 COMPLETE (20.1%).** | In progress |
-| **5b — NOW (2026-11-17)** | The scoreboard reconciled to the canonical register render under the Director's live-state rule; C5R.3 ORGANIZE, the GROW-DUP save fix, and the C5R.4 LENS settled as code-complete. **Board: 39/182 COMPLETE (21.4%).** | In progress |
-| **6 — The road to finish** | The remaining §14 foundation families in order (truth/receipts → roster → Diff's upper rings → the upper Dell families), the gated Q1 save-path decision, the withheld DAF-09 discrepancy, Studio browser acceptance — then Ace's vision items: Nursery proposal cards and custom shapes, the Plane as a walkable **Room** (3D) and **Sky** (2D), the page set ending in the **Psalm Matrix**, navigation researched before it is placed. | Ahead |
-| **FINISH** | The Master Work List reads **182/182 COMPLETE**, every item with executed evidence, and whole-program certification is issued by the Director with the Keeper's trailing certification on record. Human testing opens only through its gates: a real AI docked live **and** Ace working the Matrix himself. | The finish line |
+| **4 — The Dell Plan + Workflow v1** | Ace's Dell-by-Dell tour rewrites what many Dells are *supposed* to do (§12 rulings DD-43…DD-54+: Parallel must mean parallel, Loop bounds explicit, Diff the one comparison authority, Trace covers the whole process…). Workflow v1 seats the five roles; the Director Review Queue and the Master Work List (182 items) replace every older scoreboard. | Plan governing; Workflow v1 superseded by the Grand Workflow (2026-11-14) |
+| **5 — The foundation circuits (Nov 2026)** | Foundation-order circuits closing one by one — Loop, Bounds, ParseRefusal, Diff rings 1+2, EmbedBind, the roster fix — plus the LatinMandell program (LM-0 census → LM-1 import merged → LM-2 splitter); C5R.3 ORGANIZE, the GROW-DUP save fix, and the C5R.4 LENS settled as code-complete. | Closed |
+| **6 — The repair wave and the release (2026-11-25 → 27)** | An independent review lane (the Critic) and adversarial testing surfaced a family of real defects — cross-owner leaks, a fail-open checkpoint seal, double-counted learning, label/ID collisions, a stale-writer overwrite path, a two-writer receipt flaw, and a simulation preview that could misreport its own measurements. Every one was verified first-hand, repaired, triple-proven, and landed. The withheld register row #112 was reconsidered on a reconciled evidence bundle, and the Director granted scoped certification of the shipping release with its exceptions mapped (§7). The superseded Part I draft (#508) was retired unmerged; its surviving contents had already landed separately. | Closed 2026-11-27 |
+| **FINISH** | The integrated release is certified by the Director, the Keeper's credits are fully discharged, and **Ace's final acceptance is the one remaining release act**. Carried forward openly, not hidden: the §7 exception list (R5 implementation, TreeView, the open/unestablished items) and Ace's vision items — Nursery proposal cards and custom shapes, the Plane as a walkable **Room** (3D) and **Sky** (2D), the page set ending in the **Psalm Matrix**. Human testing opens only through its gates: a real AI docked live **and** Ace working the Matrix himself. | Acceptance pending |
 
 Two rules keep the map honest: **merged is never certified** (a merge is an
 execution under authorization; certification is a separate authority act), and
-**the board is machine-rendered from its data file** — nobody hand-edits the
-percentage.
+**certification is scoped** — its exceptions stay named in §7 rather than being
+summed away into a whole-program claim.
 
 ---
 
@@ -701,12 +780,12 @@ percentage.
 | `form/open.py` | `Program` — the central state object — and `open_program()` |
 | `form/mandell/` | The Mandell language: `registry.py` (the 100 Dells), `executor.py`, `chain_exec.py`, `core_ii_exec.py` (Core II state machine), `translate.py`, checkpoint/recovery, supersession, redaction |
 | `form/mandell/latinmandell.py`, `morpheme.py`, `lm_table*.json` | LatinMandell: morpheme decomposition and the harvested roots/affixes tables (§3.10) |
-| `form/dell_matrix/` | Nursery, plane, spatial views, acceptance policy, lifecycle, inference dock, Exchange, workshops |
+| `form/dell_matrix/` | Nursery, plane, spatial views, acceptance policy, lifecycle, inference dock, Exchange, workshops, simulation board, sonification |
 | `form/duobeta/` | DuoBeta learning: observation, policy gates, ledger |
 | `form/persist.py`, `form/persist_rest.py` | Disk persistence (JSON under `form/state/`), load-time recovery hooks |
 | `form/regress.py` | The regression harness (canonical suite registry; count = length of LIST) |
 | `director-reports/` | Per-circuit evidence reports submitted for Director certification; `INDEX.md` is the entry point |
-| `director-reports/MASTER_WORK_LIST.md` | The single scoreboard: all 182 work items, machine-rendered by `master_list.py` from `master_work_list_items.json` |
+| `director-reports/MASTER_WORK_LIST.md` | The build-era scoreboard of work items, machine-rendered by `master_list.py` from `master_work_list_items.json` (the release itself was disposed by the Director's final disposition, §7) |
 | `director-reports/DIRECTOR_REVIEW_QUEUE.md` | Everything awaiting a Director disposition, with exact heads; the hourly review disposes of the whole queue |
 | `gui/` | DellMatrix Studio — the local visual application (local-only; not network-deployed) |
 | `docs/` | Documentation (large; currency varies — this README is the current-truth summary) |
@@ -728,6 +807,11 @@ python3 -m form.regress --order rev    # reverse order
 **Limitations, stated plainly:**
 - Persistence is explicit: a plain REPL start is a fresh in-memory program; EOF does
   not autosave. `save` / `--load` is the contract.
+- The R5 history-retention save-path redesign is policy-only — not implemented
+  (§7). TreeView is defined and not built (§7).
+- Ordinary saves are per-file atomic, not pair-atomic: a crash between the Nursery
+  and Program saves can expose a hybrid pair on the next load. Only the checkpoint
+  path is pair-atomic (§7).
 - `lineage` by label reports ambiguity when several distinct records share a label;
   use the ID to disambiguate.
 - Group-in-group nesting (projects within projects) is not implemented; a project is
@@ -769,8 +853,8 @@ and do not modify `src/` (frozen).
 - **DuoBeta** — the learning subsystem: observation in, policy-gated proposals, human-gated application.
 - **Exchange** — file-based transfer of ideas *with their receipts*, imported as pending under the receiver's gate.
 - **Honest refusal** — the system's pattern of declining, with a reason, instead of fabricating a result.
-- **Director / Keeper** — the two independent review authorities (ChatGPT / Grok): the Director analyzes and gives the final check hourly; the Keeper confirms on a fast lane. Either can HOLD a work item instantly; only Uni writes code.
-- **Master Work List** — the single 182-item enumeration of all remaining work; COMPLETE means authority-confirmed closed, and the headline percentage allows no partial credit.
+- **Director / Keeper** — the two independent review authorities (ChatGPT / Gemini): the Director analyzes and gives the final check; the Keeper confirms on a fast lane. Either can HOLD a work item instantly; only Uni writes code. (The Keeper seat was held by Grok until 2026-11-20.)
+- **Master Work List** — the build-era scoreboard: the single enumeration of all remaining work, with COMPLETE meaning authority-confirmed closed and no partial credit. The release was disposed by the Director's final disposition (§7), not by the board reaching a number.
 - **LatinMandell** — the morpheme lens (§3.10): English decomposed into Latin/Greek pieces so word *function* is explicit; an aid to understanding, not a source of truth.
 - **Mandelmoji** — the glyph layer (§3.10): one character that references a Dell and carries a predisposed tone through 05[Tone].
-- **Psalm** — an AI docked into DellMatrix as a worker (proposals only, never authority). The **Psalm Matrix** is the planned all-AI page of the future page set.
+- **Psalm** — an AI docked into DellMatrix as a worker (proposals only, never authority). The built-in Psalm personas are incorporated in the **personamatrix** (§3.7), which also lets users create their own personas. The **Psalm Matrix** page itself remains a planned page of the future page set.
