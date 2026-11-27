@@ -3774,6 +3774,18 @@ def _seed_claim(line: str) -> bool:
             _SEED_CLAIM_ATOM_OPEN.match(body, pos)
         if m:
             pos = m.end()
+            # Nested-bracket aggregate form (e.g. 08[A[B]]): the
+            # atom-open match above consumes through the INNER
+            # bracket's close, leaving the outer close behind as
+            # apparent residue. That extra ']' is part of the same
+            # malformed atom — the canonical parser refuses this
+            # exact shape by name (aggregate Dell conflict), so the
+            # line is claim territory, never prose (same principle
+            # as the unclosed bracket in the header note). Consume
+            # the stray close run so the scan can proceed to the
+            # label/flow tail and claim the line for the gate.
+            while pos < end_of and body[pos] == "]":
+                pos += 1
             # Optional typed argument list, in the grammar's own
             # position (immediately after the atom).
             am = _seed_args.match(body, pos)
@@ -5250,7 +5262,53 @@ def run(owner: str = "Operator", do_load: bool = False) -> None:
         from form.persist import _path as _persist_path
         import os as _os
         _session_existed = _os.path.isfile(_persist_path(owner))
-        p = persist_load(owner)
+        try:
+            p = persist_load(owner)
+        except Exception as _load_exc:
+            # J-12 (PR #502 family 10): the loader's typed
+            # corrupt-envelope refusals (ProgramLoadError /
+            # NurseryLoadError) present at the public door as a
+            # diagnosis with a recovery offer — never a raw
+            # traceback. Any other exception is a genuine defect
+            # and keeps its traceback.
+            from form.persist_rest import ProgramLoadError as _PLE
+            from form.dell_matrix.nursery import (
+                NurseryLoadError as _NLE)
+            if not isinstance(_load_exc, (_PLE, _NLE)):
+                raise
+            _say(f"Load refused for {owner}: {_load_exc}")
+            # J-12 wording scope (Director 7137035559): the
+            # sentence below claims only what THIS boundary can
+            # prove — no state was loaded (the session never
+            # starts) and the refusal itself wrote nothing (from
+            # the raise, the load path performs no further
+            # writes and this handler only prints and probes the
+            # generation id). It deliberately does NOT claim
+            # "no file was changed" for the whole load attempt:
+            # persist_rest.load runs checkpoint, rollback,
+            # confirmation, supersession and exchange recovery
+            # BEFORE the final envelope is validated, and that
+            # journal work may legitimately write files before
+            # a refusal is ever raised.
+            _say("No state was loaded, and this refusal itself "
+                 "changed no file.")
+            try:
+                from form.mandell.checkpoint_generation import (
+                    current_generation_id as _cgid)
+                _gen = _cgid(owner)
+            except Exception:
+                _gen = None
+            if _gen:
+                _say(f"Recovery: sealed checkpoint generation "
+                     f"'{_gen}' survives for this owner and is "
+                     f"the recovery source — repair or replace "
+                     f"the corrupt live file from that "
+                     f"generation, then restart with --load.")
+            else:
+                _say("Recovery: no sealed checkpoint generation "
+                     "exists for this owner; the corrupt file "
+                     "is preserved on disk for manual recovery.")
+            raise SystemExit(1)
     else:
         p = open_program(owner)
     if not do_load:

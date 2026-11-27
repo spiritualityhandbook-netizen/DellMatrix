@@ -628,8 +628,35 @@ def load(owner: str = "Operator", path: Optional[str] = None, activate: bool = T
     # any state is exposed. No journal: no-op.
     from form.dell_matrix.exchange import recover_exchange_import
     recover_exchange_import(owner)
+    default_path = path is None
     path = path or _path(owner)
     if not os.path.isfile(path):
+        if default_path:
+            # J-12 (PR #502 family 10): a missing canonical
+            # program file is a brand-new owner ONLY when nothing
+            # of a prior book survives. A committed checkpoint
+            # generation is positive evidence of a destroyed
+            # envelope — sealing saves the live pair first, so a
+            # generation can only exist if this file existed.
+            # Fabricating a fresh program here would expose a
+            # hybrid pair: fresh units wearing the destroyed
+            # book's surviving nursery proposals. Refuse,
+            # diagnosed; the generation is the recovery source.
+            # Nursery content alone is deliberately NOT evidence:
+            # a first session that grows before its first save
+            # legitimately leaves proposals with no program file
+            # yet, and the fresh arm below serves exactly that.
+            from form.mandell.checkpoint_generation import (
+                current_generation_id, has_checkpoint)
+            if has_checkpoint(owner):
+                raise ProgramLoadError(
+                    f"program file {os.path.basename(path)} is "
+                    f"missing but sealed checkpoint generation "
+                    f"{current_generation_id(owner)!r} survives "
+                    f"for this owner: the envelope is broken, not "
+                    f"new — refusing to fabricate a fresh program "
+                    f"over the surviving state; restore from the "
+                    f"sealed generation to recover")
         p = open_program(owner)
         p.language = empty_language()
         # R7.4 (D1): a brand-new owner (no persisted state at all)
@@ -669,7 +696,22 @@ def _load_impl(owner: str, path: str, nursery, activate: bool) -> Program:
         )
     with open(path, "rb") as f:
         _blob = f.read()
-    data = json.loads(_blob.decode("utf-8"))
+    try:
+        data = json.loads(_blob.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        # J-12 (PR #502 family 10): the parse step honors the same
+        # typed-refusal contract as every other step of this
+        # loader — missing member, binding mismatch and structural
+        # validation all raise ProgramLoadError, and the nursery
+        # member's NurseryLoadError sets the same standard. Name
+        # the file, the diagnosis and the size; the corrupt bytes
+        # are preserved, never absorbed or overwritten.
+        raise ProgramLoadError(
+            f"program file {os.path.basename(path)} is not a "
+            f"complete valid generation (truncated/malformed "
+            f"JSON: {exc}; {len(_blob)} bytes on disk; refusing "
+            f"load — the file is preserved unchanged)"
+        ) from exc
     resolved = _validate_program_data(data, owner)
     lang = parse_language(data)
     p = _prepare_program(resolved, data, _nursery=nursery)

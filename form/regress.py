@@ -454,6 +454,54 @@ LIST = [
     "form.dirf14_catch_consumed_test:smoke",
     "form.step10_consistency_test:smoke",
     "form.step11_public_contracts_test:smoke",
+    # Part VII (PR #502): Edition 1 DAG edge ledger — machine-checkable
+    # transcription of 08_DEPENDENCY_DAG.json with one negative bypass
+    # test per divergent edge (D1-D4, Director 7044797269).
+    "form.dag_edge_ledger_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 1: J-01 Chain +
+    # J-02 Refusal journey harness (plan section 5.2); registered in
+    # the same commit that renames the plan-stage spec to *_test.py.
+    "form.journey_chain_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 2: J-03 English ->
+    # LatinMandell journey harness (plan section 5.2); registered in
+    # the same commit that renames the plan-stage spec to *_test.py.
+    "form.journey_language_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 3: J-04 Create/
+    # persist Idea + J-16 Promote + J-17 Undo/redo boundary journey
+    # harness (plan section 5.2); registered in the same commit as
+    # the suite it names (omitted-entry law).
+    "form.journey_idea_lifecycle_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 4: J-05 Human
+    # confirm + J-21 Visual Nursery at scale journey harness (plan
+    # section 5.2); registered in the same commit as the suite it
+    # names (omitted-entry law).
+    "form.journey_confirm_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 5: J-06 Rollback
+    # journey harness (plan section 5.2); registered in the same commit
+    # as the suite it names (omitted-entry law).
+    "form.journey_rollback_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 6: J-07 Cross-
+    # view space + J-08 Tree 3D + J-13 Studio coherence + J-23
+    # Plan-change sync journey harness (plan section 5.2);
+    # registered in the same commit as the suite it names
+    # (omitted-entry law).
+    "form.journey_views_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 7: J-09
+    # Resonance to Nursery + J-14 Scoped growth journey harness
+    # (plan section 5.2); registered in the same commit as the suite
+    # it names (omitted-entry law).
+    "form.journey_growth_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 8: J-10 AI
+    # assist + J-22 Outage/reconnect journey harness (plan
+    # section 5.2); registered in the same commit as the suite
+    # it names (omitted-entry law).
+    "form.journey_dock_test:smoke",
+    # Part VII (PR #502) GP-E27 code stage, family 10: J-12
+    # Crash-save journey harness (plan section 5.2; family 9 /
+    # J-11 HCN remains unbuilt until GP-E22 lands); registered
+    # in the same commit as the suite it names (omitted-entry
+    # law).
+    "form.journey_crash_test:smoke",
     # DellMatrix Studio GUI API suite (P5): real HTTP over gui.server.
     "form.gui_api_test:smoke",
     # Studio security suite: adversarial callers against gui.server.

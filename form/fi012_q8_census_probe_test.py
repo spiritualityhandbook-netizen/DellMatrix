@@ -58,6 +58,27 @@ detail[:2000] / goals[:12] / words[:500] parse slices remain on
 main by design. State hygiene extended: the entry-point legs use
 a dedicated probe owner via form.open.open_program and never
 save, so no state file is created.
+
+UPDATE (2026-11-26, Director Part VII final review 7203153355;
+PR #546 journey carrier): the J-04 whole-storage behavior the
+Part VII journey fixtures pin has landed through the carrier —
+parse_create_line no longer slices detail or goals at all (the
+silent truncations J-04 was written against are REMOVED, the
+same supersession shape as the #522 label repair above):
+
+  S1  the census now pins the ABSENCE of the 2000 and 12 slice
+      bounds in the function's AST; the words bounds ([:120]
+      derivation, [:500] nominal) are censused as before.
+  B2  now tests whole storage: a 2500-char detail is returned
+      at 2500. Historical pin (superseded): detail 2500 sliced
+      silently to 2000.
+  B3  now tests whole storage: 15 goals are returned as 15.
+      Historical pin (superseded): goals 15 sliced silently
+      to 12.
+
+B4, B5, C1 unchanged: words is still derived from detail[:120]
+(so its effective cap stands), and no truncation signal exists
+in the returned record — now because nothing is truncated.
 """
 from __future__ import annotations
 
@@ -128,8 +149,8 @@ def main() -> int:
                 if (isinstance(k, ast.Constant)
                         and k.value == "label"):
                     label_is_unsliced_name = isinstance(v, ast.Name)
-    caps = {"detail[:2000]": 2000 in slice_uppers,
-            "goals[:12]": 12 in slice_uppers,
+    caps = {"detail_unsliced": 2000 not in slice_uppers,
+            "goals_unsliced": 12 not in slice_uppers,
             "words[:500]": 500 in slice_uppers,
             "label_unsliced": label_is_unsliced_name
             and 80 not in slice_uppers}
@@ -188,20 +209,24 @@ def main() -> int:
           f"ok={res.get('ok')} error={res.get('error')} "
           f"units {before} -> {len(_unit_labels())}")
 
-    # --- B2: detail cap
+    # --- B2: detail stored whole (J-04; #546 carrier, Director
+    # 7203153355). Historical pin (superseded): a 2500-char detail
+    # was silently sliced to 2000 at this door.
     r = parse_create_line(
         "create an idea called x detail: " + "d" * 2500 +
         " goals: g")
-    check("B2_detail_2500_to_2000_silent",
-          len(r["detail"]) == 2000,
+    check("B2_detail_2500_stored_whole",
+          len(r["detail"]) == 2500,
           f"detail_len={len(r['detail'])}")
 
-    # --- B3: goals cap
+    # --- B3: goals stored whole (J-04; #546 carrier).
+    # Historical pin (superseded): 15 goals were silently
+    # sliced to 12 at this door.
     goals = "; ".join(f"goal{i}" for i in range(15))
     r = parse_create_line(
         f"create an idea called x detail: d goals: {goals}")
-    check("B3_goals_15_to_12_silent",
-          len(r["goals"]) == 12,
+    check("B3_goals_15_stored_whole",
+          len(r["goals"]) == 15,
           f"goals_kept={len(r['goals'])}")
 
     # --- B4: words — no truncation signal in any result
@@ -238,10 +263,12 @@ def main() -> int:
           " parse_create_line — carried losslessly; budget 200"
           " enforced by typed refusal at needs.parse_and_place"
           " (#522/R24-L; historical cap 80 silent slice superseded)")
-    print("  detail: cap 2000 @ form/idea_create.py parse_create_line"
-          " — SILENT truncation")
-    print("  goals : cap 12   @ form/idea_create.py parse_create_line"
-          " — SILENT truncation")
+    print("  detail: NO parse cap @ form/idea_create.py"
+          " parse_create_line — stored whole (J-04, #546;"
+          " historical cap 2000 silent slice superseded)")
+    print("  goals : NO parse cap @ form/idea_create.py"
+          " parse_create_line — stored whole (J-04, #546;"
+          " historical cap 12 silent slice superseded)")
     print("  words : cap 500 nominal / 120 effective @ same site"
           " — SILENT truncation")
     print("  store layer (Nursery.add): NO corresponding caps; "
