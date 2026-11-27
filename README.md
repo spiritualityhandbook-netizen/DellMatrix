@@ -295,7 +295,9 @@ to expose a half-loaded state rather than inventing one. Saves are owner-locked,
 malformed save is refused by staged validation *before* it can bind — a damaged save
 can no longer swap the live program for a cleared one. If a save arrives from a stale
 writer (one whose view of the world an import has already moved past), it is refused
-with a typed error and the newer records are preserved, never overwritten.
+with a typed error and the newer records are preserved, never overwritten. One bound
+stated plainly: ordinary saves are atomic *per file*, not as a pair — only the
+checkpoint path below is pair-atomic (§7).
 
 Three mechanisms deserve plain explanation:
 
@@ -709,10 +711,16 @@ unestablished as it says they are.
   executed in the build environment).
 - The **R5 save-path redesign** (history-retention policy for saves): the policy is
   adopted, the implementation is **not built** — it is outside the certified release
-  and needs its own authorization. (The earlier Q1 pair-save concern is closed by
-  the landed stack instead: staged validation refuses malformed saves before they
-  bind, and the Exchange witness/preservation machinery of §3.5/§3.8 is on main;
-  PR #294 remains open as the standing Q1 *design record*, never a merge candidate.)
+  and needs its own authorization. (Related, and still open: ordinary saves are
+  per-file atomic only — a crash between the Nursery save and the Program save can
+  leave a hybrid pair that a fresh load exposes as-is. The *checkpoint* path is
+  pair-atomic and never hybrid; the ordinary-path behavior is documented and
+  asserted as a bounded statement by `form/sm35_pair_atomic_test.py`, pending a
+  Director ruling on whether a repair is warranted. What the landed stack did close
+  is the neighbouring damage: staged validation refuses malformed saves before they
+  bind, stale writers are refused, and Exchange imports are witnessed and
+  replay-safe (§3.5/§3.8). PR #294 remains open as the standing Q1 *design record*,
+  never a merge candidate.)
 - **TreeView** — the family-tree lens over the one SemanticGraph (parents above,
   children as branches, pending children shown pending) — is *defined* and
   **not built**.
@@ -796,6 +804,9 @@ python3 -m form.regress --order rev    # reverse order
   not autosave. `save` / `--load` is the contract.
 - The R5 history-retention save-path redesign is policy-only — not implemented
   (§7). TreeView is defined and not built (§7).
+- Ordinary saves are per-file atomic, not pair-atomic: a crash between the Nursery
+  and Program saves can expose a hybrid pair on the next load. Only the checkpoint
+  path is pair-atomic (§7).
 - `lineage` by label reports ambiguity when several distinct records share a label;
   use the ID to disambiguate.
 - Group-in-group nesting (projects within projects) is not implemented; a project is
