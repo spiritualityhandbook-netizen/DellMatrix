@@ -247,22 +247,28 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
             blob = f.read()
         fps[kind] = hashlib.sha256(blob).hexdigest()
         _check_fail(f"member_{kind}", _fail_at)
+        member_capture: Dict[str, bool] = {}
         try:
-            atomic_write_bytes(_member_path(owner, kind, generation_id), blob)
+            atomic_write_bytes(_member_path(owner, kind, generation_id), blob,
+                               _sync_capture=member_capture)
         except (AtomicWriteError, OSError) as exc:
             # 72-29 (D3): broaden to OSError so a member-copy failure
             # from any write path aborts through CheckpointCommitError
             # (and thus commit_checkpoint's eager-convergence handler),
             # never as a raw OSError bypassing it.
             raise CheckpointCommitError(f"member copy failed for {kind}; commit aborted: {exc}") from exc
-        # Row #47 (Part I section 5.1): capture this member copy's
-        # directory-fsync outcome immediately, before the next write
-        # overwrites atomic_write's function-object surface, so the
-        # commit receipt can report the member seam independently of
-        # the pointer seam (the 72-29 D2 surface covered only the
-        # pointer). Degradation stays best-effort; it is never silent.
+        # Row #47 (Part I section 5.1): the commit receipt reports the
+        # member seam independently of the pointer seam (the 72-29 D2
+        # surface covered only the pointer). The outcome comes from
+        # THIS call's own per-operation capture, never from
+        # atomic_write's process-wide function-object surface: that
+        # surface is last-writer-wins, so a second writer sharing the
+        # process could replace this copy's outcome before any read
+        # (Director source review on PR #547, 2026-11-26; two-writer
+        # fixture in h7_dirsync_seams_test). Degradation stays
+        # best-effort; it is never silent.
         members_dir_fsynced = members_dir_fsynced and bool(
-            getattr(atomic_write_bytes, "_last_dir_fsynced", False))
+            member_capture.get("dir_fsynced", False))
         # Fingerprint validation: the sealed bytes are exactly what we sealed.
         if _sha256_file(_member_path(owner, kind, generation_id)) != fps[kind]:
             raise CheckpointCommitError(f"member fingerprint mismatch after write for {kind}; commit aborted")
@@ -288,15 +294,17 @@ def _seal_members(program, generation_id: str, _fail_at: Optional[str] = None) -
         "committed": True,
     }
     _check_fail("manifest", _fail_at)
+    manifest_capture: Dict[str, bool] = {}
     try:
-        atomic_write_json(_manifest_path(owner, generation_id), manifest)
+        atomic_write_json(_manifest_path(owner, generation_id), manifest,
+                          _sync_capture=manifest_capture)
     except (AtomicWriteError, OSError) as exc:
         # 72-29 (D3): see the member-copy wrap above.
         raise CheckpointCommitError(f"manifest write failed; commit aborted: {exc}") from exc
-    # Row #47: capture the manifest write's directory-fsync outcome
-    # immediately, before the pointer write overwrites the surface.
-    manifest_dir_fsynced = bool(
-        getattr(atomic_write_json, "_last_dir_fsynced", False))
+    # Row #47: the manifest write's own per-operation capture (see
+    # the member seam above for why the shared surface cannot be
+    # trusted under a second in-process writer).
+    manifest_dir_fsynced = bool(manifest_capture.get("dir_fsynced", False))
     _check_fail("after_members", _fail_at)  # crash here: members+manifest sealed, pointer still old
     return {
         "generation_id": generation_id,
@@ -317,11 +325,21 @@ def _commit_pointer(owner: str, sealed: Dict[str, Any], _fail_at: Optional[str] 
         "previous_generation_id": sealed["previous_generation_id"],
         "owner": owner,
     }
+    pointer_capture: Dict[str, bool] = {}
     try:
-        atomic_write_json(_pointer_path(owner), pointer)
+        atomic_write_json(_pointer_path(owner), pointer,
+                          _sync_capture=pointer_capture)
     except (AtomicWriteError, OSError) as exc:
         # 72-29 (D3): see the member-copy wrap above.
         raise CheckpointCommitError(f"pointer commit failed: {exc}") from exc
+    # The pointer write's own per-operation outcome, carried back on
+    # the sealed dict for the commit receipt (72-29 D2's pinned
+    # ``dir_fsynced`` meaning; per-operation capture since the
+    # PR #547 Director correction — the shared function-object
+    # surface is last-writer-wins and cannot be read honestly once
+    # this function returns).
+    sealed["dir_fsynced_pointer"] = bool(
+        pointer_capture.get("dir_fsynced", False))
     return pointer
 
 
@@ -408,12 +426,14 @@ def commit_checkpoint(program, generation_id: Optional[str] = None,
         sealed = _seal_members(program, gen_id, _fail_at=_fail_at)
         _commit_pointer(owner, sealed, _fail_at=_fail_at)
         # 72-29 (D2): directory-sync degradation must be observable at
-        # the checkpoint layer. atomic_write records the pointer
-        # write's directory-fsync outcome on the function object
-        # (its documented explicit-degradation surface); capture it
-        # immediately, before any later write overwrites it, and
-        # carry it on the commit receipt below. Additive only.
-        dir_fsynced = bool(getattr(atomic_write_json, "_last_dir_fsynced", False))
+        # the checkpoint layer. The pointer write's outcome arrives
+        # via _commit_pointer's per-operation capture on the sealed
+        # dict (PR #547 Director correction: the function-object
+        # surface is last-writer-wins across in-process writers, so
+        # reading it here could report another writer's outcome).
+        # A missing key reads False — degradation is never upgraded
+        # silently. Additive only.
+        dir_fsynced = bool(sealed.get("dir_fsynced_pointer", False))
     except CheckpointCommitError:
         # Converge eagerly: the failed seal may have overwritten one
         # member of the live pair. Recovery restores the preserved

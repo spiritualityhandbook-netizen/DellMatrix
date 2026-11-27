@@ -15,13 +15,22 @@ BEFORE the commit boundary. A commit performs, in order:
     manifest write     (atomic_write_json)
     pointer write      (atomic_write_json)  <- commit boundary
 
-Each atomic_write call records its own directory-fsync outcome on
-the function object (atomic_write's documented explicit-degradation
+Each atomic_write call records its directory-fsync outcome on the
+function object (atomic_write's documented explicit-degradation
 surface), but the checkpoint layer historically observed ONLY the
 pointer's. A member copy whose directory sync degraded left the
 generation's payload possibly non-durable while the commit receipt
 asserted ``dir_fsynced: True`` with no checkpoint-layer surface for
 the member or manifest degradation.
+
+Director correction on PR #547 (source review, 2026-11-26): the
+function-object surface is process-wide and last-writer-wins, so a
+receipt read from it can carry a SECOND in-process writer's outcome
+whenever the writers overlap. The receipt therefore reads each
+write's own per-operation capture (``_sync_capture``), never the
+shared surface. The final section of this suite pins that with a
+deterministic two-writer interleave at the member and pointer
+seams, plus the channel property itself.
 
 Contract pinned here (Part I plan 2026-11-20 section 5.1, row #47
 retained remainder):
@@ -214,6 +223,127 @@ def smoke() -> bool:
           and r.get("dir_fsynced_manifest") is True,
           f"receipt={ {k: r.get(k) for k in ('dir_fsynced', 'dir_fsynced_members', 'dir_fsynced_manifest')} }")
     check("pointer_seam.load_coherent", loads(o, gen))
+
+    # -- channel property: the function-object surface is process-
+    # wide and holds only the LAST writer's outcome (Director
+    # source review on PR #547, 2026-11-26). Two writers sharing
+    # one process can therefore replace each other's published
+    # outcome between a write returning and a reader observing
+    # the surface. A per-operation capture is the only honest
+    # receipt source under concurrency.
+    from form.dell_matrix import atomic_write as AW
+    scratch = STATE / f"h7ds_channel_{uuid.uuid4().hex[:8]}.bin"
+    cap_a, cap_b = {}, {}
+    try:
+        AW.atomic_write_bytes(str(scratch), b"a", _sync_capture=cap_a)
+        AW.atomic_write_bytes(str(scratch), b"b",
+                              _fail_at="dir_fsync_fail",
+                              _sync_capture=cap_b)
+        channel_ok = (
+            getattr(AW.atomic_write_bytes, "_last_dir_fsynced", None)
+            is False
+            and cap_a.get("dir_fsynced") is True
+            and cap_b.get("dir_fsynced") is False)
+        channel_detail = (
+            f"attr={getattr(AW.atomic_write_bytes, '_last_dir_fsynced', None)} "
+            f"cap_a={cap_a} cap_b={cap_b}")
+    except TypeError as exc:
+        channel_ok = False
+        channel_detail = f"per-operation capture unsupported: {exc}"
+    finally:
+        try:
+            scratch.unlink()
+        except OSError:
+            pass
+    check("channel.shared_surface_last_writer_wins", channel_ok,
+          channel_detail)
+
+    # -- two writers, one process (deterministic interleave):
+    # writer B's degraded write lands after writer A's seam write
+    # returns but before A's receipt observation, at BOTH the
+    # member seam and the pointer seam. A's receipt must report
+    # A's OWN outcomes: every A write in this run genuinely
+    # synced, so every seam must read True.
+    import threading
+    o, p = fresh("RACE")
+    add(p, "race base", "two writer race base words")
+    gen = "gr47000000000001"
+    real_bytes = CG.atomic_write_bytes
+    real_json = CG.atomic_write_json
+    b_bin = STATE / f"h7ds_b_{uuid.uuid4().hex[:8]}.bin"
+    b_json = STATE / f"h7ds_b_{uuid.uuid4().hex[:8]}.json"
+    at1, done1 = threading.Event(), threading.Event()
+    at2, done2 = threading.Event(), threading.Event()
+    b_ran = {"bytes": False, "json": False}
+
+    def w_bytes(path, blob, **kw):
+        out = real_bytes(path, blob, **kw)
+        if not at1.is_set() and not b_ran["bytes"]:
+            at1.set()
+            done1.wait(120)
+        w_bytes._last_dir_fsynced = getattr(
+            real_bytes, "_last_dir_fsynced", False)
+        return out
+    w_bytes._last_dir_fsynced = True
+
+    pointer_abspath = os.path.abspath(CG._pointer_path(o))
+
+    def w_json(path, payload, **kw):
+        out = real_json(path, payload, **kw)
+        if (os.path.abspath(path) == pointer_abspath
+                and not b_ran["json"]):
+            at2.set()
+            done2.wait(120)
+        w_json._last_dir_fsynced = getattr(
+            real_json, "_last_dir_fsynced", False)
+        return out
+    w_json._last_dir_fsynced = True
+
+    result_box = {}
+
+    def run_a():
+        try:
+            result_box["r"] = CG.commit_checkpoint(
+                p, generation_id=gen)
+        except Exception as exc:  # surfaced by the checks below
+            result_box["exc"] = exc
+
+    CG.atomic_write_bytes = w_bytes
+    CG.atomic_write_json = w_json
+    t = threading.Thread(target=run_a)
+    try:
+        t.start()
+        if at1.wait(180):
+            real_bytes(str(b_bin), b"b", _fail_at="dir_fsync_fail")
+            b_ran["bytes"] = True
+            done1.set()
+            if at2.wait(180):
+                real_json(str(b_json), {"b": 1},
+                          _fail_at="dir_fsync_fail")
+                b_ran["json"] = True
+                done2.set()
+        t.join(300)
+    finally:
+        CG.atomic_write_bytes = real_bytes
+        CG.atomic_write_json = real_json
+        for f in (b_bin, b_json):
+            try:
+                f.unlink()
+            except OSError:
+                pass
+    check("two_writer.interleave_executed",
+          b_ran["bytes"] and b_ran["json"] and "r" in result_box,
+          f"b_ran={b_ran} exc={result_box.get('exc')}")
+    r = result_box.get("r") or {}
+    check("two_writer.members_manifest_honest",
+          r.get("dir_fsynced_members") is True
+          and r.get("dir_fsynced_manifest") is True,
+          f"receipt={ {k: r.get(k) for k in ('dir_fsynced', 'dir_fsynced_members', 'dir_fsynced_manifest')} }")
+    check("two_writer.pointer_honest",
+          r.get("dir_fsynced") is True,
+          f"receipt={ {k: r.get(k) for k in ('dir_fsynced', 'dir_fsynced_members', 'dir_fsynced_manifest')} }")
+    check("two_writer.load_coherent",
+          bool(r) and loads(o, gen))
 
     for o in owners:
         wipe(o)
