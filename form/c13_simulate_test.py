@@ -515,6 +515,91 @@ def smoke() -> bool:
                                   .get("units_created") or [])
             and "c13_pp_solo" not in p.cube.session.plane.units,
             f"arms={len(arms5)}")
+
+        # -- 20. Director postmerge challenge (7212959799) repairs.
+        # (a) run_parallel_preview's never-raises contract covers
+        # EVERY failure during arm-list normalization, not only
+        # TypeError: a throwing iterator and a throwing __str__
+        # escaped the landed code. (b) A failed snapshot section is
+        # reported UNAVAILABLE, never read as a true empty state:
+        # the landed code let a serializer failure fabricate
+        # composition removals/creations at diff level.
+        class _ThrowingIter:
+            def __iter__(self):
+                yield "08[Create] :: c13_t20_never"
+                raise RuntimeError("iterator blew up")
+
+        class _BadStr:
+            def __str__(self):
+                raise ValueError("str blew up")
+
+        pv6 = parallel_preview(p, _ThrowingIter())
+        rec("t20a_parallel_preview_throwing_iterator_never_raises",
+            pv6.get("kind") == "PARALLEL_PREVIEW"
+            and pv6.get("arms") == []
+            and pv6.get("conflicts") == [],
+            f"kind={pv6.get('kind')} arms={pv6.get('arms')}")
+        pv7 = parallel_preview(p, [_BadStr()])
+        rec("t20b_parallel_preview_throwing_str_never_raises",
+            pv7.get("kind") == "PARALLEL_PREVIEW"
+            and pv7.get("arms") == [],
+            f"kind={pv7.get('kind')} arms={pv7.get('arms')}")
+
+        import form.persist_core_ii as _pci
+        from form.dell_matrix.simulate_board import run_simulation
+        _orig_ser = _pci.serialize_core_ii
+        try:
+            _calls = {"n": 0}
+
+            def _fail_after(program):
+                _calls["n"] += 1
+                if _calls["n"] == 1:
+                    return {"compositions": {"c13_comp_x": "v1"}}
+                raise RuntimeError("serializer unavailable")
+
+            _pci.serialize_core_ii = _fail_after
+            rcpt = run_simulation(p, "08[Create] :: c13_t20c")
+            d = rcpt.get("diff") or {}
+            rec("t20c_serializer_failure_after_is_unavailable",
+                "compositions" in (d.get("unavailable") or [])
+                and d.get("compositions_removed") == []
+                and d.get("compositions_created") == []
+                and "compositions" not in (rcpt.get("effect_inventory")
+                                            or []),
+                f"unavailable={d.get('unavailable')} "
+                f"removed={d.get('compositions_removed')} "
+                f"inventory={rcpt.get('effect_inventory')}")
+
+            def _fail_always(program):
+                raise RuntimeError("serializer unavailable")
+
+            _pci.serialize_core_ii = _fail_always
+            rcpt = run_simulation(p, "08[Create] :: c13_t20d")
+            d = rcpt.get("diff") or {}
+            rec("t20d_serializer_failure_before_is_unavailable",
+                "compositions" in (d.get("unavailable") or [])
+                and d.get("compositions_created") == []
+                and d.get("compositions_removed") == [],
+                f"unavailable={d.get('unavailable')}")
+
+            _calls2 = {"n": 0}
+
+            def _healthy_change(program):
+                _calls2["n"] += 1
+                if _calls2["n"] == 1:
+                    return {"compositions": {"c13_comp_x": "v1"}}
+                return {"compositions": {"c13_comp_x": "v2"}}
+
+            _pci.serialize_core_ii = _healthy_change
+            rcpt = run_simulation(p, "08[Create] :: c13_t20e")
+            d = rcpt.get("diff") or {}
+            rec("t20e_healthy_measurement_still_reports_change",
+                d.get("unavailable") == []
+                and d.get("compositions_changed") == ["c13_comp_x"],
+                f"unavailable={d.get('unavailable')} "
+                f"changed={d.get('compositions_changed')}")
+        finally:
+            _pci.serialize_core_ii = _orig_ser
     finally:
         for o in owners:
             _cleanup(o)

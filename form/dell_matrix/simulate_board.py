@@ -126,8 +126,12 @@ def _live_files(program: Any) -> Dict[str, Optional[str]]:
 def _snapshot(program: Any) -> Dict[str, Any]:
     """Scoped state view for the diff: Plane units, Nursery
     proposals, history. Reads object state directly — no status
-    providers, no write-on-read surfaces."""
+    providers, no write-on-read surfaces. A section whose read
+    fails is named in the snapshot's "unavailable" list and its
+    view stays empty: a failed measurement must never masquerade
+    as a true empty state (Director challenge 7212959799)."""
     units: Dict[str, str] = {}
+    unavailable: List[str] = []
     try:
         for uid, unit in program.cube.session.plane.units.items():
             material = "|".join([
@@ -138,41 +142,65 @@ def _snapshot(program: Any) -> Dict[str, Any]:
             units[str(uid)] = hashlib.sha256(
                 material.encode("utf-8")).hexdigest()
     except Exception:
-        pass
+        unavailable.append("units")
     proposals: Dict[str, str] = {}
     try:
         for pid, prop in program.nursery.proposals.items():
             proposals[str(pid)] = str(getattr(prop, "status", ""))
     except Exception:
-        pass
+        unavailable.append("proposals")
     compositions: Dict[str, str] = {}
     try:
         from form.persist_core_ii import serialize_core_ii
         raw = (serialize_core_ii(program) or {}).get("compositions") or {}
         compositions = {str(k): str(v) for k, v in raw.items()}
     except Exception:
-        pass
+        unavailable.append("compositions")
     history = list(getattr(program, "history", []) or [])
     return {"units": units, "proposals": proposals, "history": history,
-            "compositions": compositions}
+            "compositions": compositions,
+            "unavailable": sorted(unavailable)}
 
 
 def _scoped_diff(before: Dict[str, Any], after: Dict[str, Any]) -> Dict[str, Any]:
+    # A section unavailable on EITHER side was not measured: its
+    # created/removed/changed lists stay empty and the section is
+    # named in the diff's "unavailable" list, so a failed
+    # measurement can never fabricate a creation or a removal.
+    unavailable = sorted(set(before.get("unavailable") or [])
+                         | set(after.get("unavailable") or []))
     bu, au = before["units"], after["units"]
     bp, ap = before["proposals"], after["proposals"]
     bc, ac = before.get("compositions") or {}, after.get("compositions") or {}
+    units_created = sorted(set(au) - set(bu))
+    units_removed = sorted(set(bu) - set(au))
+    units_modified = sorted(
+        u for u in set(bu) & set(au) if bu[u] != au[u])
+    proposals_added = sorted(set(ap) - set(bp))
+    proposals_changed = sorted(
+        p for p in set(bp) & set(ap) if bp[p] != ap[p])
+    compositions_created = sorted(set(ac) - set(bc))
+    compositions_removed = sorted(set(bc) - set(ac))
+    compositions_changed = sorted(
+        c for c in set(bc) & set(ac) if bc[c] != ac[c])
+    if "units" in unavailable:
+        units_created, units_removed, units_modified = [], [], []
+    if "proposals" in unavailable:
+        proposals_added, proposals_changed = [], []
+    if "compositions" in unavailable:
+        compositions_created = []
+        compositions_removed = []
+        compositions_changed = []
     return {
-        "units_created": sorted(set(au) - set(bu)),
-        "units_removed": sorted(set(bu) - set(au)),
-        "units_modified": sorted(
-            u for u in set(bu) & set(au) if bu[u] != au[u]),
-        "proposals_added": sorted(set(ap) - set(bp)),
-        "proposals_changed": sorted(
-            p for p in set(bp) & set(ap) if bp[p] != ap[p]),
-        "compositions_created": sorted(set(ac) - set(bc)),
-        "compositions_removed": sorted(set(bc) - set(ac)),
-        "compositions_changed": sorted(
-            c for c in set(bc) & set(ac) if bc[c] != ac[c]),
+        "units_created": units_created,
+        "units_removed": units_removed,
+        "units_modified": units_modified,
+        "proposals_added": proposals_added,
+        "proposals_changed": proposals_changed,
+        "compositions_created": compositions_created,
+        "compositions_removed": compositions_removed,
+        "compositions_changed": compositions_changed,
+        "unavailable": unavailable,
         "history_before": len(before["history"]),
         "history_after": len(after["history"]),
         "history_delta": len(after["history"]) - len(before["history"]),
@@ -521,9 +549,13 @@ def run_parallel_preview(program: Any,
     else:
         try:
             seeds = [str(s) for s in seed_texts]
-        except TypeError:
-            # A non-iterable arm list is a bad arm list: the honest
-            # empty preview the contract promises, never a raise.
+        except Exception:
+            # A bad arm list — non-iterable, an iterator that
+            # raises mid-stream, an arm whose str() raises — is a
+            # bad arm list: the honest empty preview the contract
+            # promises, never a raise (Director challenge
+            # 7212959799: a TypeError-only handler let RuntimeError
+            # and ValueError escape the never-raises contract).
             seeds = []
     arms = [run_simulation(program, s) for s in seeds]
 
