@@ -160,12 +160,21 @@ def _fsync_dir(dirpath: str, *, force_fail: bool = False) -> bool:
             pass
 
 
-def atomic_write_json(path: str, payload: Any, *, _fail_at: Optional[str] = None) -> bytes:
+def atomic_write_json(path: str, payload: Any, *, _fail_at: Optional[str] = None,
+                      _sync_capture: Optional[Dict[str, bool]] = None) -> bytes:
     """Serialize ``payload`` to JSON and atomically replace ``path`` with it.
 
     Returns the exact bytes written (callers use them for signature caches).
     Raises AtomicWriteError (or the injected failure) WITHOUT replacing the
     target whenever anything fails before the os.replace boundary.
+
+    ``_sync_capture``: optional caller-owned dict; when given, THIS call's
+    own directory-fsync outcome is written into it as
+    ``capture["dir_fsynced"]`` before returning. The function attribute
+    ``_last_dir_fsynced`` remains the most-recent-call surface (process-
+    wide, last writer wins); a caller that needs its own operation's
+    outcome while other writers may share the process must use the
+    capture, never the attribute.
     """
     fail = _fail_at if _fail_at is not None else _FAIL_AT
 
@@ -188,10 +197,13 @@ def atomic_write_json(path: str, payload: Any, *, _fail_at: Optional[str] = None
     # Expose the fsync outcome honestly for tests/docs without changing
     # the return contract.
     atomic_write_json._last_dir_fsynced = dir_fsynced  # type: ignore[attr-defined]
+    if _sync_capture is not None:
+        _sync_capture["dir_fsynced"] = dir_fsynced
     return blob
 
 
-def atomic_write_bytes(path: str, blob: bytes, *, _fail_at: Optional[str] = None) -> bytes:
+def atomic_write_bytes(path: str, blob: bytes, *, _fail_at: Optional[str] = None,
+                       _sync_capture: Optional[Dict[str, bool]] = None) -> bytes:
     """Atomically replace ``path`` with the exact ``blob`` bytes.
 
     Same Persistence V2 guarantees as :func:`atomic_write_json` (sibling
@@ -200,6 +212,9 @@ def atomic_write_bytes(path: str, blob: bytes, *, _fail_at: Optional[str] = None
     Used for generation member copies where the fingerprint must bind the
     exact sealed bytes. Raises AtomicWriteError WITHOUT replacing the target
     whenever anything fails before the os.replace boundary.
+
+    ``_sync_capture``: as in :func:`atomic_write_json` — this call's own
+    directory-fsync outcome, immune to other writers sharing the process.
     """
     fail = _fail_at if _fail_at is not None else _FAIL_AT
     if not isinstance(blob, (bytes, bytearray)):
@@ -216,11 +231,15 @@ def atomic_write_bytes(path: str, blob: bytes, *, _fail_at: Optional[str] = None
 
     dir_fsynced = _atomic_replace(path, blob, fail)
     atomic_write_bytes._last_dir_fsynced = dir_fsynced  # type: ignore[attr-defined]
+    if _sync_capture is not None:
+        _sync_capture["dir_fsynced"] = dir_fsynced
     return blob
 
 
 # Auditable record of whether the most recent atomic_write_bytes call managed
 # a parent-directory fsync (False = explicit degradation, save still valid).
+# Process-wide and last-writer-wins: a caller needing its OWN call's outcome
+# under possible concurrent writers passes _sync_capture instead.
 atomic_write_bytes._last_dir_fsynced = False  # type: ignore[attr-defined]
 
 
