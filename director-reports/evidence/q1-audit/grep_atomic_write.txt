@@ -1,0 +1,61 @@
+form/dell_matrix/atomic_write.py:9:Save sequence (``atomic_write_json``):
+form/dell_matrix/atomic_write.py:150:    atomic_write_json._last_dir_fsynced = dir_fsynced  # type: ignore[attr-defined]
+form/dell_matrix/atomic_write.py:157:    Same Persistence V2 guarantees as :func:`atomic_write_json` (sibling
+form/dell_matrix/atomic_write.py:258:# Auditable record of whether the most recent atomic_write_json call managed
+form/dell_matrix/atomic_write.py:260:atomic_write_json._last_dir_fsynced = False  # type: ignore[attr-defined]
+form/dell_matrix/exchange.py:400:    from form.dell_matrix.atomic_write import atomic_write_json
+form/dell_matrix/exchange.py:401:    atomic_write_json(_import_journal_path(owner), journal)
+form/dell_matrix/exchange.py:609:    from form.dell_matrix.atomic_write import atomic_write_json
+form/dell_matrix/exchange.py:667:        atomic_write_json(owner_nursery_path(owner), nursery_raw)
+form/dell_matrix/exchange.py:676:        atomic_write_json(_path(owner), program_raw)
+form/dell_matrix/nursery.py:294:        from form.dell_matrix.atomic_write import atomic_write_json
+form/dell_matrix/nursery.py:313:        blob = atomic_write_json(self.path, payload, _fail_at=_fail_at)
+form/mandell/checkpoint_generation.py:64:from form.dell_matrix.atomic_write import AtomicWriteError, atomic_write_bytes, atomic_write_json
+form/mandell/checkpoint_generation.py:200:    from form.dell_matrix.atomic_write import atomic_write_json as _awj
+form/mandell/checkpoint_generation.py:254:        atomic_write_json(_manifest_path(owner, generation_id), manifest)
+form/mandell/checkpoint_generation.py:276:        atomic_write_json(_pointer_path(owner), pointer)
+form/mandell/core_i_recovery.py:309:    from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/core_i_recovery.py:312:    atomic_write_json(_journal_path(owner), journal)
+form/mandell/core_i_recovery.py:361:    from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/core_i_recovery.py:391:    atomic_write_json(_journal_path(owner), journal)
+form/mandell/core_i_recovery.py:1045:    from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/core_i_recovery.py:1128:    prog_blob = atomic_write_json(staging_prog, program_data)
+form/mandell/core_i_recovery.py:1129:    nurs_blob = atomic_write_json(staging_nurs, nursery_payload)
+form/mandell/core_i_recovery.py:1134:        ideas_blob = atomic_write_json(staging_ideas, ideas_data)
+form/mandell/core_i_recovery.py:1136:        ideas_blob = atomic_write_json(staging_ideas, {"owner": owner, "ideas": {}})
+form/mandell/core_i_recovery.py:1143:        graph_blob = atomic_write_json(staging_graph, graph_data)
+form/mandell/core_i_recovery.py:1145:        graph_blob = atomic_write_json(staging_graph, {
+form/mandell/core_i_recovery.py:1150:    # was staged. atomic_write_json returns the exact bytes written.
+form/mandell/core_i_recovery.py:1413:    from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/core_i_recovery.py:1424:    atomic_write_json(_confirm_journal_path(owner), journal)
+form/mandell/core_i_recovery.py:1489:    from form.dell_matrix.atomic_write import atomic_write_json, atomic_write_bytes
+form/mandell/core_i_recovery.py:1512:    atomic_write_json(jpath, journal)
+form/mandell/core_i_recovery.py:1759:    from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/core_i_recovery.py:1973:        atomic_write_json(npath, ndata)
+form/mandell/core_i_recovery.py:2033:    from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/core_i_recovery.py:2089:    atomic_write_json(_supersede_journal_path(owner), journal)
+form/mandell/core_i_recovery.py:2284:    from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/core_i_recovery.py:2402:            atomic_write_json(npath, ndata)
+form/mandell/core_i_recovery.py:2505:            atomic_write_json(npath, ndata)
+form/mandell/idea_checkpoint.py:27:from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/idea_checkpoint.py:62:    atomic_write_json(marker, {"owner": owner, "phase": "pending"})
+form/mandell/idea_checkpoint.py:125:    atomic_write_json(path, snapshot)
+form/mandell/idea_checkpoint.py:152:    # 1. Write all target files FIRST (each atomic via atomic_write_json).
+form/mandell/idea_checkpoint.py:157:        atomic_write_json(path, data)
+form/mandell/idea_persist.py:18:from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/idea_persist.py:44:    atomic_write_json(path, idea.to_dict())
+form/mandell/p2_r1_adversarial_proof.py:225:    orig_atomic=sg.atomic_write_json if hasattr(sg,'atomic_write_json') else None
+form/mandell/p2_r1_adversarial_proof.py:228:    orig=aw.atomic_write_json
+form/mandell/p2_r1_adversarial_proof.py:234:    aw.atomic_write_json=failing_atomic
+form/mandell/p2_r1_adversarial_proof.py:241:        aw.atomic_write_json=orig
+form/mandell/p2_r1_adversarial_proof.py:291:    aw.atomic_write_json(graph_journal_path(OWNER), journal)
+form/mandell/semantic_graph.py:584:        from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/semantic_graph.py:585:        atomic_write_json(graph_path(self.owner), data)
+form/mandell/semantic_graph.py:609:        from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/semantic_graph.py:636:        atomic_write_json(path, journal)
+form/mandell/semantic_graph.py:1549:            from form.dell_matrix.atomic_write import atomic_write_json
+form/mandell/semantic_graph.py:1550:            atomic_write_json(jpath, journal)
+form/persist_rest.py:103:    from form.dell_matrix.atomic_write import atomic_write_json
+form/persist_rest.py:105:    atomic_write_json(target, data, _fail_at=_fail_at)
+form/persist_rest.py:173:    from form.dell_matrix.atomic_write import atomic_write_json
+form/persist_rest.py:175:    atomic_write_json(cp, serialize(program), _fail_at=_fail_at)
