@@ -416,6 +416,105 @@ def smoke() -> bool:
             and _core_ii_present(c) is False,
             f"create_ok={res.get('ok')} "
             f"present_after={_core_ii_present(c)}")
+
+        # -- 18. Part I #167: the receipt DECLARES its effect
+        # inventory — every state class the run measured as
+        # touched (chains / compositions / planes / nursery /
+        # history), derived from the run's own scoped diff, never
+        # a static claim. Merged from c13_simulate_part1_test_spec
+        # per PART_I_PLAN §2 step zero (same build). The spec's
+        # probe seed double-wrapped a Simulate (a nested refusal);
+        # the merged check reads the board receipt at the parent
+        # suite's own extraction point (res["simulate"]) and pins
+        # both an executed rehearsal's measured declaration and
+        # the refusal receipt's honest empty declaration.
+        res = _sim(p, "08[Create] :: c13_inv_a")
+        rcpt = res.get("simulate") or {}
+        inv = rcpt.get("effect_inventory")
+        rec("t18_part1_167_effect_inventory_declared",
+            rcpt.get("outcome") == "executed"
+            and isinstance(inv, list)
+            and set(inv) == {"chains", "planes", "history"}
+            and "c13_inv_a" not in p.cube.session.plane.units,
+            f"outcome={rcpt.get('outcome')} inventory={inv} "
+            f"diff={rcpt.get('diff')}")
+        res = _sim(p, "31[Simulate] :: 08[Create] :: c13_inv_nested")
+        rcpt = res.get("simulate") or {}
+        rec("t18b_refusal_receipt_declares_empty_inventory",
+            rcpt.get("outcome") == "refused_nested_simulate"
+            and rcpt.get("effect_inventory") == [],
+            f"outcome={rcpt.get('outcome')} "
+            f"inventory={rcpt.get('effect_inventory')}")
+        from form.dell_matrix.simulate_board import _effect_inventory
+        rec("t18c_inventory_mapping_covers_every_class",
+            _effect_inventory(
+                [{"dell": 8}],
+                {"compositions_created": ["comp_x"],
+                 "units_created": ["u_x"],
+                 "proposals_added": ["p_x"],
+                 "history_delta": 1})
+            == ["chains", "compositions", "planes", "nursery",
+                "history"]
+            and _effect_inventory([], {}) == [],
+            "inventory mapping does not cover the declared vocabulary")
+
+        # -- 19. Part I #170: a parallel-preview surface exists —
+        # rehearsing N seeds side by side returns PER-ARM receipts
+        # (each arm its own isolated copy) PLUS the cross-arm
+        # conflicts, never one blended answer. Merged from
+        # c13_simulate_part1_test_spec per PART_I_PLAN §2.
+        from form.mandell.executor import parallel_preview
+        pv = parallel_preview(
+            p, ["08[Create] :: c13_pp_a", "08[Create] :: c13_pp_b"])
+        arms = pv.get("arms") or []
+        rec("t19_part1_170_parallel_preview_surface",
+            pv.get("kind") == "PARALLEL_PREVIEW"
+            and len(arms) == 2
+            and all(a.get("outcome") == "executed" for a in arms)
+            and "c13_pp_a" in ((arms[0].get("diff") or {})
+                               .get("units_created") or [])
+            and "c13_pp_b" in ((arms[1].get("diff") or {})
+                               .get("units_created") or [])
+            and pv.get("conflicts") == []
+            and "c13_pp_a" not in p.cube.session.plane.units
+            and "c13_pp_b" not in p.cube.session.plane.units,
+            f"kind={pv.get('kind')} arms={len(arms)} "
+            f"conflicts={pv.get('conflicts')}")
+        pv2 = parallel_preview(
+            p, ["08[Create] :: c13_pp_same", "08[Create] :: c13_pp_same"])
+        rec("t19b_parallel_preview_names_conflicts",
+            any(cf.get("class") == "planes"
+                and cf.get("id") == "c13_pp_same"
+                and cf.get("arms") == [0, 1]
+                for cf in (pv2.get("conflicts") or []))
+            and "c13_pp_same" not in p.cube.session.plane.units,
+            f"conflicts={pv2.get('conflicts')}")
+        # -- 19c/19d. Malformed arm-list inputs honor the documented
+        # contract ("Never raises; a bad arm list yields an honest
+        # empty preview") — Director wake-pass defect, 2026-11-21:
+        # an int raised TypeError and a bare string was shredded
+        # into one preview arm per character.
+        pv3 = parallel_preview(p, 5)
+        rec("t19c_parallel_preview_int_input_never_raises",
+            pv3.get("kind") == "PARALLEL_PREVIEW"
+            and pv3.get("arms") == []
+            and pv3.get("conflicts") == [],
+            f"kind={pv3.get('kind')} arms={pv3.get('arms')}")
+        pv4 = parallel_preview(p, None)
+        rec("t19d_parallel_preview_none_input_empty",
+            pv4.get("kind") == "PARALLEL_PREVIEW"
+            and pv4.get("arms") == [],
+            f"kind={pv4.get('kind')} arms={pv4.get('arms')}")
+        pv5 = parallel_preview(p, "08[Create] :: c13_pp_solo")
+        arms5 = pv5.get("arms") or []
+        rec("t19e_parallel_preview_bare_string_is_one_arm",
+            pv5.get("kind") == "PARALLEL_PREVIEW"
+            and len(arms5) == 1
+            and arms5[0].get("outcome") == "executed"
+            and "c13_pp_solo" in ((arms5[0].get("diff") or {})
+                                  .get("units_created") or [])
+            and "c13_pp_solo" not in p.cube.session.plane.units,
+            f"arms={len(arms5)}")
     finally:
         for o in owners:
             _cleanup(o)
