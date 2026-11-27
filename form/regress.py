@@ -450,6 +450,14 @@ LIST = [
     "form.part6_unknowns_probe_test:smoke",
     "form.fi016_capability_probe_test:smoke",
     "form.dirf12_journal_receipt_test:smoke",
+    # Q1 / J-19 C-B (Director ruling 7136749722; Keeper SCOPED
+    # DESIGN CHALLENGE PASS 7202299383; Director FINAL BUILD
+    # CLEARANCE 7203152620): duplicate exchange import returns
+    # the durable witness with zero writes; new identities land
+    # fresh; disposal breaks the witness (M3); a stale writer's
+    # ordinary save preserves a completed import's seed/receipt
+    # records or refuses typed pre-byte (X4); owner isolation.
+    "form.q1_duplicate_import_test:smoke",
     "form.dirf13_loop_count_test:smoke",
     "form.dirf14_catch_consumed_test:smoke",
     "form.step10_consistency_test:smoke",

@@ -7,13 +7,20 @@ WHAT THIS SUITE PROVES (and what it does not):
 1. STATIC CENSUS (the pin): in form/ PRODUCTION code the
    owner-state domain has exactly ONE lock primitive —
    form/owner_state_lock.py (a per-owner kernel file lock) —
-   and exactly FOUR acquisition sites, one per file, each
+   and exactly FIVE acquisition sites, one per file, each
    taking the program's OWN owner:
 
      form/mandell/unit_binding.py      bind transaction
      form/persist_rest.py              save funnel
      form/dell_matrix/confirm_lineage.py  confirm commit lock
      form/mandell/unit_containment.py  containment _LockGate
+     form/dell_matrix/exchange.py      import transaction
+       (bounded correction, Q1 / J-19 C-B: Director design
+       ruling 7136749722 + FINAL BUILD CLEARANCE 7203152620 —
+       the accepted duplicate-import design serializes the
+       import transaction under the same primitive, PROOF_SPEC
+       §3/§4 edits 1-3; same primitive, same domain, no new
+       lock home)
 
    Kernel-lock homes are pinned at exactly TWO, by domain
    (bounded correction, Director ruling 7063000901 on PR #508,
@@ -32,7 +39,7 @@ WHAT THIS SUITE PROVES (and what it does not):
    was first pinned. No other threading.Lock/RLock/
    Semaphore/Condition/Event/Barrier and no multiprocessing
    lock anywhere in production code.
-   A fifth acquisition site, a THIRD kernel-lock home, or a
+   A sixth acquisition site, a THIRD kernel-lock home, or a
    site locking a FOREIGN owner turns this suite RED — that
    is the tripwire working.
 
@@ -45,10 +52,11 @@ WHAT THIS SUITE PROVES (and what it does not):
    threading.RLock is OUTSIDE this census's scope (form/ only);
    it is censused by the CH-17 H9 suite.
 
-2. RUNTIME LOCK-ORDER GRAPH: the four sites are instrumented
-   (the lazy per-call import in all four means one patch point)
-   while REAL operations run — save, bind, containment nest,
-   confirm. Every held stack names exactly ONE owner (nesting is
+2. RUNTIME LOCK-ORDER GRAPH: the sites are instrumented
+   (the lazy per-call import at every site means one patch
+   point) while REAL operations run — save, bind, containment
+   nest, confirm. Every held stack names exactly ONE owner
+   (nesting is
    always a same-owner re-entrant join through the ONE
    primitive), observed nesting depth never exceeds 3, and the
    observed edge set is pinned: with a single per-owner lock key
@@ -163,11 +171,20 @@ _THREADING_PATTERNS = [
 ]
 
 # The pinned acquisition census: file -> owner-argument idiom.
+# Bounded correction (Q1 / J-19 C-B, Director design ruling
+# 7136749722 + FINAL BUILD CLEARANCE 7203152620): the accepted
+# duplicate-import design serializes the import transaction
+# under the same primitive (PROOF_SPEC §3/§4, edits 1-3), adding
+# form/dell_matrix/exchange.py as the fifth site, locking the
+# import's own owner. Same primitive, same domain — no new lock
+# home; the save-side site in persist_rest additionally hosts
+# the §6.2 stale-writer check inside its existing segment.
 _PINNED_SITES = {
     "form/mandell/unit_binding.py": "program.owner",
     "form/persist_rest.py": "program.owner",
     "form/dell_matrix/confirm_lineage.py": "program.owner",
     "form/mandell/unit_containment.py": "self._program.owner",
+    "form/dell_matrix/exchange.py": "owner",
 }
 
 
@@ -208,7 +225,7 @@ def _static_census():
           f"{sorted(threading_homes)}")
     ok = set(acq) == set(_PINNED_SITES) and all(
         len(v) == 1 for v in acq.values())
-    check("census_exactly_four_acquisition_sites_one_per_file",
+    check("census_exactly_five_acquisition_sites_one_per_file",
           ok, f"acquisition census: "
               f"{ {k: len(v) for k, v in sorted(acq.items())} }")
     owner_ok = all(
