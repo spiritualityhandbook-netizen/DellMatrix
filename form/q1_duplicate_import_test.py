@@ -26,7 +26,12 @@ Contract proven here (PROOF_SPEC §1–§3, §6):
   including a PRESENT exchange section whose shell is malformed,
   which is unreadable state and never an empty section;
   Director correction 7203516785), the save refuses typed
-  (StaleWriterSaveError) before any byte changes.
+  (StaleWriterSaveError) before any byte changes. A failed
+  durable READ is classified by site and class (Director
+  correction 7205885026): only proven corrupt TARGET bytes
+  take the repair posture (Q12); an OSError-class failure
+  (Q13) or a failed nursery read over intact durable program
+  records (Q14) refuses typed pre-byte.
 - CAPACITY (Critic P1, review 4713412892): preservation is
   verified against the serializer's bounded retention — if the
   outgoing section cannot retain EVERY live-bound record (a
@@ -472,6 +477,83 @@ def main() -> bool:
     _rec("Q12: save over whole-file-corrupt durable state "
          "proceeds (repair posture, no stale-writer refusal)",
          err is None, repr(err))
+    _cleanup(owner)
+
+    # ---- Q13: Director correction 7205885026 — a REAL
+    # OSError-class read failure (a genuine OSError instance,
+    # the class a temporary I/O failure delivers) is NOT the
+    # corrupt-bytes repair case: it proves nothing about the
+    # durable records the intact program file holds, so the
+    # stale save refuses typed pre-byte and the import's
+    # durable records survive. (The pre-correction handler
+    # returned for EVERY OSError — this is the exact hole.)
+    owner = "Q1IOErr"
+    _cleanup(owner)
+    stale = Program(owner=owner)
+    importer = Program(owner=owner)
+    imp = exchange.import_packet(importer, _packet())
+    pid = imp["pid"]
+    before = _file_bytes(_program_path(owner))
+    real_raw = exchange._raw_state_files
+
+    def _io_boom(_owner):
+        raise OSError(5, "simulated transient I/O failure")
+
+    exchange._raw_state_files = _io_boom
+    err = None
+    try:
+        stale.save()
+    except Exception as e:  # noqa: BLE001 - verdict recorded below
+        err = e
+    finally:
+        exchange._raw_state_files = real_raw
+    _rec("Q13: OSError-class durable read failure -> stale "
+         "save refuses TYPED pre-byte",
+         StaleWriterSaveError is not None
+         and isinstance(err, StaleWriterSaveError), repr(err))
+    _rec("Q13: refused save changed no durable bytes",
+         _file_bytes(_program_path(owner)) == before)
+    st = exchange._durable_import_state(owner, pid)
+    _rec("Q13: the import's durable records survive intact",
+         st["proposal_present"] and st["seed_present"]
+         and st["receipts_count"] == 2, str(st))
+    _cleanup(owner)
+
+    # ---- Q14: Director correction 7205885026 — a FAILED
+    # NURSERY READ (real corrupt nursery bytes, no injection)
+    # over INTACT durable program records: nursery evidence is
+    # unavailable, which is not corruption of the program file
+    # being repaired — preservation cannot be established, so
+    # the stale save refuses typed pre-byte and the program
+    # file's durable records stay exactly as they were.
+    owner = "Q1NursFail"
+    _cleanup(owner)
+    stale = Program(owner=owner)
+    importer = Program(owner=owner)
+    imp = exchange.import_packet(importer, _packet())
+    pid = imp["pid"]
+    before = _file_bytes(_program_path(owner))
+    with open(owner_nursery_path(owner), "wb") as f:
+        f.write(b"\xff\xfe not json")
+    err = None
+    try:
+        stale.save()
+    except Exception as e:  # noqa: BLE001 - verdict recorded below
+        err = e
+    _rec("Q14: failed nursery read + intact durable program "
+         "records -> stale save refuses TYPED pre-byte",
+         StaleWriterSaveError is not None
+         and isinstance(err, StaleWriterSaveError), repr(err))
+    _rec("Q14: refused save changed no durable bytes",
+         _file_bytes(_program_path(owner)) == before)
+    with open(_program_path(owner), encoding="utf-8") as f:
+        prog_data = json.load(f)
+    _rec("Q14: the program file's durable seed record for the "
+         "live import is still on disk",
+         any(e.get("pid") == pid for e in
+             prog_data.get("exchange_seeds", {})
+             .get("entries", {}).values()
+             if isinstance(e, dict)))
     _cleanup(owner)
 
     passed = sum(1 for _, ok, _ in RESULTS if ok)

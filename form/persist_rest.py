@@ -127,6 +127,64 @@ def _refuse_if_binding_loss(program: Program, target: str) -> None:
             f"carried, then save)")
 
 
+def _repair_posture_applies(owner: str, target: str) -> bool:
+    """Classification probe for a failed durable read (Director
+    correction 7205885026, reconciled with the landed DCC-XVII
+    control K contract): True ONLY in the two shapes where
+    proceeding cannot drop a durable exchange record —
+
+    * the target (program) file's bytes are PROVEN corrupt —
+      unparseable, or parsed but not an object — the repair
+      posture beside this check (_persisted_bindings:
+      unreadable target bytes carry no readable record to
+      lose; fixture Q12); or
+    * the target file is absent, or readable with both
+      exchange sections lawfully readable AND empty: no
+      durable exchange records exist to preserve, so
+      preservation is vacuous — whatever made the canonical
+      read fail (including a corrupt NURSERY file, DCC-XVII
+      control K: a program save proceeds over a garbage
+      nursery file holding no exchange state; the nursery's
+      corruption is its own load path's typed-refusal domain,
+      and this save never writes the nursery file).
+
+    Every other shape returns False and the caller refuses
+    typed, pre-byte: a target I/O error (a temporary failure
+    proves nothing about the records a readable program file
+    holds; fixture Q13), a failed nursery read over a program
+    file that DOES hold durable records (preservation cannot
+    be established without the liveness evidence; fixture
+    Q14), a present-but-malformed exchange section (unreadable
+    state, never an empty section), or a failure the probe
+    cannot attribute (fixture Q9). The protected records live
+    only in the target file; the nursery failure's site
+    matters exactly when target records exist, and then the
+    verdict is refusal either way.
+
+    The probe reads bytes only to classify the failure; the
+    preservation data itself still comes from the canonical
+    durable read (_raw_state_files) when it succeeds."""
+    if not os.path.isfile(target):
+        return True
+    try:
+        with open(target, encoding="utf-8") as f:
+            program_raw = json.load(f)
+    except OSError:
+        return False
+    except (UnicodeDecodeError, ValueError):
+        return True
+    if not isinstance(program_raw, dict):
+        return True
+    from form.dell_matrix import exchange as _exchange
+    for section in ("exchange_seeds", "exchange_receipts"):
+        if _exchange._section_shell_error(
+                program_raw, section) is not None:
+            return False
+        if _exchange._section_entries(program_raw, section):
+            return False
+    return True
+
+
 def _preserve_unseen_exchange_records(program: Program,
                                       target: str) -> None:
     """Q1 / C-B §6.2 — the stale-writer check at the ordinary
@@ -161,6 +219,15 @@ def _preserve_unseen_exchange_records(program: Program,
       be taken for an empty section; Director correction
       7203516785), the save raises StaleWriterSaveError before
       any byte changes. Lawful absent/empty sections proceed.
+      A failed durable READ is classified before it earns
+      either posture (Director correction 7205885026,
+      reconciled with DCC-XVII control K in
+      _repair_posture_applies): proven corrupt target bytes,
+      or a target provably holding no exchange records, take
+      the repair posture; any failure over a target that
+      holds — or may hold — durable records refuses typed,
+      pre-byte, because a temporary read error proves nothing
+      about the records a readable program file holds.
       Preservation is also verified against the serializer's
       bounded retention (Critic P1, review 4713412892): if the
       outgoing section would drop a live-bound record at
@@ -187,18 +254,21 @@ def _preserve_unseen_exchange_records(program: Program,
         nursery_raw, program_raw = _exchange._raw_state_files(
             owner)
     except Exception as e:
-        # Whole-file unparseability follows the binding-loss
-        # posture beside this check (_persisted_bindings):
-        # unreadable bytes carry no READABLE exchange record to
-        # preserve, and a live instance's save over them is the
-        # established repair (the DCC-XVII / TD-1 corrupt-state
-        # contract). Any other read failure — the state cannot
-        # be established though no file is corrupt — refuses
-        # typed, pre-byte (fixture Q9's injected failure).
-        if isinstance(e, (OSError, UnicodeDecodeError,
-                          ValueError)) or (
-                isinstance(e, _exchange.ExchangeError)
-                and "not an object" in str(e)):
+        # The failure is classified before it earns a posture
+        # (Director correction 7205885026; the classifier
+        # _repair_posture_applies carries the full contract,
+        # including the DCC-XVII control K reconciliation).
+        # Proceed only where no durable exchange record can be
+        # dropped — proven corrupt target bytes (the
+        # DCC-XVII / TD-1 repair; fixture Q12) or a target
+        # provably holding no exchange records. Every failure
+        # over a target that holds or may hold records — a
+        # target I/O error (fixture Q13), a failed nursery
+        # read over intact durable program records (fixture
+        # Q14), or an unattributable failure (fixture Q9) —
+        # leaves preservation unestablished and refuses typed,
+        # pre-byte.
+        if _repair_posture_applies(owner, target):
             return
         raise StaleWriterSaveError(
             f"save for owner {owner!r} cannot verify the "
