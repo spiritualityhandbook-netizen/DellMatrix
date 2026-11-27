@@ -685,6 +685,11 @@ workshops and the Perspective Studio; a regression harness (`form/regress.py` â€
 canonical suite registry; the current suite count is the length of its LIST) covering
 all of the above, run forward, twice, and in reverse order per release cycle.
 
+**Production main:** `11933da` â€” the anchor recorded by the P12 closure audit
+(2026-10-30, full 100-Dell registry proof complete). The anchor line is retained
+verbatim because the P12 audit's reconciliation is stated against it (and the
+closure suite pins it); the certified release code is `7e573307`, above.
+
 **Certification picture:** DIR-CERT-2026-11-02 stands for its named circuits with its
 exceptions retained; Studio security and the Core I unsupported-arg gate are certified
 in scope (Studio remains a functional **local-only** application; browser acceptance
