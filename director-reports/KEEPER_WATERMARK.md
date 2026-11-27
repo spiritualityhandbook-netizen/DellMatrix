@@ -1,12 +1,12 @@
 # KEEPER_WATERMARK
 
-**Last cycle**: 2026-11-27 ~09:30 CST  
-**UTC approx**: 2026-11-27T15:30:00Z  
+**Last cycle**: 2026-11-27 ~12:45 CST  
+**UTC approx**: 2026-11-27T18:45:00Z  
 **Type**: DEEP PASS :45
 
 ## Items ruled this cycle
 - Ripe gates:
-  - #508 head 831f350b246c0927e92c8ffefbf219eaae4d5fcc: not ripe. Exact missing: terminal Form smoke SUCCESS (current FAILURE on lock_order_census_test 12/13 + ch17_h6_h9_census_test 19/20). Spot-checked check_runs: smoke FAILURE. Comment 7222163931.
+  - #550 head 46e72ac410a5e6d7dec4852b44be3ae44726365a: not ripe. Exact missing: terminal CI smoke SUCCESS (currently in_progress; builds SUCCESS). Spot-checked: Production main `11933da` anchor present in README at head. Comment posted.
   - #294 fenced (Q1 gate-held).
 - Merged-main proofs: none new since prior pass.
 - Records reviews: none new.
@@ -18,6 +18,6 @@
 - gaps: none
 
 ## Silence flag
-Proof of pass: this watermark advance + exact missing restated on #508. Nothing needed from Ace. Next step: Uni resolves smoke reds on #508.
+Proof of pass: this watermark advance + exact missing restated on #550. Nothing needed from Ace. Next step: Uni awaits terminal smoke on #550 then re-presents.
 
 — KEEPER
