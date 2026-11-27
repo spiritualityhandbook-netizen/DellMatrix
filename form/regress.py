@@ -228,6 +228,7 @@ LIST = [
     "form.gpe07_audit_test",
     "form.show_render_directive_test",
     "form.checkpoint_generation_stress_test",
+    "form.h7_dirsync_seams_test",
     "form.graph_journal_crash_test",
     "form.snapshot_retrieval_test",
     "form.snapshot_revalidation_test",
